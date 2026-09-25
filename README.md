@@ -17,7 +17,7 @@ are not part of this deliverable yet.
 ## Notebooks
 
 1. `notebooks/01_dataset_and_damage_pipeline.ipynb`: data pool, calibration, and the damage
-   pipeline (this deliverable).
+   pipeline (DONE).
 2. `notebooks/02_repair_and_experiments.ipynb`: repair methods and experiments (later).
 3. `notebooks/03_analysis.ipynb`: results analysis and report figures (later).
 
