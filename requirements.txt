@@ -1,0 +1,13 @@
+# Day 1 packages only (see CLAUDE.md). No torch or transformers today.
+pysbd
+rapidfuzz
+pandas
+pyyaml
+matplotlib
+pytest
+ipykernel
+nbconvert
+
+# Add only for the optional SAIA connectivity check (scripts/check_saia.py):
+# openai
+# python-dotenv

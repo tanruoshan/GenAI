@@ -1,0 +1,32 @@
+# Set Config for damage-injection pipeline
+
+seed: 42
+
+paths:
+  raw_dir: data/raw/BLN600
+  processed_dir: data/processed
+  reports_dir: reports
+  runs_dir: runs
+
+sentence_pool:
+  min_words: 20
+  max_words: 60
+  min_fact_tokens: 2
+  min_fact_tokens_fallback: 1 # used only if the >=2 pool has fewer than ~170 sentences
+  fallback_pool_threshold: 170
+  max_sentences_per_excerpt: 3
+  length_bands:
+    - [20, 29]
+    - [30, 44]
+    - [45, 60]
+
+sample:
+  n_test: 150
+  n_dev: 20
+
+corruption:
+  intensity_low: 0.40 # share of a damaged word's letters and digits that are altered
+  intensity_high: 0.60
+  max_deletions: 2
+  drop_prob: 0.10 # placeholder, reviewed in section H
+  levels: [1w, 10, 25, 50, 75]
