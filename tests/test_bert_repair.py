@@ -4,7 +4,7 @@ import math
 import pytest
 import torch
 
-from blnrepair.bert_repair import MASK, BertReranker, char_sim, render, split_parts
+from blnrepair.bert_repair import MASK, BertReranker, char_sim, load_repair_config, render, repair_version, split_parts
 from blnrepair.data import ROOT
 from blnrepair.slots import build_slots
 
@@ -87,12 +87,12 @@ class FlatModel(torch.nn.Module):
         return type("Out", (), {"logits": torch.zeros(*input_ids.shape, self.vocab_size)})()
 
 
-@pytest.mark.skipif(not (ROOT / "data" / "processed" / "corrupted_v1.jsonl").exists(), reason="frozen data missing")
+@pytest.mark.skipif(not (ROOT / "data" / "processed" / "corrupted_v2.jsonl").exists(), reason="frozen data missing")
 def test_one_word_per_slot_on_real_dev_rows(tokenizer):
     from blnrepair.freeze import load_frozen
     from blnrepair.preds import format_ok
     from blnrepair.slots import splice
-    rows = [r for r in load_frozen("v1") if r["split"] == "dev" and r["severity"] in ("1w", "25")][:4]
+    rows = [r for r in load_frozen("v2") if r["split"] == "dev" and r["severity"] in ("1w", "25")][:4]
     r = BertReranker(FlatModel(len(tokenizer)), tokenizer, lam=1.0)
     for row in rows:
         out = r(build_slots(row))
@@ -111,3 +111,10 @@ def test_lambda_trades_bert_score_against_letter_similarity(monkeypatch):
     assert r(view)["pred_words"] == ["court"]  # letters dominate
     dropped = {"id": "x", "severity": "1w", "words": ["the", None], "slots": [slot("", dropped=True, core="")]}
     assert r(dropped)["pred_words"] == ["count"]  # a dropped slot uses the BERT score only
+
+
+def test_repair_version_holds_model_settings_and_split():
+    cfg = load_repair_config()
+    assert repair_version({**cfg, "lam": 1.0, "beam": 5, "top_n": 10}, "dev") == f"{cfg['model_tag']}-l1-b5-n10-dev"
+    assert repair_version({**cfg, "lam": 0.5}, "test").endswith("-test")
+    assert repair_version({**cfg, "lam": 0.5}, "dev") != repair_version({**cfg, "lam": 2}, "dev")

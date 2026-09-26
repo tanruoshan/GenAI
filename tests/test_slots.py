@@ -5,13 +5,13 @@ from blnrepair.data import ROOT
 from blnrepair.freeze import load_frozen
 from blnrepair.slots import DROPPED, build_slots, slot_core, slot_view, splice, split_punct
 
-pytestmark = pytest.mark.skipif(not (ROOT / "data" / "processed" / "corrupted_v1.jsonl").exists(),
-                                reason="needs the frozen corrupted_v1.jsonl")
+pytestmark = pytest.mark.skipif(not (ROOT / "data" / "processed" / "corrupted_v2.jsonl").exists(),
+                                reason="needs the frozen corrupted_v2.jsonl")
 
 
 @pytest.fixture(scope="module")
 def rows():
-    rows = load_frozen("v1")
+    rows = load_frozen("v2")
     assert len(rows) == 1020
     return rows
 

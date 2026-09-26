@@ -6,13 +6,13 @@ from blnrepair.freeze import load_frozen
 from blnrepair.preds import PRED_FIELDS, append_pred, load_preds, pred_path, row_key, run_method, slot_exact
 from blnrepair.slots import split_punct
 
-pytestmark = pytest.mark.skipif(not (ROOT / "data" / "processed" / "corrupted_v1.jsonl").exists(),
-                                reason="needs the frozen corrupted_v1.jsonl")
+pytestmark = pytest.mark.skipif(not (ROOT / "data" / "processed" / "corrupted_v2.jsonl").exists(),
+                                reason="needs the frozen corrupted_v2.jsonl")
 
 
 @pytest.fixture(scope="module")
 def dev_rows():
-    return [r for r in load_frozen("v1") if r["split"] == "dev" and r["severity"] in ("0", "1w", "25")][:9]
+    return [r for r in load_frozen("v2") if r["split"] == "dev" and r["severity"] in ("0", "1w", "25")][:9]
 
 
 def gold_predict(row_by_key):
@@ -57,7 +57,7 @@ def test_gold_predictions_splice_to_gold_and_score_one(dev_rows, tmp_path):
 
 
 def test_test_split_is_closed_by_default(tmp_path):
-    test_row = next(r for r in load_frozen("v1") if r["split"] == "test" and r["k"])
+    test_row = next(r for r in load_frozen("v2") if r["split"] == "test" and r["k"])
     with pytest.raises(AssertionError, match="test split is closed"):
         run_method([test_row], lambda v: {"pred_words": []}, "fake", "v1", "m", preds_dir=tmp_path)
     assert not pred_path("fake", "v1", tmp_path).exists()
