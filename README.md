@@ -11,15 +11,25 @@ size of the damaged region grows?
 
 ## Status
 
-Day 1: dataset loading and the synthetic damage-injection pipeline. Repair methods and evaluation
-are not part of this deliverable yet.
+Data and damage are frozen (`corrupted_v2`). Both repair methods run end to end on the dev split.
+BERT reranking settings are being tuned on dev; the final run on the test split comes after that.
 
 ## Notebooks
 
-1. `notebooks/01_dataset_and_damage_pipeline.ipynb`: data pool, calibration, and the damage
-   pipeline (DONE).
-2. `notebooks/02_repair_and_experiments.ipynb`: repair methods and experiments (later).
-3. `notebooks/03_analysis.ipynb`: results analysis and report figures (later).
+1. `notebooks/01_dataset_and_damage_pipeline.ipynb`: data pool, calibration and the damage pipeline.
+2. `notebooks/02_bert_repair.ipynb`: fine-tuned BERT with character-aware reranking (repair and dev tuning).
+3. `notebooks/03_llm_repair.ipynb`: few-shot LLM repair (with and without the article as context) and the contamination probe.
+4. `notebooks/04_evaluation.ipynb`: reads the stored predictions and scores BERT and the LLM on the same rows.
+
+Predictions are stored in `runs/preds/`, one file per method and version. A finished row is never
+requested again, so a run can be stopped and resumed. The test split stays closed until
+`runs/repair_config_v1.yaml` exists and `ALLOW_TEST = True` is set in the notebook.
+
+## LLM setup
+
+Copy `.env.example` to `.env` and fill in the key (git-ignored). The client in `src/blnrepair/llm.py`
+speaks the OpenAI-compatible API and only calls the model ids listed in `configs/llm.yaml`. The prompt
+files in `prompts/` are never edited once used; a change goes into a new `_v2` file.
 
 ## Data
 

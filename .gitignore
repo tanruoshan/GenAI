@@ -1,7 +1,7 @@
 # Claude-related / internal working files - not for instructor review
 CLAUDE.md
 .claude/
-docs/dossier.md
+docs/
 claude_code_task_*.md
 
 # Python
@@ -18,6 +18,9 @@ venv/
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Stale results kept locally only (zero-shot was dropped from the study)
+runs/_archive/
 
 # Secrets
 .env
