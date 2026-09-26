@@ -1,0 +1,8 @@
+# Settings for BERT repair (notebook 2) on a whole split. Notebook 4 reads the same file to find the stored run.
+# These are the defaults of CLAUDE.md, not tuned yet: the lambda / beam grid on dev may change them, and a
+# change gives a new version name, so old predictions are never read by mistake.
+model: models/bert_ft_v1   # the fine-tuned model (run record in runs/bert_ft_v1_config.yaml)
+model_tag: ftv1
+lam: 1.0                   # weight of the letter similarity against BERT's log-probability
+beam: 5                    # top pieces per mask position
+top_n: 10                  # candidates kept per mask count

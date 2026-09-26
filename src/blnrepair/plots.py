@@ -51,3 +51,34 @@ def loss_curve(log, steps_per_epoch, best_epoch):
         ax.spines[side].set_visible(False)
     fig.tight_layout()
     return fig
+
+
+SERIES = ["#2a78d6", "#eb6834", "#1baf7a"]  # categorical slots 1 to 3 (validated palette), in fixed order
+
+
+def level_lines(means, metrics, titles, order, reference="no repair"):
+    """One panel per metric: level (x) against the metric's mean (y), one line per method, with a legend.
+    means: a DataFrame indexed by (method, level), columns = metrics. order: every method that can appear, in
+    a fixed order; a method keeps its colour (categorical slot) whether or not the others are present.
+    The reference method (the damaged text itself) is drawn as a muted dashed line."""
+    present = set(means.index.get_level_values(0))
+    fig, axes = plt.subplots(1, len(metrics), figsize=(4.2 * len(metrics), 3.6))
+    for ax, metric, title in zip(axes, metrics, titles):
+        if reference in present:
+            series = means.loc[reference, metric]
+            ax.plot(range(len(series)), series.values, color=MUTED, linewidth=1.5, linestyle="--", label=reference)
+        for method, color in zip(order, SERIES):
+            if method not in present:
+                continue
+            series = means.loc[method, metric]
+            ax.plot(range(len(series)), series.values, color=color, linewidth=2, marker="o", markersize=6, label=method)
+        ax.set_xticks(range(len(series)), [f"{lv}%" if lv != "1w" else "1 word" for lv in series.index])
+        ax.set_xlabel("damage level (share of sentence words)")
+        ax.set_title(title, fontsize=10, color=INK, loc="left")
+        ax.yaxis.grid(True, color="#e5e4e0", linewidth=0.8)
+        ax.set_axisbelow(True)
+        for side in ("top", "right"):
+            ax.spines[side].set_visible(False)
+    axes[0].legend(frameon=False, fontsize=8)
+    fig.tight_layout()
+    return fig

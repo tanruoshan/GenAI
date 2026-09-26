@@ -15,11 +15,25 @@ import itertools
 import json
 import math
 import re
+from pathlib import Path
 
 import torch
+import yaml
 from rapidfuzz.distance import Levenshtein
 
+from blnrepair.data import ROOT
+
 MASK = "[MASK]"
+
+
+def load_repair_config(path=None):
+    return yaml.safe_load(Path(path or ROOT / "configs" / "bert_repair.yaml").read_text(encoding="utf-8"))
+
+
+def repair_version(cfg, split):
+    """Version name of a stored BERT run: model and settings are in the name, so a new setting never
+    reads old predictions (for example ftv1-l1-b5-n10-dev)."""
+    return f"{cfg['model_tag']}-l{cfg['lam']:g}-b{cfg['beam']}-n{cfg['top_n']}-{split}"
 INNER = re.compile(r"([^0-9A-Za-zÀ-ɏ]+)")  # the letter class of subwords.parts_of
 
 
