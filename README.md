@@ -12,7 +12,9 @@ size of the damaged region grows?
 ## Status
 
 Data and damage are frozen (`corrupted_v2`). Both repair methods run end to end on the dev split.
-BERT reranking settings are being tuned on dev; the final run on the test split comes after that.
+BERT is tuned on dev (λ = 8, `configs/bert_repair.yaml`); its test run is done by the project owner.
+The LLM track is handed over for model and prompt tuning on another machine, then its test run; see
+"Running the LLM track on your own machine" below.
 
 ## Notebooks
 
@@ -22,14 +24,48 @@ BERT reranking settings are being tuned on dev; the final run on the test split 
 4. `notebooks/04_evaluation.ipynb`: reads the stored predictions and scores BERT and the LLM on the same rows.
 
 Predictions are stored in `runs/preds/`, one file per method and version. A finished row is never
-requested again, so a run can be stopped and resumed. The test split stays closed until
-`runs/repair_config_v1.yaml` exists and `ALLOW_TEST = True` is set in the notebook.
+requested again, so a run can be stopped and resumed. The test split stays closed for a method until
+its config says `frozen: true` (`configs/bert_repair.yaml` for BERT, `configs/llm.yaml` for the LLM) and
+`ALLOW_TEST = True` is set in the notebook.
 
 ## LLM setup
 
 Copy `.env.example` to `.env` and fill in the key (git-ignored). The client in `src/blnrepair/llm.py`
 speaks the OpenAI-compatible API and only calls the model ids listed in `configs/llm.yaml`. The prompt
-files in `prompts/` are never edited once used; a change goes into a new `_v2` file.
+files in `prompts/` are never edited once used; a change goes into a new file with a new version number.
+
+## Running the LLM track on your own machine
+
+The LLM track is finished on dev with Llama 3.1 8B on GWDG SAIA, but the dev results are weak: 21% (few-shot)
+and 27% (few-shot + article) of the answers have the wrong number of words, above the 15% limit set in the
+project plan. The rest is done on a machine with its own LLM. Follow the steps in this order; everything
+before step 3 uses the dev split only.
+
+1. **Use your own LLM.** In `.env` (copied from `.env.example`) set `SAIA_BASE_URL` to your server's
+   OpenAI-compatible address and `SAIA_API_KEY` to its key (any value if the server needs none); the
+   variable names stay. In `configs/llm.yaml` set `model` to your model id and add the id to
+   `allowed_models`. Only open-weight models may be used, never a hosted third-party model (BLN600 is
+   CC BY-NC-ND). If your server is not OpenAI-compatible, adapt `SaiaClient` in `src/blnrepair/llm.py`
+   (`chat` and `list_models`) and run `python -m pytest tests/test_llm.py`. The model id is part of the
+   version name of every stored prediction, so your runs never mix with the Llama runs.
+2. **Tune the prompts on dev.** A prompt file is never edited once used. Copy the file you want to change to a
+   new version (for example `prompts/repair_fewshot_v3.txt`), point `TEMPLATES` in notebook 3 at it, and
+   change the prompt version in the version names in `variant_versions` (`src/blnrepair/llm.py`); without
+   that the notebook reads the old answers. The three few-shot examples can change too (`fewshot_picks` in
+   `configs/llm.yaml`; they must be dev sentences and are left out of the scoring). Run notebook 3 and then
+   notebook 4 with `SPLIT = "dev"`, and look at the format failures and the scores. The aim is below 15%
+   format failures. Never choose anything by looking at the test split.
+3. **Lock the config and open the test split.** When model, prompts and examples are final, set
+   `frozen: true` in `configs/llm.yaml` and commit it. Then in notebook 3 set `SPLIT = "test"` and
+   `ALLOW_TEST = True`. Without `frozen: true` the notebook stops.
+4. **Run the LLM on the test split.** Run notebook 3 top to bottom: 750 rows for each of the two variants
+   (few-shot and few-shot + article) and the contamination probe on the 150 test sentences, about 1,650
+   requests. Every answer is saved as it arrives, so the run can be stopped and continued.
+5. **Share the evaluation data.** Get the BERT test predictions first
+   (`runs/preds/bert_rerank_*-test.jsonl`, from the project owner): notebook 4 scores a method only when
+   all its rows are stored. Then run notebook 4 with `SPLIT = "test"`, and send back the executed notebook 4
+   (tables and figure) and the LLM test predictions `runs/preds/llm_*-test.jsonl` (commit them), for the
+   report.
 
 ## Data
 

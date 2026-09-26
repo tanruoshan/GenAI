@@ -20,3 +20,7 @@ timeout_s: 120
 max_retries: 5 # retries only for 429, 5xx and timeouts, never because of what an answer says
 backoff_s: 2 # waits 2, 4, 8, ... seconds between retries, at most 60
 max_wait_s: 3700 # on a 429, wait until the reset the server reports (at most this long; the hourly limit resets within an hour)
+
+# The gate for the test split. Leave false while tuning the model, prompts and few-shot picks on dev. Set to
+# true (and commit) when they are final; notebook 3 then allows SPLIT = "test" (with ALLOW_TEST = True).
+frozen: false
