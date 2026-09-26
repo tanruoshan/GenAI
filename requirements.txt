@@ -1,4 +1,4 @@
-# Day 1 packages only (see CLAUDE.md). No torch or transformers today.
+# Day 1 packages
 pysbd
 rapidfuzz
 pandas
@@ -8,6 +8,10 @@ pytest
 ipykernel
 nbconvert
 
-# Add only for the optional SAIA connectivity check (scripts/check_saia.py):
-# openai
-# python-dotenv
+# Day 2, pinned. torch is the CPU build (no GPU on this machine). Install with:
+#   python -m pip install --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple -r requirements.txt
+torch==2.14.0
+transformers==5.17.0
+accelerate==1.15.0
+openai==3.19.2
+python-dotenv==1.2.3

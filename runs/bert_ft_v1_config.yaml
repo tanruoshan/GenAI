@@ -1,0 +1,39 @@
+version: v1
+model_name: bert-base-cased
+pool: data/processed/bert_train_pool.jsonl
+pool_sha256: runs/bert_train_pool.sha256
+train:
+  learning_rate: 5.0e-05
+  batch_size: 16
+  max_epochs: 10
+  patience: 2
+  warmup_frac_of_epoch: 0.1
+  weight_decay: 0.01
+  grad_clip: 1.0
+  max_length: 192
+  fp16_on_gpu: true
+  eval_batch_size: 64
+  log_every: 100
+smoke:
+  steps: 30
+  n_train_examples: 64
+  n_val_examples: 256
+seed: 42
+pool_hash: d5313c92a49b12de10a07807705dcb9ae8b245cbe7fa94249074188ff15935ae
+model_sha256: d483fd168bb478010880efc12f2cdea3a8ffe3c449744717cc2259acc992414b
+best_epoch: 2
+best_val_loss: 4.14199
+pretrained_val_loss: 5.60756
+epochs_run: 4
+steps: 7243
+steps_per_epoch: 1812
+stop_reason: 'early stop: no lower validation loss for 2 epochs'
+started: '2026-09-25T18:43:24+00:00'
+finished: '2026-09-25T18:58:53+00:00'
+device: Tesla T4
+mixed_precision: true
+versions:
+  torch: 2.11.0+cu128
+  transformers: 5.16.1
+  accelerate: 1.14.0
+  python: 3.13.15

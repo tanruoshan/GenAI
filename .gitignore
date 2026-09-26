@@ -22,6 +22,9 @@ venv/
 # Secrets
 .env
 
+# Model weights (fine-tuned checkpoints, cached downloads)
+models/
+
 # BLN600 is CC BY-NC-ND and coursework only: neither the raw data nor text derived from it is committed
 data/raw/
 data/processed/
