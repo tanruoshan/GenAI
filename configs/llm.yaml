@@ -1,0 +1,22 @@
+# Settings for the SAIA (GWDG) client in src/blnrepair/llm.py. The base URL and the key are in .env, never here.
+
+# Only these model ids may be called (open-weight models hosted by GWDG). Never an external model.
+allowed_models:
+  - meta-llama-3.1-8b-instruct
+  - qwen3-30b-a3b-instruct-2507
+
+model: meta-llama-3.1-8b-instruct # the model the notebooks use; the final choice (O2) is made at CHECKPOINT 5
+
+# Few-shot examples: (dev sentence id, level). Their gold answers are shown in the prompt, so these
+# sentences are left out of every scored set.
+fewshot_picks:
+  - ["3206323884-017", "1w"]
+  - ["3200807881-004", "25"]
+  - ["3206237078-010", "75"]
+
+temperature: 0
+max_tokens: 1024
+timeout_s: 120
+max_retries: 5 # retries only for 429, 5xx and timeouts, never because of what an answer says
+backoff_s: 2 # waits 2, 4, 8, ... seconds between retries, at most 60
+max_wait_s: 3700 # on a 429, wait until the reset the server reports (at most this long; the hourly limit resets within an hour)
