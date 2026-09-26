@@ -132,11 +132,13 @@ def test_at_most_two_deletions_and_letters_remain(records):
                 assert any(ch.isalnum() for ch in p["out"])
 
 
-def test_intensity_stays_near_the_drawn_range(records):
+def test_intensity_stays_near_the_drawn_range(records, setup):
+    _, _, cfg = setup
+    lo, hi = cfg["intensity_low"] - 0.10, cfg["intensity_high"] + 0.10  # rounding margin, not the drawn range itself
     for rec in records.values():
         for p in rec["ops_per_word"]:
             if not p["dropped"] and sum(ch.isalnum() for ch in p["gold"]) >= 5:
-                assert 0.30 <= p["intensity"] <= 0.70
+                assert lo <= p["intensity"] <= hi
 
 
 def test_substitution_source(setup):

@@ -25,8 +25,8 @@ sample:
   n_dev: 20
 
 corruption:
-  intensity_low: 0.40 # share of a damaged word's letters and digits that are altered
-  intensity_high: 0.60
+  intensity_low: 0.20 # share of a damaged word's letters and digits that are altered (v2: matches the IQR of real erroneous-word CER in reports/calibration.json)
+  intensity_high: 0.30
   max_deletions: 2
   drop_prob: 0.10 # placeholder, reviewed in section H
   levels: [1w, 10, 25, 50, 75]

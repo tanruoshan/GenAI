@@ -75,8 +75,22 @@ def freeze(records, version, cfg, processed_dir, reports_dir, runs_dir, n_test=1
     runs_dir.mkdir(parents=True, exist_ok=True)
     path.write_bytes(data)
     (runs_dir / f"corrupted_{version}.sha256").write_bytes(f"{digest}  {path.name}\n".encode("utf-8"))
-    (runs_dir / "config_snapshot.yaml").write_bytes(yaml.safe_dump(snapshot, sort_keys=False, allow_unicode=True).encode("utf-8"))
+    (runs_dir / f"config_snapshot_{version}.yaml").write_bytes(yaml.safe_dump(snapshot, sort_keys=False, allow_unicode=True).encode("utf-8"))
     return "written", digest
+
+
+def load_frozen(version="v2", processed_dir=None, runs_dir=None):
+    """The frozen damaged rows, after checking the file hash against runs/corrupted_<version>.sha256.
+    Stops with an error on any mismatch."""
+    from blnrepair.data import ROOT
+    processed_dir = Path(processed_dir) if processed_dir else ROOT / "data" / "processed"
+    runs_dir = Path(runs_dir) if runs_dir else ROOT / "runs"
+    data = (processed_dir / f"corrupted_{version}.jsonl").read_bytes()
+    stored = (runs_dir / f"corrupted_{version}.sha256").read_text(encoding="utf-8").split()[0]
+    digest = sha256_bytes(data)
+    if digest != stored:
+        raise RuntimeError(f"corrupted_{version}.jsonl hash {digest} does not match the stored {stored}. Stop.")
+    return [json.loads(line) for line in data.decode("utf-8").splitlines()]
 
 
 def verify_freeze(rows, table, cfg, version, processed_dir, runs_dir):

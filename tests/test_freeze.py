@@ -48,7 +48,7 @@ def test_freeze_writes_once_and_is_idempotent(small, tmp_path):
     status, digest = freeze(records, "v1", cfg, processed, reports, runs, n_test=2, n_dev=1)
     assert status == "written" and len(records) == 18
     assert (runs / "corrupted_v1.sha256").read_text(encoding="utf-8") == f"{digest}  corrupted_v1.jsonl\n"
-    snapshot = yaml.safe_load((runs / "config_snapshot.yaml").read_text(encoding="utf-8"))
+    snapshot = yaml.safe_load((runs / "config_snapshot_v1.yaml").read_text(encoding="utf-8"))
     assert snapshot["version"] == "v1" and snapshot["corruption"]["p_deletion"] == 0.15
     assert freeze(records, "v1", cfg, processed, reports, runs, n_test=2, n_dev=1) == ("unchanged", digest)
     assert verify_freeze(rows, table, cfg, "v1", processed, runs) == digest
