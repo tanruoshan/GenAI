@@ -12,9 +12,13 @@ size of the damaged region grows?
 ## Status
 
 Data and damage are frozen (`corrupted_v2`). Both repair methods run end to end on the dev split.
-BERT is tuned on dev (λ = 8, `configs/bert_repair.yaml`); its test run is done by the project owner.
+BERT is tuned on dev (λ = 8, `configs/bert_repair.yaml`) and its test run is done: 750 rows in
+`runs/preds/bert_rerank_ftv1-l8-b5-n10-test.jsonl`, committed in this repository.
 The LLM track is handed over for model and prompt tuning on another machine, then its test run; see
 "Running the LLM track on your own machine" below.
+
+`CLAUDE.md` and `docs/` (the project dossier and report source notes) are tracked in this repository
+as internal working notes, kept alongside the instructor-facing material.
 
 ## Notebooks
 
@@ -61,11 +65,10 @@ before step 3 uses the dev split only.
 4. **Run the LLM on the test split.** Run notebook 3 top to bottom: 750 rows for each of the two variants
    (few-shot and few-shot + article) and the contamination probe on the 150 test sentences, about 1,650
    requests. Every answer is saved as it arrives, so the run can be stopped and continued.
-5. **Share the evaluation data.** Get the BERT test predictions first
-   (`runs/preds/bert_rerank_*-test.jsonl`, from the project owner): notebook 4 scores a method only when
-   all its rows are stored. Then run notebook 4 with `SPLIT = "test"`, and send back the executed notebook 4
-   (tables and figure) and the LLM test predictions `runs/preds/llm_*-test.jsonl` (commit them), for the
-   report.
+5. **Share the evaluation data.** The BERT test predictions are already in this repository
+   (`runs/preds/bert_rerank_ftv1-l8-b5-n10-test.jsonl`): notebook 4 scores a method only when all its rows
+   are stored. Run notebook 4 with `SPLIT = "test"`, and send back the executed notebook 4 (tables and
+   figure) and the LLM test predictions `runs/preds/llm_*-test.jsonl` (commit them), for the report.
 
 ## Data
 

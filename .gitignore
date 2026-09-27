@@ -1,9 +1,3 @@
-# Claude-related / internal working files - not for instructor review
-CLAUDE.md
-.claude/
-docs/
-claude_code_task_*.md
-
 # Python
 __pycache__/
 *.py[cod]
