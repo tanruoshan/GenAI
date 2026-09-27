@@ -1,30 +1,95 @@
 \section{Related Work}
-% BUDGET: ~0.75 page. Course asks: how far is the objective already solved, what do we add.
-% FACT SOURCE: notes/report_sources.md Sec. 2.
-% Use ONLY references that exist in references.bib (all taken from the verified list in the dossier).
-% Block 1: Post-OCR correction of historical text.
-%   Thomas et al. (2024): fine-tuned Llama 2 beat fine-tuned BART on BLN600 itself (CER -54.5% vs -23.3%).
-%   Boros et al. (2024) \citep{boros2024postcorrection}: 14 LLMs, zero/few-shot, several historical benchmarks: "anything
-%     but efficient". Intro already names both; here say WHY they differ (fine-tuned vs prompted; real vs our graded damage).
-%   Debaene et al. (2025): seq2seq beat generative models on early modern Dutch.
-%   Lyu et al. (2021): neural post-hoc correction of historical corpora.
-%   Evershed and Fitch (2014): context plus confusion. Our reranking is a basic form of this.
-% Block 2: Text infilling and masked language models.
-%   Devlin et al. (2019), Shen et al. (2020) (multi-token blanks are hard for parallel prediction), Zhu et al. (2019).
-%   Donahue, Lee & Liang (2020) \citep{donahue2020enabling}: fine-tunes a GPT-2-style LM to fill arbitrary masked
-%     spans ("infilling by language modeling"), the LLM-side counterpart to BERT's masked-span filling here.
-% Block 2b: Robustness to noisy/corrupted input (added 2026-09-27, verified against ACL Anthology / OpenReview).
-%   Belinkov & Bisk (2018) \citep{belinkov2018synthetic}: character-level synthetic and natural noise both break
-%     neural MT; motivates treating "synthetic OCR-like noise" as only a proxy for real damage (Limitations).
-%   Pruthi, Dhingra & Lipton (2019) \citep{pruthi2019combating}: models are brittle to small character edits
-%     (swaps, drops, adds) unless given explicit robust word recognition; supports why letter-level similarity
-%     is given to BERT explicitly (reranking) rather than assumed to be learned implicitly.
-% Block 3: Evaluation and contamination.
-%   Zhang et al. (2020) BERTScore. Sainz et al. (2023) contamination per benchmark.
-% Closing sentence = our delta: controlled, fact-centred severity scale, identical input for both methods, fact-level metric, damage location given.
-% DEVIL'S ADVOCATE: related work found so far is mostly post-OCR on real errors, or general noise robustness /
-%   infilling not tied to historical text. Say plainly that combining fact-centred synthetic OCR damage with a
-%   fact-level metric, on identical input for both an encoder and an LLM, is what is new here.
-\todo{Draft related work.}
-% Smoke test so the bibliography compiles; DELETE this line when real text is written:
-\nocite{booth-etal-2024-bln600,thomas2024leveraging,debaene2025evaluating,lyu2021neural,evershed2014correcting,shen2020blank,zhang2020bertscore,devlin2019bert,sainz2023contamination,belinkov2018synthetic,pruthi2019combating,donahue2020enabling}
+% FACT SOURCE: notes/report_sources.md Sec. 2. Every citation below was re-checked against the full PDF text
+% (not just the abstract) in ref_dump/ on 2026-09-27. Restructured 2026-09-27: each of the three paragraphs now
+% opens with a \paragraph{} label naming its sub-question, and its very next sentence states the gap in plain
+% language, before the supporting evidence. Budget ~0.85 page incl. table.
+
+\paragraph{SQ1: grading damage for repair.} No prior study grades damage severity for the repair step itself; graded
+severity has only been used for \emph{reading} already-OCR'd text. Post-OCR research splits the task into error
+\emph{detection} and error \emph{correction} \citep{nguyen2021survey}, scored separately by the ICDAR 2019
+competition \citep{rigaud2019icdar}; we study correction only and assume the damaged span is known, the assumption
+Method~\ref{sec:method} builds on. Results on how well GenAI corrects disagree: a neural sequence model corrects OCR
+errors directly \citep{lyu2021neural}; a Llama~2 model fine-tuned on BLN600 cut CER further than a fine-tuned BART
+\citep{thomas2024leveraging}; 14 prompted LLMs were weak across several historical benchmarks
+\citep{boros2024postcorrection}; a seq2seq model beat generative alternatives on early modern Dutch
+\citep{debaene2025evaluating}; and prompted LLMs lowered CER for English text but not for Finnish
+\citep{kanerva2025ocr}. These results diverge along three lines -- fine-tuned versus prompted, the language involved,
+and how damaged the source corpus already was -- but every study reports CER or WER averaged over its corpus's
+natural error distribution \citep{nguyen2021survey}, which cannot show at what point repair stops working. Graded
+severity levels do exist, but only for reading OCR text: synthetic degradations at several severities have measured
+named-entity recognition \citep{hamdi2020assessing}, and real OCR output has been binned into quality bands for
+similar downstream tests \citep{vanstrien2020assessing}. Applying that grading logic to the repair step itself is
+what SQ1 does.
+
+\paragraph{SQ2: restoring text at known gaps.} The closest prior task is restoring damaged ancient text at known
+positions, and it differs from ours in exactly the ways SQ2 probes. Pythia hides 1--10 characters at known positions
+in Greek inscriptions and predicts them \citep{assael2019restoring}; Ithaca extends this and pairs predictions with
+historians' own judgement \citep{assael2022restoring}; a masked-language-model approach fills gaps in Akkadian
+cuneiform text, with accuracy falling as the masked span grows \citep{lazar2021filling}. Three differences motivate
+our design. First, these studies hide characters completely, whereas OCR damage leaves letters garbled yet partly
+readable, which our slot input exploits (Sec.~\ref{sec:slot}). Second, their gaps are short, at most ten characters
+or a few tokens, while ours reach 75\% of a sentence. Third, none of them compares a masked encoder against a
+prompted LLM, or scores facts separately from overall similarity -- the comparison SQ2 makes. On the model side,
+BERT fills masked positions in parallel \citep{devlin2019bert}, which makes multi-token blanks harder to fill well
+\citep{shen2020blank} and motivates the short beam search over candidate lengths in Method~\ref{sec:models};
+left-to-right generative infilling \citep{donahue2020enabling} is the natural counterpart for a prompted LLM; and
+combining context with letter-level evidence is a classic OCR correction idea \citep{evershed2014correcting}, of
+which our reranking step is a direct, modern instance. This also settles whether a masked encoder counts as GenAI at
+all: BERT can be sampled to produce text \citep{wang2019bert}, and filling a blank from context is generation
+conditioned on the rest of the sentence \citep{donahue2020enabling}.\footnote{We cite \citet{wang2019bert} only for
+this narrow claim; the paper's own Markov-random-field derivation was later retracted by one of its authors, see
+\url{https://kyunghyuncho.me/bert-has-a-mouth-and-must-speak-but-it-is-not-an-mrf/}. A reader unconvinced by the
+generative framing can instead read BERT as the fine-tuned, in-domain baseline the few-shot LLM has to beat, which
+is how our experiment treats it either way.}
+
+\paragraph{SQ3: meaning versus facts.} A similarity score can pass a repair that gets the facts wrong, and SQ3 tests
+whether that happens here. BERTScore \citep{zhang2020bertscore} is the standard similarity metric for judging
+generated text against a reference. In summarisation it correlates only weakly with human judgements of
+faithfulness (Spearman 0.19) and factuality (Spearman 0.12) \citep{maynez2020faithfulness}, and it can give a high
+score to a candidate that shares most content words with the reference while stating a different fact
+\citep{hanna2021finegrained} -- exactly the failure mode of a repair with the right context and one wrong name. This
+evidence comes from summarisation and machine translation, not from text repair, so SQ3 checks it directly by
+comparing BERTScore against the Fact Recovery Rate on the same repaired sentences. A second concern is memorisation:
+BLN600 has been publicly available since 2024, so an instruction-tuned LLM may have seen parts of it during
+pretraining \citep{sainz2023contamination}. We probe for this with guided completion: give the model the first part
+of a test instance and compare its continuation with the true remainder \citep{golchin2024time}.
+
+No single element of our design is new by itself; the combination is. Table~\ref{tab:position} places our study
+against the three closest lines of work on five points: whether the damage location is known, whether the damaged
+letters stay visible, whether severity is graded, whether facts are scored separately from overall similarity, and
+whether an encoder and an LLM are compared under the same input. The gaps this leaves are what Method
+\ref{sec:method} builds on: graded nested damage (Sec.~\ref{sec:damage}), a shared slot input for both repair
+methods (Sec.~\ref{sec:slot}), two repair families evaluated side by side (Sec.~\ref{sec:models}), and a fact-level
+score reported next to BERTScore (Sec.~\ref{sec:metrics}).
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+ & Known & Letters & Graded & Fact & Enc.\ vs \\
+Work & loc. & visible & severity & score & LLM \\
+\midrule
+Post-OCR LLMs$^a$ & $\times$ & \checkmark & $\times$ & $\times$ & $\times$ \\
+Pythia$^b$ & \checkmark & $\times$ & $\times$ & $\times$ & $\times$ \\
+Akkadian MLM$^c$ & \checkmark & $\times$ & \checkmark & $\times$ & $\times$ \\
+\textbf{Ours} & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+\bottomrule
+\end{tabular}
+\caption{Position of this study. $^a$\citet{thomas2024leveraging,boros2024postcorrection,kanerva2025ocr}
+(real OCR, CER/WER over the corpus). $^b$\citet{assael2019restoring} (1--10 hidden characters).
+$^c$\citet{lazar2021filling} (masked tokens, results by span length). Graded: results reported by amount
+of damage.}
+\label{tab:position}
+\end{table}
+
+% ---- NOTES FOR DEFENSE / APPENDIX (kept out of the page count discussion) ----
+% - Belinkov and Bisk (2018), synthetic vs natural noise transfer: moved to Limitations, not cited here,
+%   since it answers a validity threat (Sec. 6) rather than one of SQ1-SQ3.
+% - Hamdi et al. appear twice on purpose: the 2020 paper documents the synthetic graded degradation used
+%   here; the 2023 NLE journal version (cited in the Introduction) gives the in-depth NER/NEL analysis.
+%   Keep both; they are not duplicates.
+% - Restructured 2026-09-27: added \paragraph{} labels (SQ1/SQ2/SQ3) per user request, and moved each
+%   paragraph's gap statement to its second sentence so the point is explicit up front, not buried at the
+%   end of an unbroken block.

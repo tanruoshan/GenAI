@@ -1,19 +1,22 @@
 \section{Introduction}
-% DRAFT 1 (2026-09-27). Budget ~1 page. Funnel: DH today -> OCR limits -> damage hits facts -> GenAI temptation
+% DRAFT 2 (2026-09-27). Budget ~1 page. Funnel: DH today -> OCR limits -> damage hits facts -> GenAI temptation
 % and risk -> gap -> RQ -> this experiment -> contributions. FACT SOURCE: notes/report_sources.md Sec. 1-4.
-% Every number below is checked against its source (Booth 2024 Table 2; Thomas 2024 abstract; Boros 2024 abstract).
+% Every number and quote below was re-checked against the source PDF in ref_dump/ on 2026-09-27 (not just the
+% abstract). Two citations replaced this pass: bingham2010digitization and holley2009good were dropped from the
+% Zotero library (not independently accessible), so their claims now use nguyen2021survey and booth-etal-2024-bln600,
+% both already cited elsewhere in this section and both open-access PDFs in ref_dump/.
 
-Digitised newspapers are now a core source for historical research. Keyword search over large digital collections
-has replaced much of the slow reading of physical volumes \citep{bingham2010digitization}. Yet what historians search
+Digitised newspapers are now a core source for historical research. Digitisation lets scholars search and mine
+large collections by keyword rather than reading page by page \citep{nguyen2021survey}. Yet what historians search
 and mine is not the page itself but the text that an OCR engine read from a scan of it. OCR errors measurably change
-the results of quantitative analyses \citep{hill2019quantifying} and harm downstream NLP tasks, with named entities
-among the most affected \citep{vanstrien2020assessing,hamdi2023indepth}. For 19th-century British newspapers the mean
-character error rate (CER) is about 7\%, but it ranges from 0.3\% to 44.5\% between excerpts of a single title
-\citep{booth-etal-2024-bln600}. This spread tracks the condition of the source page, not just the OCR engine: torn,
-stained or faded originals give the engine the least to work with \citep{holley2009good}. For the British Library's
-own 19th-century newspaper archive, character accuracy reaches 83.6\% but word accuracy falls to 78\%, and accuracy
-for capitalised words and number groups drops further still, to 63.4\% and 64.1\% \citep{tanner2009measuring}. The
-words hit hardest are thus often the facts a historian searches for: names, places, dates and sums of money.
+the results of quantitative analyses \citep{hill2019quantifying} and harm downstream NLP tasks \citep{vanstrien2020assessing},
+with named entities among the most affected \citep{hamdi2023indepth}. For 19th-century British newspapers the mean
+character error rate (CER) is about 7\%, but it ranges from 0.3\% to 44.5\% between excerpts of a single title, and
+this spread tracks the condition of the source page, not just the OCR engine: faded or physically damaged originals
+give the engine the least to work with \citep{booth-etal-2024-bln600}. For the British Library's own 19th-century
+newspaper archive, character accuracy reaches 83.6\% but word accuracy falls to 78\%, and accuracy for capitalised
+words and number groups drops further still, to 63.4\% and 64.1\% \citep{tanner2009measuring}. The words hit hardest
+are thus often the facts a historian searches for: names, places, dates and sums of money.
 
 Generative AI makes it tempting to repair such text automatically, but the evidence is mixed. Llama~2,
 instruction-tuned on BLN600, reduced the CER of its OCR by 54.5\%, against 23.3\% for a fine-tuned BART
@@ -24,7 +27,7 @@ their input does not support \citep{ji2023survey}. For an archive, a plausible b
 noise, because the reader can no longer see that anything was damaged. Similarity-based metrics may hide this error
 too: a sentence with the wrong name can still score as close in meaning to the original.
 
-Existing post-OCR studies score whole documents at whatever error level the OCR happened to produce. They show that a
+Existing post-OCR correction studies score whole documents at whatever error level the OCR happened to produce. They show that a
 model helps on average, but not how far repair can be trusted as damage grows, nor whether the facts inside the damaged
 region survive. We therefore ask:
 
@@ -44,7 +47,7 @@ pages cannot give. We therefore build a controlled experiment on BLN600 \citep{b
 600 newspaper excerpts with human gold transcriptions. In each of 150 test sentences we damage one block of words
 around a fact at five nested levels, from one word to 75\% of the sentence, with character noise calibrated on the
 corpus's own OCR errors. Both methods receive the same input: the intact context plus the garbled form of each damaged
-word, so that only the repair differs. We compare two GenAI families: \todo{CHECK IS BERT GenAI?}masked infilling with BERT
+word, so that only the repair differs. We compare two GenAI families: masked infilling with BERT
 \citep{devlin2019bert}, fine-tuned on in-domain gold text and guided by letter similarity in the spirit of
 ``context beats confusion'' \citep{evershed2014correcting}, and instruction-following generation with an open-weight
 LLM prompted with three solved examples. We score the repaired words with BERTScore \citep{zhang2020bertscore} for
@@ -61,5 +64,16 @@ falls to the no-repair floor; (2) which method wins at low vs high damage, and w
 effect; (3) the size of the BERTScore vs Fact Recovery gap.}
 
 % ---- OPEN POINTS ----
-%  1. "IS BERT GENAI?" Framed as masked infilling (it generates the missing words from context). If a reader objects, Related Work can add that BERT is the in-domain baseline the LLM must beat.
-% 2. KNOWN LOCATION is a strong assumption; justified in Method (OCR engines flag low-confidence regions).
+%  1. RESOLVED 2026-09-27: "IS BERT GENAI?" answered in Related Work (Sec. 2, citing Wang and Cho 2019 for
+%     "BERT can generate", plus the fallback reading of BERT as the in-domain baseline the LLM must beat).
+%  2. KNOWN LOCATION is a strong assumption; justified in Method (OCR engines flag low-confidence regions).
+%  3. RESOLVED 2026-09-27: two \todo{get citation} gaps closed. Content-checked against full PDF text
+%     (not just abstract) in ref_dump/: nguyen2021survey's own introduction states digitisation is "for the
+%     purpose of text processing by computers (e.g., search...), ... easier access ... by a much wider
+%     audience"; booth-etal-2024-bln600 Sec 3.2 states BLN600 source images include some "too faded or
+%     damaged to read" and that "older newspapers suffer with quality issues ... particularly those with
+%     faded low-contrast print." Also fixed: vanstrien2020assessing was cited for "named entities among
+%     the most affected", but that paper actually finds OCR errors have a SMALLER impact on NER than on
+%     sentence segmentation (its own words). Decoupled: vanstrien2020assessing now backs only the general
+%     "harm downstream NLP tasks" claim (accurate: that is the paper's own subject), and hamdi2023indepth
+%     alone backs "named entities among the most affected" (verified: "NEs are particularly affected").

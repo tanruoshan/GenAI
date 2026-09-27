@@ -1,32 +1,113 @@
 \section{Method}
-% BUDGET: ~2 pages incl. Tables 1-2 and Figure 1. Mirror the EMNLP example's method section: what is known, what we add.
-% FACT SOURCE: notes/report_sources.md Sec. 3 (merged from dossier.md, dossier_v2.md, CLAUDE.md, configs).
-% Basic theory only. One idea per paragraph. Numbers below are verified against configs and run records.
+\label{sec:method}
+% BUDGET: ~2 pages incl. Tables 1-2 and Figure 1. FACT SOURCE: notes/report_sources.md Sec. 3 (merged from
+% dossier.md, dossier_v2.md, CLAUDE.md, configs). Drafted 2026-09-27 directly from configs/*.yaml,
+% runs/bert_ft_v1_config.yaml, runs/config_snapshot_v2.yaml, reports/calibration.json, reports/corruption_stats.json,
+% and prompts/repair_fewshot_v2.txt. Numbers below are the same ones already checked into report_sources.md
+% Sec. 3 and cross-checked here against the raw config/run files a second time.
+%
+% FLAGGED FOR THE TEAM (see notes/report_sources.md Sec. 0, conflicts #5 and #10):
+%  - Conflict #5: configs/llm.yaml has frozen: false. The LLM model, host and prompt version are not final --
+%    a teammate is tuning on their own machine. Sec 3.4(b) below states the CURRENT dev default
+%    (Llama-3.1-8B-Instruct via GWDG SAIA) and says explicitly that it is provisional. Do not remove that
+%    caveat until configs/llm.yaml is frozen: true and \todo{final id} in Table~\ref{tab:settings} is filled in
+%    -- the Introduction and Related Work were deliberately written to name only "an open-weight LLM" for the
+%    same reason, so Method must not commit to a model name the rest of the paper does not.
+%  - Conflict #10: the damage pipeline calibrates character noise from mild, real OCR errors on held-out
+%    excerpts; it does not model physical tears, stains or fading directly. Sec 3.2 states this scope limit
+%    inline and points to Limitations (Sec. 6) rather than repeating the argument there.
+%  - Minor gap not in the conflicts table: the RQ (Introduction) names "names, numbers and dates" as the facts
+%    of interest, but the fact-token rule below is a surface heuristic (capitalisation and digits) that is
+%    broader than "dates" in particular -- a capitalised month name counts, a bare day number only counts via
+%    the digit rule. Sec 3.1 states the rule exactly rather than re-using the Introduction's shorthand, so the
+%    two do not silently disagree.
 
 \subsection{Task and Data}
-% P1 (task, 3 sentences). Input: a sentence whose damaged span is known and whose garbled letters are visible.
-%   Output: one word per damaged position. Both methods get identical input and are scored by identical code.
-% P2 (data). BLN600 \citep{booth-etal-2024-bln600}: 600 excerpts of London crime reporting, 1830s-1890s,
-%   572 of them from three related weeklies; image, OCR and gold transcription per excerpt; CC BY-NC-ND.
-%   Sentences split with pysbd; pool = 20-60 words and >= 2 fact tokens (3,123 sentences, 592 excerpts).
-%   Fact token = a number, a word with a digit or pound sign, or a capitalised non-initial word (stop list: Mr, Mrs, The, ...).
-%   Sample, seed 42: 150 test (65/59/26 by band 20-29/30-44/45-60) and 20 dev sentences from 157 excerpts;
-%   max 3 per excerpt; no excerpt in both splits. Dev is used only for tuning.
-% DEVIL'S ADVOCATE: the fact rule is a surface rule ("Old" in Old Bailey counts, lowercase facts do not). Say so in one clause.
-\todo{Draft 3.1 (about 8 lines).}
+Given a sentence whose damaged span is known and whose garbled letters are visible, the task is to predict one word
+per damaged position; both repair methods take the same input and are scored by the same code (Sec.~\ref{sec:slot}).
+We build this task on \bln{} \citep{booth-etal-2024-bln600}, 600 excerpts of London crime reporting from 1830--1890s
+British newspapers (572 from three related weeklies), each with its source image, OCR output and a gold
+transcription, released under CC BY-NC-ND. We split excerpts into sentences with \texttt{pysbd} and pool sentences of
+20--60 words with at least two \emph{fact tokens}: a number, any word containing a digit or pound sign, or a
+capitalised word that is not the first word of the sentence (a short stop list excludes titles such as Mr, Mrs, The).
+This is a surface rule, not a named-entity tagger: it catches "Old" in "Old Bailey" and misses a lower-cased fact, and
+it flags dates only through capitalisation or digits, not through date parsing. The pool holds 3,123 sentences from
+592 excerpts. From it we draw, with a fixed seed, 150 test and 20 dev sentences from 157 excerpts (at most three per
+excerpt, no excerpt in both splits, balanced across three sentence-length bands); dev is used only for tuning and is
+never scored as a result.
 
 \subsection{Damage Simulation}
-% P1 (span). One anchor per sentence, drawn among its fact tokens; always damaged, never dropped. One contiguous span of k
-%   words around it, start = clamp(anchor - k/2). Levels: 1 word, then 10/25/50/75% of the words (half-up rounding),
-%   plus a clean level 0. Spans are nested, so the same place gets worse. 850 rows with damage (750 test, 100 dev).
-% P2 (noise). Each damaged word is dropped with p = 0.10 (never the anchor); otherwise 20-30% of its letters and digits
-%   are changed: ~15% deleted (max 2 per word), the rest substituted from a confusion table estimated on 29 held-out
-%   BLN600 excerpts (86% of substitutions; rest: capitalised table entry, look-alike map O/0, rn/m, cl/d, random char).
-%   Punctuation is never touched.
-% P3 (why 20-30%). Real erroneous words in the calibration excerpts have a median per-word error of 0.25
-%   (q1 0.17, q3 0.40). 20-30% sits around that median; an earlier 40-60% setting sat above q3 and was dropped.
-% EMPIRICAL ANCHOR: Booth et al. (2024) report mean CER about 0.07 for BLN600 OCR; our 25% level is at that point,
-%   higher levels are heavier by design.
+\label{sec:damage}
+For each sentence we draw one anchor among its fact tokens -- always damaged, never dropped -- and damage one
+contiguous span of $k$ words around it, with $k$ set so the span covers 1 word, then 10, 25, 50 or 75\% of the
+sentence (half-up rounding); spans are nested, so the same place in the sentence gets worse from level to level
+rather than moving around. Each damaged word is dropped outright with probability 0.10 (never the anchor); a
+surviving word has 20--30\% of its letters and digits altered, about 15\% of those by deletion (at most two per
+word) and the rest by substitution, drawn from a confusion table calibrated on 29 held-out \bln{} excerpts (85.7\% of
+substitutions), a capitalised table entry (3.6\%), a look-alike map such as O/0 or rn/m (4.9\%), or a random
+same-kind character (5.8\%); punctuation is never touched. The 20--30\% band was chosen to sit around the median
+per-word character error rate we measured on those held-out excerpts (0.25, IQR 0.17--0.40); an earlier 40--60\%
+setting sat above that range and was dropped. This calibration comes from mild, real OCR errors on aligned words, so
+it models the kind of noise OCR output already contains, not a direct simulation of a torn or stained physical page
+(the Limitations section returns to this). Table~\ref{tab:damage} shows the result on the test split: sentence-level
+CER grows roughly in step with real \bln{} OCR error rates, but the share of damaged words that are themselves facts
+falls from 100\% at the 1-word level to 17\% at 75\%, so "fact recovery" is not measuring the same mixture of words
+at every level. About one in ten fact slots is dropped outright, leaving no visible letters for that fact at all.
+
+\subsection{Shared Slot Input}
+\label{sec:slot}
+Both methods see the same \emph{slot view}: the sentence's undamaged context is left untouched, and each damaged
+gold word is replaced by a slot showing its garbled form (a dropped word becomes an empty slot, written $\langle
+?\rangle$). This view is built from the gold tokens and the per-word edit operations, never from the raw corrupted
+text, so it cannot leak an easier version of the task. A predicted word is spliced back inside the original word's
+edge punctuation, so context words are never rewritten and every difference in score comes from what a method puts
+in the slots. For example, the damaged sentence "A POWERFULLY-BUILT man, $\langle$same$\rangle$
+$\langle$Bbonias$\rangle$ $\langle$Huicl,$\rangle$ $\langle$e$\rangle$ commission agent, \ldots{}" has the gold
+continuation "named Thomas Hurd, a"; the garbled forms are visible to both repair methods, but the gold words are
+not. Showing garbled rather than blanked letters keeps this an OCR-repair task rather than blind text infilling: an
+OCR engine already flags such regions as low-confidence, and a reader of a damaged page still sees partial letters.
+
+\subsection{Repair Methods}
+\label{sec:models}
+\begin{sloppypar}
+\textbf{(a) BERT + reranking.} We fine-tune \texttt{bert-base-cased} \citep{devlin2019bert} (110M parameters; cased
+because fact tokens are partly defined by capitalisation) on clean gold text from the 443 excerpts held outside the
+sample (2,939 sentences; a further 10\% of excerpts held out for validation, with zero excerpt or sentence overlap
+with test or dev, which we verified directly). Training mirrors inference: for each target word, span words before it
+are left as gold text, the target is masked with its true number of subword pieces, and later span words each become
+one \texttt{[MASK]}. Fine-tuning uses a learning rate of $5\mathrm{e}{-5}$, batch size 16, up to 10 epochs with early
+stopping (patience 2) after a 10\%-of-one-epoch warmup and linear decay; the best checkpoint (epoch 2) lowered the
+per-piece validation loss from 5.61 (pretrained) to 4.14. At inference, slots are filled left to right; for the
+current slot the model tries 1, 2 and 3 masks, keeps a beam of 5 pieces per position, and retains the top 10
+candidates per mask count. A slot with a visible internal hyphen or apostrophe is split into sub-slots filled the
+same way; only 0.9\% of slots (3.5\% of fact slots) still need more than three pieces. Each candidate is scored as its mean log-probability per piece plus $\lambda(1-d)$, where $d$ is the normalised
+Levenshtein distance to the garbled form, so a fluent completion is pulled back toward what the damaged letters
+actually show -- a direct, modern instance of
+"context beats confusion" \citep{evershed2014correcting}. We chose $\lambda = 8$ from a grid over $\{1,2,4,8,16\}$ on
+dev, where it gave the best exact-word rate at a point where Fact Recovery Rate had already plateaued. Dropped slots,
+which have no garbled letters to match against, are scored on the language-model term alone.
+\end{sloppypar}
+
+\textbf{(b) LLM few-shot.} The LLM condition prompts an open-weight model with a system message, a task instruction,
+three solved dev examples (held out from all scoring), and the same slot view as BERT, asking for a JSON list of
+exactly $k$ strings at temperature 0. \emph{This track was not frozen at the time of writing}: development runs used
+Llama-3.1-8B-Instruct \citep{grattafiori2024llama3} served through GWDG's SAIA API, with Qwen3-30B-A3B-Instruct as an
+allowed alternative, but the final model, host and prompt version are being decided by a teammate on separate
+hardware before the test split is scored -- which is also why the Introduction and Related Work name only "an
+open-weight LLM" rather than a specific model. Only open-weight models hosted this way are used, since \bln{}'s
+CC BY-NC-ND licence rules out sending it to a closed third-party API. The system message itself was necessary: without
+it, an early check found the model answering in Python or tool-call syntax in 15 of 15 cases rather than plain JSON.
+An answer of the wrong length, not valid JSON, or cut off by the token limit counts as a \emph{format failure} and is
+scored as if no repair had been made, with no retry and no manual correction. A secondary variant supplies the whole
+surrounding article as context instead of just the sentence (its other sentences are gold, not damaged, so this is an
+upper bound rather than a fair comparison with BERT); we compare it only against the LLM's own few-shot run.
+Zero-shot prompting was tried on dev and dropped, so this design cannot isolate how much of the LLM's performance
+comes from the three examples themselves rather than the instruction alone.
+
+\textbf{(c) No-repair baseline.} The damaged text itself is scored as if it were a third method, giving the floor
+both repair methods have to beat. Table~\ref{tab:settings} summarises both methods' settings; the LLM row's model
+field is left as \todo{final id} until Sec.~\ref{sec:models}(b)'s open point above is resolved.
+
 \begin{table}[t]
 \centering
 \small\setlength{\tabcolsep}{3pt}
@@ -42,35 +123,7 @@ Facts / damaged words (\%) & 100 & 48 & 26 & 19 & 17 \\
 \caption{Damage by level (test split). CER is over the whole sentence against gold; real BLN600 OCR is about 7\% \citep{booth-etal-2024-bln600}.}
 \label{tab:damage}
 \end{table}
-% DEVIL'S ADVOCATE: the fact share falls from 100% to 17%, so "fact recovery" at 1w and at 75% measure different mixes.
-%   Also: about 1 in 10 fact slots is dropped (68 of 692), so those facts have no visible letters at all.
-\todo{Draft 3.2 (about 10 lines).}
 
-\subsection{Shared Slot Input}
-% The slot view: undamaged context unchanged, one slot per damaged gold word showing its garbled form, a dropped word
-%   as an empty slot. Both methods therefore know the number of damaged words. Predictions are spliced back inside the
-%   gold word's edge punctuation, so context words are never rewritten and every score difference comes from the slots.
-% Justify in one sentence: OCR engines flag low-confidence regions, and a reader of a torn page still sees partial letters.
-% Figure 1 (make it; saves text): the example below, gold span underneath, BERT and LLM output lines.
-%   A POWERFULLY-BUILT man, <same> <Bbonias> <Huicl,> <e> commission agent, ...   gold: named Thomas Hurd, a
-\todo{Draft 3.3 (about 5 lines) and Figure 1 in figures/.}
-
-\subsection{Repair Methods}
-% (a) BERT + reranking. bert-base-cased \citep{devlin2019bert}, cased because facts depend on capitals.
-%   Fine-tuned on clean gold text from the 443 excerpts outside the sample (2,939 sentences; 10% of excerpts held out
-%   for validation; zero overlap with test/dev, tested). Training input copies inference: span words before the target
-%   are filled, the target is masked with its true piece count, later span words are one [MASK] each.
-%   Inference fills slots left to right; for each slot it tries 1, 2 and 3 masks, keeps candidates, and scores
-%   score = mean log-probability per piece + lambda * (1 - normalised Levenshtein distance to the garbled form).
-%   This is a basic form of "context plus confusion" \citep{evershed2014correcting}. Dropped slots use the BERT score only.
-%   Words with a visible hyphen or apostrophe are filled part by part; only 0.9% of slots still need more than 3 pieces.
-% (b) LLM few-shot. \todo{final model id and host from teammate}. System message + instruction + 3 solved dev examples
-%   + the slot view; answer = JSON list with exactly k strings; temperature 0. A wrong-length answer is a format failure
-%   and is scored as no repair (no retry, no manual fix). Open-weight model only, because BLN600 is CC BY-NC-ND.
-%   The system message was needed: without it the 8B model answered in Python code (15 of 15 failures on a first check).
-% (c) No repair: the damaged text scored as if it were a method (the floor).
-% Secondary: few-shot + whole article (other sentences gold, so an upper bound); compared only with LLM few-shot.
-% Zero-shot was tried on dev and dropped: state that this means we cannot separate the effect of the examples.
 \begin{table}[t]
 \centering
 \small\setlength{\tabcolsep}{3pt}
@@ -83,7 +136,7 @@ Val.\ loss & 5.61 (pretrained) $\rightarrow$ 4.14 \\
 Reranking & 1--3 masks/slot, beam 5, top 10, $\lambda=8$ \\
 \midrule
 \multicolumn{2}{l}{\textit{LLM few-shot}} \\
-Model & \todo{final id} \\
+Model & \todo{final id} (dev default: Llama-3.1-8B-Instruct) \\
 Prompt & system msg + 3 dev examples, JSON output \\
 Decoding & temperature 0, max 1024 tokens \\
 \bottomrule
@@ -91,4 +144,3 @@ Decoding & temperature 0, max 1024 tokens \\
 \caption{Implementation settings. $\lambda$ chosen on dev from $\{1,2,4,8,16\}$.}
 \label{tab:settings}
 \end{table}
-\todo{Draft 3.4 (about 18 lines).}
