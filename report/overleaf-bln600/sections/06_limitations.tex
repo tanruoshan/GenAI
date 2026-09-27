@@ -1,0 +1,16 @@
+\section*{Limitations}
+% Unnumbered, ~0.3 page, counts toward the 9 pages. FACT SOURCE: notes/report_sources.md Sec. 6.
+% - Damage location is given; no detection step is tested.
+% - The damage is synthetic OCR-like character noise, not a model of physical tears or stains; one contiguous span;
+%   intensity is drawn per word, not spatially correlated like a real torn patch.
+% - The calibration comes from mild OCR and only aligned words, so it shows which characters get confused, not how
+%   heavy real damage is (a lower bound).
+% - Damage is centred on a fact by design: facts are 100% of damaged words at 1w and 17% at 75%.
+% - What sits in the span (stock phrase or rare name) is not controlled.
+% - 150 test sentences, only 26 in the longest band: trends, not powered effects.
+% - Fact Recovery Rate is a surface rule with exact match.
+% - One domain: English London crime reporting, three related publications.
+% - Method asymmetries: the LLM reads garbled letters directly, BERT only through the reranking score; BERT predicts the
+%   pieces of a word in parallel \citep{shen2020blank}; scale and pretraining differ; the LLM may have seen BLN600
+%   (public since 2024). The article variant uses gold context and is an upper bound.
+\todo{Draft limitations as one dense paragraph or a tight list.}

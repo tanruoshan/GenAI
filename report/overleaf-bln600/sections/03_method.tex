@@ -1,0 +1,94 @@
+\section{Method}
+% BUDGET: ~2 pages incl. Tables 1-2 and Figure 1. Mirror the EMNLP example's method section: what is known, what we add.
+% FACT SOURCE: notes/report_sources.md Sec. 3 (merged from dossier.md, dossier_v2.md, CLAUDE.md, configs).
+% Basic theory only. One idea per paragraph. Numbers below are verified against configs and run records.
+
+\subsection{Task and Data}
+% P1 (task, 3 sentences). Input: a sentence whose damaged span is known and whose garbled letters are visible.
+%   Output: one word per damaged position. Both methods get identical input and are scored by identical code.
+% P2 (data). BLN600 \citep{booth-etal-2024-bln600}: 600 excerpts of London crime reporting, 1830s-1890s,
+%   572 of them from three related weeklies; image, OCR and gold transcription per excerpt; CC BY-NC-ND.
+%   Sentences split with pysbd; pool = 20-60 words and >= 2 fact tokens (3,123 sentences, 592 excerpts).
+%   Fact token = a number, a word with a digit or pound sign, or a capitalised non-initial word (stop list: Mr, Mrs, The, ...).
+%   Sample, seed 42: 150 test (65/59/26 by band 20-29/30-44/45-60) and 20 dev sentences from 157 excerpts;
+%   max 3 per excerpt; no excerpt in both splits. Dev is used only for tuning.
+% DEVIL'S ADVOCATE: the fact rule is a surface rule ("Old" in Old Bailey counts, lowercase facts do not). Say so in one clause.
+\todo{Draft 3.1 (about 8 lines).}
+
+\subsection{Damage Simulation}
+% P1 (span). One anchor per sentence, drawn among its fact tokens; always damaged, never dropped. One contiguous span of k
+%   words around it, start = clamp(anchor - k/2). Levels: 1 word, then 10/25/50/75% of the words (half-up rounding),
+%   plus a clean level 0. Spans are nested, so the same place gets worse. 850 rows with damage (750 test, 100 dev).
+% P2 (noise). Each damaged word is dropped with p = 0.10 (never the anchor); otherwise 20-30% of its letters and digits
+%   are changed: ~15% deleted (max 2 per word), the rest substituted from a confusion table estimated on 29 held-out
+%   BLN600 excerpts (86% of substitutions; rest: capitalised table entry, look-alike map O/0, rn/m, cl/d, random char).
+%   Punctuation is never touched.
+% P3 (why 20-30%). Real erroneous words in the calibration excerpts have a median per-word error of 0.25
+%   (q1 0.17, q3 0.40). 20-30% sits around that median; an earlier 40-60% setting sat above q3 and was dropped.
+% EMPIRICAL ANCHOR: Booth et al. (2024) report mean CER about 0.07 for BLN600 OCR; our 25% level is at that point,
+%   higher levels are heavier by design.
+\begin{table}[t]
+\centering
+\small\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lccccc}
+\toprule
+Level & 1w & 10\% & 25\% & 50\% & 75\% \\
+\midrule
+Sentence CER (\%) & 1.0 & 3.2 & 7.9 & 15.5 & 23.1 \\
+Facts in span (mean) & 1.0 & 1.6 & 2.2 & 3.2 & 4.2 \\
+Facts / damaged words (\%) & 100 & 48 & 26 & 19 & 17 \\
+\bottomrule
+\end{tabular}
+\caption{Damage by level (test split). CER is over the whole sentence against gold; real BLN600 OCR is about 7\% \citep{booth-etal-2024-bln600}.}
+\label{tab:damage}
+\end{table}
+% DEVIL'S ADVOCATE: the fact share falls from 100% to 17%, so "fact recovery" at 1w and at 75% measure different mixes.
+%   Also: about 1 in 10 fact slots is dropped (68 of 692), so those facts have no visible letters at all.
+\todo{Draft 3.2 (about 10 lines).}
+
+\subsection{Shared Slot Input}
+% The slot view: undamaged context unchanged, one slot per damaged gold word showing its garbled form, a dropped word
+%   as an empty slot. Both methods therefore know the number of damaged words. Predictions are spliced back inside the
+%   gold word's edge punctuation, so context words are never rewritten and every score difference comes from the slots.
+% Justify in one sentence: OCR engines flag low-confidence regions, and a reader of a torn page still sees partial letters.
+% Figure 1 (make it; saves text): the example below, gold span underneath, BERT and LLM output lines.
+%   A POWERFULLY-BUILT man, <same> <Bbonias> <Huicl,> <e> commission agent, ...   gold: named Thomas Hurd, a
+\todo{Draft 3.3 (about 5 lines) and Figure 1 in figures/.}
+
+\subsection{Repair Methods}
+% (a) BERT + reranking. bert-base-cased \citep{devlin2019bert}, cased because facts depend on capitals.
+%   Fine-tuned on clean gold text from the 443 excerpts outside the sample (2,939 sentences; 10% of excerpts held out
+%   for validation; zero overlap with test/dev, tested). Training input copies inference: span words before the target
+%   are filled, the target is masked with its true piece count, later span words are one [MASK] each.
+%   Inference fills slots left to right; for each slot it tries 1, 2 and 3 masks, keeps candidates, and scores
+%   score = mean log-probability per piece + lambda * (1 - normalised Levenshtein distance to the garbled form).
+%   This is a basic form of "context plus confusion" \citep{evershed2014correcting}. Dropped slots use the BERT score only.
+%   Words with a visible hyphen or apostrophe are filled part by part; only 0.9% of slots still need more than 3 pieces.
+% (b) LLM few-shot. \todo{final model id and host from teammate}. System message + instruction + 3 solved dev examples
+%   + the slot view; answer = JSON list with exactly k strings; temperature 0. A wrong-length answer is a format failure
+%   and is scored as no repair (no retry, no manual fix). Open-weight model only, because BLN600 is CC BY-NC-ND.
+%   The system message was needed: without it the 8B model answered in Python code (15 of 15 failures on a first check).
+% (c) No repair: the damaged text scored as if it were a method (the floor).
+% Secondary: few-shot + whole article (other sentences gold, so an upper bound); compared only with LLM few-shot.
+% Zero-shot was tried on dev and dropped: state that this means we cannot separate the effect of the examples.
+\begin{table}[t]
+\centering
+\small\setlength{\tabcolsep}{3pt}
+\begin{tabular}{p{2.1cm}p{4.9cm}}
+\toprule
+\multicolumn{2}{l}{\textit{BERT + reranking}} \\
+Base model & bert-base-cased (110M) \\
+Fine-tuning & lr $5\mathrm{e}{-5}$, batch 16, early stop (patience 2, max 10 ep.), best epoch 2 \\
+Val.\ loss & 5.61 (pretrained) $\rightarrow$ 4.14 \\
+Reranking & 1--3 masks/slot, beam 5, top 10, $\lambda=8$ \\
+\midrule
+\multicolumn{2}{l}{\textit{LLM few-shot}} \\
+Model & \todo{final id} \\
+Prompt & system msg + 3 dev examples, JSON output \\
+Decoding & temperature 0, max 1024 tokens \\
+\bottomrule
+\end{tabular}
+\caption{Implementation settings. $\lambda$ chosen on dev from $\{1,2,4,8,16\}$.}
+\label{tab:settings}
+\end{table}
+\todo{Draft 3.4 (about 18 lines).}

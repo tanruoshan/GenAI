@@ -1,0 +1,154 @@
+\begin{thebibliography}{20}
+\providecommand{\natexlab}[1]{#1}
+
+\bibitem[{Belinkov and Bisk(2018)}]{belinkov2018synthetic}
+Yonatan Belinkov and Yonatan Bisk. 2018.
+\newblock \href {https://openreview.net/forum?id=BJ8vJebC-} {Synthetic and
+  natural noise both break neural machine translation}.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}.
+
+\bibitem[{Bingham(2010)}]{bingham2010digitization}
+Adrian Bingham. 2010.
+\newblock \href {https://doi.org/10.1093/tcbh/hwq007} {The digitization of
+  newspaper archives: Opportunities and challenges for historians}.
+\newblock \emph{Twentieth Century British History}, 21(2):225--231.
+
+\bibitem[{Booth et~al.(2024)Booth, Thomas, and
+  Gaizauskas}]{booth-etal-2024-bln600}
+Callum~William Booth, Alan Thomas, and Robert Gaizauskas. 2024.
+\newblock \href {https://aclanthology.org/2024.lrec-main.219} {{BLN}600: A
+  parallel corpus of machine/human transcribed nineteenth century newspaper
+  texts}.
+\newblock In \emph{Proceedings of the 2024 Joint International Conference on
+  Computational Linguistics, Language Resources and Evaluation (LREC-COLING
+  2024)}, pages 2440--2446, Torino, Italia. ELRA and ICCL.
+
+\bibitem[{Boros et~al.(2024)Boros, Ehrmann, Romanello, Najem-Meyer, and
+  Kaplan}]{boros2024postcorrection}
+Emanuela Boros, Maud Ehrmann, Matteo Romanello, Sven Najem-Meyer, and
+  Fr{\'e}d{\'e}ric Kaplan. 2024.
+\newblock \href {https://aclanthology.org/2024.latechclfl-1.14/}
+  {Post-correction of historical text transcripts with large language models:
+  An exploratory study}.
+\newblock In \emph{Proceedings of the 8th Joint SIGHUM Workshop on
+  Computational Linguistics for Cultural Heritage, Social Sciences, Humanities
+  and Literature (LaTeCH-CLfL 2024)}, pages 133--159.
+
+\bibitem[{Debaene et~al.(2025)Debaene, Maladry, Lefever, and
+  Hoste}]{debaene2025evaluating}
+Florian Debaene, Aaron Maladry, Els Lefever, and Veronique Hoste. 2025.
+\newblock Evaluating transformers for {OCR} post-correction in early modern
+  {D}utch theatre.
+\newblock In \emph{Proceedings of the 31st International Conference on
+  Computational Linguistics (COLING 2025)}, pages 10367--10374.
+
+\bibitem[{Devlin et~al.(2019)Devlin, Chang, Lee, and
+  Toutanova}]{devlin2019bert}
+Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. 2019.
+\newblock {BERT}: Pre-training of deep bidirectional transformers for language
+  understanding.
+\newblock In \emph{Proceedings of the 2019 Conference of the North American
+  Chapter of the Association for Computational Linguistics: Human Language
+  Technologies (NAACL-HLT)}.
+
+\bibitem[{Donahue et~al.(2020)Donahue, Lee, and Liang}]{donahue2020enabling}
+Chris Donahue, Mina Lee, and Percy Liang. 2020.
+\newblock \href {https://aclanthology.org/2020.acl-main.225/} {Enabling
+  language models to fill in the blanks}.
+\newblock In \emph{Proceedings of the 58th Annual Meeting of the Association
+  for Computational Linguistics}, pages 2492--2501.
+
+\bibitem[{Evershed and Fitch(2014)}]{evershed2014correcting}
+John Evershed and Kent Fitch. 2014.
+\newblock Correcting noisy {OCR}: Context beats confusion.
+\newblock In \emph{Proceedings of the First International Conference on Digital
+  Access to Textual Cultural Heritage (DATeCH 2014)}, pages 45--51.
+
+\bibitem[{Hamdi et~al.(2023)Hamdi, Linhares~Pontes, Sidere, Coustaty, and
+  Doucet}]{hamdi2023indepth}
+Ahmed Hamdi, Elvys Linhares~Pontes, Nicolas Sidere, Micka{\"e}l Coustaty, and
+  Antoine Doucet. 2023.
+\newblock In-depth analysis of the impact of {OCR} errors on named entity
+  recognition and linking.
+\newblock \emph{Natural Language Engineering}, 29(2):425--448.
+
+\bibitem[{Hill and Hengchen(2019)}]{hill2019quantifying}
+Mark~J. Hill and Simon Hengchen. 2019.
+\newblock Quantifying the impact of dirty {OCR} on historical text analysis:
+  {E}ighteenth {C}entury {C}ollections {O}nline as a case study.
+\newblock \emph{Digital Scholarship in the Humanities}, 34(4):825--843.
+
+\bibitem[{Holley(2009)}]{holley2009good}
+Rose Holley. 2009.
+\newblock \href {https://doi.org/10.1045/march2009-holley} {How good can it
+  get? analysing and improving {OCR} accuracy in large scale historic newspaper
+  digitisation programs}.
+\newblock \emph{D-Lib Magazine}, 15(3/4).
+
+\bibitem[{Ji et~al.(2023)Ji, Lee, Frieske et~al.}]{ji2023survey}
+Ziwei Ji, Nayeon Lee, Rita Frieske, et~al. 2023.
+\newblock \href {https://doi.org/10.1145/3571730} {Survey of hallucination in
+  natural language generation}.
+\newblock \emph{ACM Computing Surveys}, 55(12):248:1--248:38.
+
+\bibitem[{Lyu et~al.(2021)Lyu, Koutraki, Krickl, and Fetahu}]{lyu2021neural}
+Lijun Lyu, Maria Koutraki, Martin Krickl, and Besnik Fetahu. 2021.
+\newblock Neural {OCR} post-hoc correction of historical corpora.
+\newblock \emph{Transactions of the Association for Computational Linguistics},
+  9:479--493.
+
+\bibitem[{Pruthi et~al.(2019)Pruthi, Dhingra, and Lipton}]{pruthi2019combating}
+Danish Pruthi, Bhuwan Dhingra, and Zachary~C. Lipton. 2019.
+\newblock \href {https://aclanthology.org/P19-1561/} {Combating adversarial
+  misspellings with robust word recognition}.
+\newblock In \emph{Proceedings of the 57th Annual Meeting of the Association
+  for Computational Linguistics}, pages 5582--5591.
+
+\bibitem[{Sainz et~al.(2023)Sainz, Campos, Garc{\'\i}a-Ferrero, Etxaniz,
+  Lopez~de Lacalle, and Agirre}]{sainz2023contamination}
+Oscar Sainz, Jon~Ander Campos, Iker Garc{\'\i}a-Ferrero, Julen Etxaniz, Oier
+  Lopez~de Lacalle, and Eneko Agirre. 2023.
+\newblock {NLP} evaluation in trouble: On the need to measure {LLM} data
+  contamination for each benchmark.
+\newblock In \emph{Findings of the Association for Computational Linguistics:
+  EMNLP 2023}, pages 10776--10787.
+
+\bibitem[{Shen et~al.(2020)Shen, Quach, Barzilay, and Jaakkola}]{shen2020blank}
+Tianxiao Shen, Victor Quach, Regina Barzilay, and Tommi Jaakkola. 2020.
+\newblock Blank language models.
+\newblock In \emph{Proceedings of the 2020 Conference on Empirical Methods in
+  Natural Language Processing (EMNLP)}, pages 5186--5198.
+
+\bibitem[{Tanner et~al.(2009)Tanner, Mu{\~n}oz, and Ros}]{tanner2009measuring}
+Simon Tanner, Trevor Mu{\~n}oz, and Pich~Hemy Ros. 2009.
+\newblock \href {https://doi.org/10.1045/july2009-munoz} {Measuring mass text
+  digitization quality and usefulness: Lessons learned from assessing the {OCR}
+  accuracy of the {B}ritish {L}ibrary's 19th century online newspaper archive}.
+\newblock \emph{D-Lib Magazine}, 15(7/8).
+
+\bibitem[{Thomas et~al.(2024)Thomas, Gaizauskas, and Lu}]{thomas2024leveraging}
+Alan Thomas, Robert Gaizauskas, and Haiping Lu. 2024.
+\newblock Leveraging {LLM}s for post-{OCR} correction of historical newspapers.
+\newblock In \emph{Proceedings of the Third Workshop on Language Technologies
+  for Historical and Ancient Languages (LT4HALA) at LREC-COLING 2024}, pages
+  116--121.
+
+\bibitem[{van Strien et~al.(2020)van Strien, Beelen, Coll~Ardanuy, Hosseini,
+  McGillivray, and Colavizza}]{vanstrien2020assessing}
+Daniel van Strien, Kaspar Beelen, Mariona Coll~Ardanuy, Kasra Hosseini, Barbara
+  McGillivray, and Giovanni Colavizza. 2020.
+\newblock \href {https://doi.org/10.5220/0009169004840496} {Assessing the
+  impact of {OCR} quality on downstream {NLP} tasks}.
+\newblock In \emph{Proceedings of the 12th International Conference on Agents
+  and Artificial Intelligence (ICAART), Volume 1: ARTIDIGH}, pages 484--496.
+
+\bibitem[{Zhang et~al.(2020)Zhang, Kishore, Wu, Weinberger, and
+  Artzi}]{zhang2020bertscore}
+Tianyi Zhang, Varsha Kishore, Felix Wu, Kilian~Q. Weinberger, and Yoav Artzi.
+  2020.
+\newblock {BERTScore}: Evaluating text generation with {BERT}.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}.
+
+\end{thebibliography}

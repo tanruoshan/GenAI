@@ -1,0 +1,30 @@
+\section{Related Work}
+% BUDGET: ~0.75 page. Course asks: how far is the objective already solved, what do we add.
+% FACT SOURCE: notes/report_sources.md Sec. 2.
+% Use ONLY references that exist in references.bib (all taken from the verified list in the dossier).
+% Block 1: Post-OCR correction of historical text.
+%   Thomas et al. (2024): fine-tuned Llama 2 beat fine-tuned BART on BLN600 itself (CER -54.5% vs -23.3%).
+%   Boros et al. (2024) \citep{boros2024postcorrection}: 14 LLMs, zero/few-shot, several historical benchmarks: "anything
+%     but efficient". Intro already names both; here say WHY they differ (fine-tuned vs prompted; real vs our graded damage).
+%   Debaene et al. (2025): seq2seq beat generative models on early modern Dutch.
+%   Lyu et al. (2021): neural post-hoc correction of historical corpora.
+%   Evershed and Fitch (2014): context plus confusion. Our reranking is a basic form of this.
+% Block 2: Text infilling and masked language models.
+%   Devlin et al. (2019), Shen et al. (2020) (multi-token blanks are hard for parallel prediction), Zhu et al. (2019).
+%   Donahue, Lee & Liang (2020) \citep{donahue2020enabling}: fine-tunes a GPT-2-style LM to fill arbitrary masked
+%     spans ("infilling by language modeling"), the LLM-side counterpart to BERT's masked-span filling here.
+% Block 2b: Robustness to noisy/corrupted input (added 2026-09-27, verified against ACL Anthology / OpenReview).
+%   Belinkov & Bisk (2018) \citep{belinkov2018synthetic}: character-level synthetic and natural noise both break
+%     neural MT; motivates treating "synthetic OCR-like noise" as only a proxy for real damage (Limitations).
+%   Pruthi, Dhingra & Lipton (2019) \citep{pruthi2019combating}: models are brittle to small character edits
+%     (swaps, drops, adds) unless given explicit robust word recognition; supports why letter-level similarity
+%     is given to BERT explicitly (reranking) rather than assumed to be learned implicitly.
+% Block 3: Evaluation and contamination.
+%   Zhang et al. (2020) BERTScore. Sainz et al. (2023) contamination per benchmark.
+% Closing sentence = our delta: controlled, fact-centred severity scale, identical input for both methods, fact-level metric, damage location given.
+% DEVIL'S ADVOCATE: related work found so far is mostly post-OCR on real errors, or general noise robustness /
+%   infilling not tied to historical text. Say plainly that combining fact-centred synthetic OCR damage with a
+%   fact-level metric, on identical input for both an encoder and an LLM, is what is new here.
+\todo{Draft related work.}
+% Smoke test so the bibliography compiles; DELETE this line when real text is written:
+\nocite{booth-etal-2024-bln600,thomas2024leveraging,debaene2025evaluating,lyu2021neural,evershed2014correcting,shen2020blank,zhang2020bertscore,devlin2019bert,sainz2023contamination,belinkov2018synthetic,pruthi2019combating,donahue2020enabling}

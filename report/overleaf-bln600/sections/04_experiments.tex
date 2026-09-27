@@ -1,0 +1,65 @@
+\section{Empirical Investigation}
+% BUDGET: ~2.5 pages incl. Figure 2 and Tables 3-4. FACT SOURCE: notes/report_sources.md Sec. 4.
+% RULE: only TEST numbers are results. Dev numbers may appear once, as tuning context (e.g. lambda choice).
+
+\subsection{Experimental Design}
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{p{1.6cm}p{5.2cm}}
+\toprule
+Factor & Levels \\
+\midrule
+Severity & 0, 1 word, 10, 25, 50, 75\% of words \\
+Length band & 20--29, 30--44, 45--60 words \\
+Methods & BERT + rerank; LLM few-shot; no repair (secondary: LLM + article) \\
+Data & 150 test sentences, 750 rows per method; dev 20 (tuning only) \\
+Metrics & BERTScore, \frr{} (primary); exact match, repair gain, format failures, contamination (secondary) \\
+\bottomrule
+\end{tabular}
+\caption{Experimental design.}
+\label{tab:design}
+\end{table}
+% Levels are nested within the same sentence, so all comparisons are paired (per sentence: better / same / worse).
+% Tuning: lambda grid on dev only (lambda 8; FRR 0.042 -> 0.126 from lambda 1 to 8, flat after). Test split was opened per
+%   method only after its config was frozen (a code gate), so no setting was chosen on test.
+\todo{Draft 4.1 (about 6 lines).}
+
+\subsection{Metrics}
+% BERTScore F1 of the repaired vs gold span \citep{zhang2020bertscore}: roberta-large, layer 17, baseline rescaling
+%   (so values can go below 0). Fact Recovery Rate: share of gold fact tokens in the span restored exactly in their slot,
+%   punctuation ignored. Exact words; CER = Levenshtein / gold span length; repair gain = CER before - CER after.
+%   Format failure = wrong-length answer, scored as no repair. Contamination probe \citep{sainz2023contamination}:
+%   first half of each clean test sentence, near-verbatim continuation = similarity >= 0.9.
+% DEVIL'S ADVOCATE (SQ3): a wrong name can still get a high BERTScore; that is the reason for FRR.
+%   Repair gain per row is dominated by short spans (one wrong word in a 1-word span gives CER > 1). Decide: pooled CER?
+% OPTIONAL: split FRR into visible vs dropped fact slots (68 of 692 fact slots have no letters).
+\todo{Draft 4.2 (about 8 lines).}
+
+\subsection{Results}
+% Figure 2: level (x) vs span BERTScore and FRR (y), one line per method, no repair dashed. From notebook 04, TEST split.
+% Table 3 below. Table 4 (optional): level x band, to separate damaged share from absolute gap length (SQ1).
+\begin{table}[t]
+\centering
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lcccccc}
+\toprule
+ & \multicolumn{3}{c}{BERTScore (span)} & \multicolumn{3}{c}{\frr{}} \\
+Level & BERT & LLM & None & BERT & LLM & None \\
+\midrule
+1w   & \pending & \pending & \pending & \pending & \pending & \pending \\
+10\% & \pending & \pending & \pending & \pending & \pending & \pending \\
+25\% & \pending & \pending & \pending & \pending & \pending & \pending \\
+50\% & \pending & \pending & \pending & \pending & \pending & \pending \\
+75\% & \pending & \pending & \pending & \pending & \pending & \pending \\
+\bottomrule
+\end{tabular}
+\caption{Test results, 150 sentences per level. None = no repair. \todo{LLM format failures per level; paired counts.}}
+\label{tab:results}
+\end{table}
+% Report in this order: (1) SQ1 curve shape and breakpoint; (2) band effect; (3) SQ2 paired BERT vs LLM per level;
+%   (4) SQ3 BERTScore vs FRR gap; (5) LLM format-failure rate and where it occurs; (6) article vs few-shot (paired);
+%   (7) contamination rate on test.
+% WATCH (from dev, to check on test): on dev the methods crossed at 50-75% only because the LLM's format failures are
+%   all there and are scored as no repair. If test shows the same, say the crossing is a format effect, not better repair.
+\todo{Fill after the LLM test run and notebook 04 on test.}
