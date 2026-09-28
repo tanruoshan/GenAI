@@ -10,6 +10,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
+import numpy as np
 import yaml
 from rapidfuzz.distance import Levenshtein
 from rapidfuzz.process import cdist
@@ -54,6 +55,12 @@ class LexiconLookup:
         best = int(dist.min())
         i = int(dist.argmin())  # first minimum = the most frequent of the closest entries
         return self.words[i], best, int((dist == best).sum())
+
+    def closest(self, core, n):
+        """The n entries closest to a damaged core: by edit distance, then by frequency (used by BERT
+        with dictionary candidates)."""
+        dist = cdist([core], self.words, scorer=Levenshtein.distance, workers=-1)[0]
+        return [self.words[i] for i in np.argsort(dist, kind="stable")[:n]]
 
     def __call__(self, view):
         pred_words, log = [], []

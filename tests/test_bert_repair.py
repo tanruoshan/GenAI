@@ -118,3 +118,36 @@ def test_repair_version_holds_model_settings_and_split():
     assert repair_version({**cfg, "lam": 1.0, "beam": 5, "top_n": 10}, "dev") == f"{cfg['model_tag']}-l1-b5-n10-dev"
     assert repair_version({**cfg, "lam": 0.5}, "test").endswith("-test")
     assert repair_version({**cfg, "lam": 0.5}, "dev") != repair_version({**cfg, "lam": 2}, "dev")
+
+
+class WordTokenizer(TinyTokenizer):
+    """TinyTokenizer plus word tokenization, for the dictionary candidates."""
+    vocab = ["[PAD]", "[MASK]", "[UNK]", "Hu", "##rd", "Hard", "the"]
+    unk_token_id = 2
+    words = {"Hurd": [3, 4], "Hard": [5], "Longword": [3, 4, 4, 4], "Hürd": [2]}
+
+    def __call__(self, word, add_special_tokens=True):
+        return {"input_ids": self.words[word]}
+
+
+def test_dictionary_candidates_are_scored_from_the_pass_with_their_piece_count():
+    r = BertReranker(NoModel(), WordTokenizer(), lex_n=4)
+    r.lex = type("Lex", (), {"closest": lambda self, core, n: ["Hurd", "Hard", "Longword", "Hürd"][:n]})()
+    lp1, lp2, lp3 = torch.randn(1, 7), torch.randn(2, 7), torch.randn(3, 7)
+    out = r.dictionary_candidates([lp1, lp2, lp3], "Hnrd")
+    assert out["Hurd"] == pytest.approx(((lp2[0, 3] + lp2[1, 4]) / 2).item())
+    assert out["Hard"] == pytest.approx(lp1[0, 5].item())
+    assert "Longword" not in out and "Hürd" not in out  # more than 3 pieces, or an unknown piece
+
+
+def test_part_counts_split_entries_like_slots():
+    from collections import Counter
+    from blnrepair.bert_repair import part_counts
+    assert part_counts(Counter({"Police-court": 2, "court": 1, "prisoner's": 1})) == Counter(
+        {"court": 3, "Police": 2, "prisoner": 1, "s": 1})
+
+
+def test_repair_version_names_the_dictionary_candidates():
+    cfg = {"model_tag": "ftv1", "lam": 4, "beam": 5, "top_n": 10}
+    assert repair_version(cfg, "dev") == "ftv1-l4-b5-n10-dev"  # unchanged without a word list
+    assert repair_version({**cfg, "lex_n": 20}, "dev") == "ftv1-l4-b5-n10-x20-dev"
