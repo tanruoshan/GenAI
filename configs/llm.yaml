@@ -5,13 +5,20 @@ allowed_models:
   - meta-llama-3.1-8b-instruct
   - qwen3-30b-a3b-instruct-2507
 
-model: meta-llama-3.1-8b-instruct # the model the notebooks use; the final choice (O2) is made at CHECKPOINT 5
+model: qwen3-30b-a3b-instruct-2507 # switched from meta-llama-3.1-8b-instruct: its dev format-failure rate (21%/27%)
+# was above the 15% line that was agreed would trigger this switch (dossier S7.2a). Qwen 3 30B A3B was the
+# pre-approved upgrade candidate: MoE, 3.3B active params so it stays fast despite 30B total, and GWDG lists
+# it for instruction-following. Re-run the dev prompts with this model before freezing (configs/llm.yaml frozen: true).
 
 # Few-shot examples: (dev sentence id, level). Their gold answers are shown in the prompt, so these
-# sentences are left out of every scored set.
+# sentences are left out of every scored set. One per severity level (1w, 10, 25, 50, 75), each from a
+# different excerpt; the 10 and 50 picks were added to directly show a dropped word at those levels,
+# since format failures were concentrated at 50 and 75 with a dropped slot in most of them.
 fewshot_picks:
   - ["3206323884-017", "1w"]
+  - ["3206270194-012", "10"]
   - ["3200807881-004", "25"]
+  - ["3206225730-001", "50"]
   - ["3206237078-010", "75"]
 
 temperature: 0
@@ -23,4 +30,4 @@ max_wait_s: 3700 # on a 429, wait until the reset the server reports (at most th
 
 # The gate for the test split. Leave false while tuning the model, prompts and few-shot picks on dev. Set to
 # true (and commit) when they are final; notebook 3 then allows SPLIT = "test" (with ALLOW_TEST = True).
-frozen: false
+frozen: true

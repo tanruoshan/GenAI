@@ -108,7 +108,7 @@ def test_variant_versions_hold_prompt_model_examples_and_split():
     cfg = {**CFG, "fewshot_picks": [["a-001", "1w"]]}
     dev, test = variant_versions(cfg, "dev"), variant_versions(cfg, "test")
     method, version = dev["few-shot"]
-    assert method == "llm_fewshot" and version.startswith(f"v2-{cfg['model']}-ex") and version.endswith("-dev")
+    assert method == "llm_fewshot" and version.startswith(f"v4-{cfg['model']}-ex") and version.endswith("-dev")
     assert test["few-shot"][1].endswith("-test") and test["few-shot"][1][:-4] == version[:-3]
     other = variant_versions({**cfg, "fewshot_picks": [["b-002", "25"]]}, "dev")
     assert other["few-shot"][1] != version and other["probe"] == dev["probe"]

@@ -27,8 +27,8 @@ def variant_versions(cfg, split):
     never reads old predictions."""
     tag = hashlib.sha256(json.dumps(cfg["fewshot_picks"]).encode()).hexdigest()[:6]
     model = cfg["model"]
-    return {"few-shot": ("llm_fewshot", f"v2-{model}-ex{tag}-{split}"),
-            "few-shot + article": ("llm_fewshot_article", f"v1-{model}-ex{tag}-{split}"),
+    return {"few-shot": ("llm_fewshot", f"v4-{model}-ex{tag}-{split}"),
+            "few-shot + article": ("llm_fewshot_article", f"v3-{model}-ex{tag}-{split}"),
             "probe": ("llm_probe", f"v1-{model}-{split}")}
 
 
