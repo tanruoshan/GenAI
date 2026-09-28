@@ -1,5 +1,7 @@
 # CLAUDE.md: BLN600 damage study, Day 2 (repair methods, dossier §6 and §7)
 
+> **Session handoff (Simon's sessions):** start with `docs/handoff/HANDOFF.md` (current state, rules, next steps) and the last entries of `docs/handoff/SESSION_LOG.md`.
+
 Source of decisions: `docs/dossier.md` (§6 slot view, §7 repair methods, §10 fairness). The Day 1 file is kept as `docs/claude_day1.md`; its fixed rules still hold. If this file and the dossier disagree on scope or design, the dossier wins; stop and ask. Items marked **[DECIDE]** are changes or open points the user must settle before code depends on them.
 
 ## Status
