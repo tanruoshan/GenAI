@@ -24,6 +24,7 @@ as internal working notes, kept alongside the instructor-facing material.
 
 1. `notebooks/01_dataset_and_damage_pipeline.ipynb`: data pool, calibration and the damage pipeline.
 2. `notebooks/02_bert_repair.ipynb`: fine-tuned BERT with character-aware reranking (repair and dev tuning).
+   `notebooks/02b_dictionary.ipynb`: the dictionary lookup, a non-GenAI baseline (closest spelling in a word list, no context), and BERT with dictionary candidates.
 3. `notebooks/03_llm_repair.ipynb`: few-shot LLM repair (with and without the article as context) and the contamination probe.
 4. `notebooks/04_evaluation.ipynb`: reads the stored predictions and scores BERT and the LLM on the same rows.
 
