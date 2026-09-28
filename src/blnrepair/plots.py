@@ -53,7 +53,7 @@ def loss_curve(log, steps_per_epoch, best_epoch):
     return fig
 
 
-SERIES = ["#2a78d6", "#eb6834", "#1baf7a"]  # categorical slots 1 to 3 (validated palette), in fixed order
+SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4"]  # categorical slots 1 to 5 (validated palette), in fixed order
 
 
 def level_lines(means, metrics, titles, order, reference="no repair"):
