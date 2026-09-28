@@ -5,4 +5,4 @@ version: v1
 
 # The gate for the test split, as for the other tracks. Set to true (and commit) once the dev run is
 # checked; notebook 2b then allows SPLIT = "test" (together with ALLOW_TEST = True).
-frozen: false
+frozen: true
