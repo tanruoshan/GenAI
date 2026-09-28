@@ -290,12 +290,15 @@ INPUT C:\Users\Sunny\AppData\Local\Programs\MiKTeX\fonts\vf\adobe\times\ptmr8t.v
 INPUT C:\Users\Sunny\AppData\Local\Programs\MiKTeX\fonts\tfm\adobe\times\ptmr8r.tfm
 INPUT C:\Users\Sunny\AppData\Local\Programs\MiKTeX\fonts\vf\adobe\times\ptmb8t.vf
 INPUT C:\Users\Sunny\AppData\Local\Programs\MiKTeX\fonts\tfm\adobe\times\ptmb8r.tfm
+INPUT C:\Users\Sunny\AppData\Local\Programs\MiKTeX\fonts\tfm\adobe\times\ptmr8t.tfm
 INPUT .\figures\nested_spans.pdf
 INPUT .\figures\nested_spans.pdf
 INPUT .\figures\nested_spans.pdf
 INPUT .\figures\nested_spans.pdf
 INPUT .\figures\nested_spans.pdf
 INPUT .\figures\nested_spans.pdf
+INPUT C:\Users\Sunny\AppData\Local\Programs\MiKTeX\fonts\vf\adobe\times\ptmr8t.vf
+INPUT C:\Users\Sunny\AppData\Local\Programs\MiKTeX\fonts\tfm\adobe\times\ptmr8r.tfm
 INPUT C:\Users\Sunny\AppData\Local\Programs\MiKTeX\fonts\tfm\adobe\times\ptmri8t.tfm
 INPUT .\sections\04_experiments.tex
 INPUT .\sections\04_experiments.tex

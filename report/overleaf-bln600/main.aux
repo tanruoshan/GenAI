@@ -64,25 +64,25 @@
 \newlabel{sec:damage}{{3.2}{3}{Damage Simulation}{subsection.3.2}{}}
 \citation{devlin2019bert}
 \citation{evershed2014correcting}
-\citation{grattafiori2024llama3}
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces The damaged span at each level, for one example 24-word sentence. Every span centers on the same anchor word (the seeded fact token) and fully contains every smaller span, so a higher level does not change how heavily any single word is damaged -- only how many words around the anchor are included.}}{4}{figure.caption.5}\protected@file@percent }
-\newlabel{fig:spans}{{1}{4}{The damaged span at each level, for one example 24-word sentence. Every span centers on the same anchor word (the seeded fact token) and fully contains every smaller span, so a higher level does not change how heavily any single word is damaged -- only how many words around the anchor are included}{figure.caption.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Damage operations. Word drop and letter deletion are sampled per word and per altered character (\textsuperscript  {a}deletion capped at 2 per word). Letter substitution is split among four sources by a fixed lookup order (confusion table, then capitalization, then look-alike map, then random), tried until one applies -- the ``share of subst.'' rows are realized frequencies of that lookup, not independent sampling probabilities. The confusion table is calibrated on 29 held-out BLN600{} excerpts.}}{4}{table.caption.5}\protected@file@percent }
+\newlabel{tab:damage-ops}{{2}{4}{Damage operations. Word drop and letter deletion are sampled per word and per altered character (\textsuperscript {a}deletion capped at 2 per word). Letter substitution is split among four sources by a fixed lookup order (confusion table, then capitalization, then look-alike map, then random), tried until one applies -- the ``share of subst.'' rows are realized frequencies of that lookup, not independent sampling probabilities. The confusion table is calibrated on 29 held-out \bln {} excerpts}{table.caption.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces The damaged span at each level, for one example 24-word sentence. Every span centers on the same anchor word (the seeded fact token) and fully contains every smaller span, so a higher level does not change how heavily any single word is damaged -- only how many words around the anchor are included.}}{4}{figure.caption.6}\protected@file@percent }
+\newlabel{fig:spans}{{1}{4}{The damaged span at each level, for one example 24-word sentence. Every span centers on the same anchor word (the seeded fact token) and fully contains every smaller span, so a higher level does not change how heavily any single word is damaged -- only how many words around the anchor are included}{figure.caption.6}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Shared Slot Input}{4}{subsection.3.3}\protected@file@percent }
 \newlabel{sec:slot}{{3.3}{4}{Shared Slot Input}{subsection.3.3}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Repair Methods}{4}{subsection.3.4}\protected@file@percent }
 \newlabel{sec:models}{{3.4}{4}{Repair Methods}{subsection.3.4}{}}
+\citation{grattafiori2024llama3}
 \citation{booth-etal-2024-bln600}
 \citation{booth-etal-2024-bln600}
 \citation{zhang2020bertscore}
 \citation{sainz2023contamination}
-\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Damage by level (test split). CER is over the whole sentence against gold; real BLN600 OCR is about 7\% \citep  {booth-etal-2024-bln600}.}}{5}{table.caption.6}\protected@file@percent }
-\newlabel{tab:damage}{{2}{5}{Damage by level (test split). CER is over the whole sentence against gold; real BLN600 OCR is about 7\% \citep {booth-etal-2024-bln600}}{table.caption.6}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {4}Empirical Investigation}{5}{section.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Experimental Design}{5}{subsection.4.1}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Implementation settings. $\lambda $ chosen on dev from $\{1,2,4,8,16\}$.}}{5}{table.caption.7}\protected@file@percent }
-\newlabel{tab:settings}{{3}{5}{Implementation settings. $\lambda $ chosen on dev from $\{1,2,4,8,16\}$}{table.caption.7}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Experimental design.}}{5}{table.caption.8}\protected@file@percent }
-\newlabel{tab:design}{{4}{5}{Experimental design}{table.caption.8}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Damage by level (test split). CER is over the whole sentence against gold; real BLN600 OCR is about 7\% \citep  {booth-etal-2024-bln600}.}}{5}{table.caption.7}\protected@file@percent }
+\newlabel{tab:damage}{{3}{5}{Damage by level (test split). CER is over the whole sentence against gold; real BLN600 OCR is about 7\% \citep {booth-etal-2024-bln600}}{table.caption.7}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Implementation settings. $\lambda $ chosen on dev from $\{1,2,4,8,16\}$.}}{5}{table.caption.8}\protected@file@percent }
+\newlabel{tab:settings}{{4}{5}{Implementation settings. $\lambda $ chosen on dev from $\{1,2,4,8,16\}$}{table.caption.8}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Metrics}{5}{subsection.4.2}\protected@file@percent }
 \newlabel{sec:metrics}{{4.2}{5}{Metrics}{subsection.4.2}{}}
 \bibdata{references}
@@ -93,12 +93,14 @@
 \bibcite{debaene2025evaluating}{{5}{2025}{{Debaene et~al.}}{{Debaene, Maladry, Lefever, and Hoste}}}
 \bibcite{devlin2019bert}{{6}{2019}{{Devlin et~al.}}{{Devlin, Chang, Lee, and Toutanova}}}
 \bibcite{donahue2020enabling}{{7}{2020}{{Donahue et~al.}}{{Donahue, Lee, and Liang}}}
-\bibcite{evershed2014correcting}{{8}{2014}{{Evershed and Fitch}}{{}}}
-\bibcite{golchin2024time}{{9}{2024}{{Golchin and Surdeanu}}{{}}}
-\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Test results, 150 sentences per level. None = no repair. \textcolor {red}{[TODO: LLM format failures per level; paired counts.]}}}{6}{table.caption.9}\protected@file@percent }
-\newlabel{tab:results}{{5}{6}{Test results, 150 sentences per level. None = no repair. \todo {LLM format failures per level; paired counts.}}{table.caption.9}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Experimental design.}}{6}{table.caption.9}\protected@file@percent }
+\newlabel{tab:design}{{5}{6}{Experimental design}{table.caption.9}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Test results, 150 sentences per level. None = no repair. \textcolor {red}{[TODO: LLM format failures per level; paired counts.]}}}{6}{table.caption.10}\protected@file@percent }
+\newlabel{tab:results}{{6}{6}{Test results, 150 sentences per level. None = no repair. \todo {LLM format failures per level; paired counts.}}{table.caption.10}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Results}{6}{subsection.4.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {5}Interpretation and Conclusion}{6}{section.5}\protected@file@percent }
+\bibcite{evershed2014correcting}{{8}{2014}{{Evershed and Fitch}}{{}}}
+\bibcite{golchin2024time}{{9}{2024}{{Golchin and Surdeanu}}{{}}}
 \bibcite{grattafiori2024llama3}{{10}{2024}{{Grattafiori et~al.}}{{Grattafiori, Dubey, Jauhri, Pandey, Kadian, Al-Dahle, Letman, Mathur, Schelten, Vaughan, and {others}}}}
 \bibcite{hamdi2020assessing}{{11}{2020}{{Hamdi et~al.}}{{Hamdi, Jean-Caurant, Sidère, Coustaty, and Doucet}}}
 \bibcite{hamdi2023indepth}{{12}{2023}{{Hamdi et~al.}}{{Hamdi, Pontes, Sidere, Coustaty, and Doucet}}}
@@ -118,4 +120,4 @@
 \bibcite{thomas2024leveraging}{{26}{2024}{{Thomas et~al.}}{{Thomas, Gaizauskas, and Lu}}}
 \bibcite{wang2019bert}{{27}{2019}{{Wang and Cho}}{{}}}
 \bibcite{zhang2020bertscore}{{28}{2020}{{Zhang et~al.}}{{Zhang, Kishore, Wu, Weinberger, and Artzi}}}
-\gdef \@abspage@last{7}
+\gdef \@abspage@last{8}
