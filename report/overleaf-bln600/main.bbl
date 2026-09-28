@@ -22,6 +22,11 @@ Yannis Assael, Thea Sommerschield, Brendan Shillingford, Mahyar Bordbar, John
   attributing ancient texts using deep neural networks}.
 \newblock \emph{Nature}, 603(7900):280--283.
 
+\bibitem[{Belinkov and Bisk(2017)}]{belinkov2018synthetic}
+Yonatan Belinkov and Yonatan Bisk. 2017.
+\newblock Synthetic and natural noise both break neural machine translation.
+\newblock \emph{arXiv preprint arXiv:1711.02173}.
+
 \bibitem[{Booth et~al.(2024)Booth, Thomas, and
   Gaizauskas}]{booth-etal-2024-bln600}
 Callum~William Booth, Alan Thomas, and Robert Gaizauskas. 2024.
@@ -159,12 +164,6 @@ Koren Lazar, Benny Saret, Asaf Yehudai, Wayne Horowitz, Nathan Wasserman, and
 \newblock In \emph{Proceedings of the 2021 {Conference} on {Empirical}
   {Methods} in {Natural} {Language} {Processing}}, pages 4682--4691, Online and
   Punta Cana, Dominican Republic. Association for Computational Linguistics.
-
-\bibitem[{Lyu et~al.(2021)Lyu, Koutraki, Krickl, and Fetahu}]{lyu2021neural}
-Lijun Lyu, Maria Koutraki, Martin Krickl, and Besnik Fetahu. 2021.
-\newblock Neural {OCR} post-hoc correction of historical corpora.
-\newblock \emph{Transactions of the Association for Computational Linguistics},
-  9:479--493.
 
 \bibitem[{Maynez et~al.(2020)Maynez, Narayan, Bohnet, and
   McDonald}]{maynez2020faithfulness}

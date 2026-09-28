@@ -1,16 +1,25 @@
 \section*{Limitations}
 % Unnumbered, ~0.3 page, counts toward the 9 pages. FACT SOURCE: notes/report_sources.md Sec. 6.
-% - Damage location is given; no detection step is tested.
-% - The damage is synthetic OCR-like character noise, not a model of physical tears or stains; one contiguous span;
-%   intensity is drawn per word, not spatially correlated like a real torn patch.
-% - The calibration comes from mild OCR and only aligned words, so it shows which characters get confused, not how
-%   heavy real damage is (a lower bound).
-% - Damage is centred on a fact by design: facts are 100% of damaged words at 1w and 17% at 75%.
-% - What sits in the span (stock phrase or rare name) is not controlled.
-% - 150 test sentences, only 26 in the longest band: trends, not powered effects.
-% - Fact Recovery Rate is a surface rule with exact match.
-% - One domain: English London crime reporting, three related publications.
-% - Method asymmetries: the LLM reads garbled letters directly, BERT only through the reranking score; BERT predicts the
-%   pieces of a word in parallel \citep{shen2020blank}; scale and pretraining differ; the LLM may have seen BLN600
-%   (public since 2024). The article variant uses gold context and is an upper bound.
-\todo{Draft limitations as one dense paragraph or a tight list.}
+% DRAFT 1 (2026-09-28). Checked: belinkov2018synthetic Sec. 7.2 ("None of the models that were trained only on
+% synthetic noise were able to perform well on natural noise"); booth Table 1 (572 = IPN 212 + Lloyd's 360, two
+% titles, six in total); booth Sec. 4 (unreadable pages rejected). Bib key belinkov2018synthetic assumed.
+% CONFIRM: one noise draw per sentence (no repeated corruption seeds).
+% If over budget: drop the hamdi2020assessing clause (already in Sec. 5, P5).
+
+\emph{Damage.} Our damage is synthetic character noise in one contiguous span, not a model of torn, stained or
+faded pages: intensity is drawn per word rather than spatially correlated as in a real torn patch, and the
+confusion table comes from mild OCR errors on aligned words, so it shows which characters get confused but likely
+understates how heavy real damage is. Synthetic and natural noise can differ enough that results on one do not carry
+over to the other \citep{belinkov2018synthetic}; degrading page images before OCR \citep{hamdi2020assessing} would
+be a closer test. \bln{} itself excludes pages too faded or damaged to transcribe \citep{booth-etal-2024-bln600}.
+\emph{Task.} The damaged region and the number of damaged words are given, so no detection step is tested. Damage is
+centred on a fact by design, so facts make up 100\% of damaged words at the 1-word level but only 17\% at 75\%, and
+what else falls in the span, a stock phrase or a rare name, is not controlled. \emph{Measurement.} Fact tokens come
+from a surface rule and are scored by exact match, so a correct spelling variant (\emph{M'Donald} for
+\emph{McDonald}) counts as a failure. With 150 test sentences, only 26 in the longest band, and one noise draw per
+sentence, we report trends rather than powered effects. \emph{Comparison.} The methods differ beyond the repair
+step: the LLM reads the garbled letters directly, BERT only through its reranking score; BERT predicts a word's
+pieces in parallel \citep{shen2020blank} and cannot produce words of more than three pieces; supervision, scale and
+pretraining differ; and the LLM may have seen \bln{}, which has been public since 2024. Format failures count as no
+repair, and the article variant uses gold context and is therefore an upper bound. Finally, all data are English
+London crime reporting, mostly from two weeklies (572 of 600 excerpts), and we test a single LLM.

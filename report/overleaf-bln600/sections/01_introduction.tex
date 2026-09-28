@@ -1,60 +1,62 @@
 \section{Introduction}
-% DRAFT 2 (2026-09-27). Budget ~1 page. Funnel: DH today -> OCR limits -> damage hits facts -> GenAI temptation
-% and risk -> gap -> RQ -> this experiment -> contributions. FACT SOURCE: notes/report_sources.md Sec. 1-4.
-% Every number and quote below was re-checked against the source PDF in ref_dump/ on 2026-09-27 (not just the
-% abstract). Two citations replaced this pass: bingham2010digitization and holley2009good were dropped from the
-% Zotero library (not independently accessible), so their claims now use nguyen2021survey and booth-etal-2024-bln600,
-% both already cited elsewhere in this section and both open-access PDFs in ref_dump/.
+% DRAFT 3 (2026-09-28). Budget ~1 page. Funnel unchanged.
+% Changes vs draft 2: (a) Booth claim restated as the paper states it (spread within one title; unreadable
+% pages excluded) -- Booth does NOT link the CER spread to page condition (Sec. 5: per-decade/per-publication
+% analysis "did not reveal any notable insights"). (b) 7% CER scoped to BLN600. (c) Similarity-metric claim now
+% cited: zhang2020bertscore App. A, Table 7, pair 12 (Monday/Tuesday). (d) Boros hallucination finding added
+% (Sec. 5 error analysis, Sec. 6 "usually degrade them"). (e) Gap sentence softened: Boros and Kanerva DO look
+% at noise level, but observed, not controlled. (f) RQ: "dates" dropped (fact rule has no date parsing).
 
 Digitised newspapers are now a core source for historical research. Digitisation lets scholars search and mine
 large collections by keyword rather than reading page by page \citep{nguyen2021survey}. Yet what historians search
 and mine is not the page itself but the text that an OCR engine read from a scan of it. OCR errors measurably change
-the results of quantitative analyses \citep{hill2019quantifying} and harm downstream NLP tasks \citep{vanstrien2020assessing},
-with named entities among the most affected \citep{hamdi2023indepth}. For 19th-century British newspapers the mean
-character error rate (CER) is about 7\%, but it ranges from 0.3\% to 44.5\% between excerpts of a single title, and
-this spread tracks the condition of the source page, not just the OCR engine: faded or physically damaged originals
-give the engine the least to work with \citep{booth-etal-2024-bln600}. For the British Library's own 19th-century
-newspaper archive, character accuracy reaches 83.6\% but word accuracy falls to 78\%, and accuracy for capitalised
-words and number groups drops further still, to 63.4\% and 64.1\% \citep{tanner2009measuring}. The words hit hardest
-are thus often the facts a historian searches for: names, places, dates and sums of money.
+the results of quantitative analyses \citep{hill2019quantifying} and harm downstream NLP tasks
+\citep{vanstrien2020assessing}, with named entities among the most affected \citep{hamdi2023indepth}. In BLN600, a
+corpus of 19th-century British newspaper excerpts, the mean character error rate (CER) is 7\%, but between excerpts
+of a single title it ranges from 0.3\% to 44.5\%, and pages too faded or damaged to read had to be left out of the
+corpus altogether \citep{booth-etal-2024-bln600}. For the British Library's own 19th-century newspaper archive,
+character accuracy reaches 83.6\% but word accuracy falls to 78\%, and accuracy for capitalised words and number
+groups drops further still, to 63.4\% and 64.1\% \citep{tanner2009measuring}. The words hit hardest are thus often
+the facts a historian searches for: names, places, dates and sums of money.
 
 Generative AI makes it tempting to repair such text automatically, but the evidence is mixed. Llama~2,
 instruction-tuned on BLN600, reduced the CER of its OCR by 54.5\%, against 23.3\% for a fine-tuned BART
 \citep{thomas2024leveraging}, while a study of 14 LLMs on several historical benchmarks found them ``anything but
-efficient'' at post-correction \citep{boros2024postcorrection}. There is also a deeper risk. A generative model always
-returns fluent text, even where the evidence for a word is gone, and such models are known to produce content that
-their input does not support \citep{ji2023survey}. For an archive, a plausible but wrong name is worse than visible
-noise, because the reader can no longer see that anything was damaged. Similarity-based metrics may hide this error
-too: a sentence with the wrong name can still score as close in meaning to the original.
+efficient'' at post-correction: they usually degraded the input, often by inventing text
+\citep{boros2024postcorrection}. This points to a deeper risk. A generative model always returns fluent text, even
+where the evidence for a word is gone \citep{ji2023survey}. For an archive, a plausible but wrong name is worse than
+visible noise, because the reader can no longer see that anything was damaged. Similarity-based metrics may hide
+this error too: BERTScore, for example, rates a translation that says \emph{Tuesday} where the reference says
+\emph{Monday} as highly similar \citep{zhang2020bertscore}.
 
-Existing post-OCR correction studies score whole documents at whatever error level the OCR happened to produce. They show that a
-model helps on average, but not how far repair can be trusted as damage grows, nor whether the facts inside the damaged
-region survive. We therefore ask:
+Existing post-OCR studies report error rates over whatever noise their OCR happened to produce. Where they break
+results down by noise level, that level is observed rather than controlled, and facts are not scored apart from the
+rest of the text. They thus show that a model helps on average, but not how far repair can be trusted as damage
+grows, nor whether the facts inside the damaged region survive. We therefore ask:
 
 \begin{quote}
 \textbf{RQ.} When the damaged words of a sentence are known and their garbled letters are visible, how much of the
-original wording, and in particular its names, numbers and dates, can a fine-tuned masked language model and a
-few-shot instruction-following LLM restore, and how does this change as the damaged share of the sentence grows?
+original wording, and in particular its fact words such as names, places and numbers, can a fine-tuned masked
+language model and a few-shot instruction-following LLM restore, and how does this change as the damaged share of
+the sentence grows?
 \end{quote}
 
-\noindent We split it into three sub-questions. \textbf{SQ1} (severity): does repair quality fall smoothly as damage
-grows, or break down at some level? \textbf{SQ2} (method): given identical input, does a fine-tuned masked language
-model or a few-shot LLM repair better? \textbf{SQ3} (metric validity): does semantic similarity overstate repair
-quality compared with exact fact recovery?
+\noindent We split it into three sub-questions. \textbf{SQ1} (severity): does repair quality fall smoothly as the
+damaged share of a sentence grows, or break down beyond some level? \textbf{SQ2} (method): given identical input,
+does a fine-tuned masked language model or a few-shot LLM repair better? \textbf{SQ3} (metric validity): does
+semantic similarity overstate repair quality compared with exact fact recovery?
 
 Answering these questions needs damage whose amount we control and whose original text we know, which real damaged
-pages cannot give. We therefore build a controlled experiment on BLN600 \citep{booth-etal-2024-bln600}, a corpus of
-600 newspaper excerpts with human gold transcriptions. In each of 150 test sentences we damage one block of words
-around a fact at five nested levels, from one word to 75\% of the sentence, with character noise calibrated on the
-corpus's own OCR errors. Both methods receive the same input: the intact context plus the garbled form of each damaged
-word, so that only the repair differs. We compare two GenAI families: masked infilling with BERT
-\citep{devlin2019bert}, fine-tuned on in-domain gold text and guided by letter similarity in the spirit of
-``context beats confusion'' \citep{evershed2014correcting}, and instruction-following generation with an open-weight
-LLM prompted with three solved examples. We score the repaired words with BERTScore \citep{zhang2020bertscore} for
-meaning and with a Fact Recovery Rate for exact facts, and we probe the LLM for memorised test text
-\citep{sainz2023contamination}. Repair here works on text only: we simulate the OCR output that damage produces, not
-the physical page, and we assume the damaged region is known; detecting it, and repairing directly from the scanned
-image with a vision-capable model, are both left to future work.
+pages cannot give. We therefore build a controlled experiment on BLN600 \citep{booth-etal-2024-bln600}: in each of
+150 test sentences we damage one block of words around a fact at five nested levels, from one word to 75\% of the
+sentence, with character noise calibrated on the corpus's own OCR errors. Both methods see the same input, the
+intact context plus the garbled form of each damaged word, so only the repair differs. We compare masked infilling
+with BERT \citep{devlin2019bert}, fine-tuned on in-domain gold text and guided by letter similarity in the spirit of
+``context beats confusion'' \citep{evershed2014correcting}, with an open-weight LLM prompted with three solved
+examples. We score the repaired words with BERTScore \citep{zhang2020bertscore} for meaning and with a Fact Recovery
+Rate for exact facts, and probe the LLM for memorised test text \citep{sainz2023contamination}. Repair works on text
+only and assumes the damaged region is known; detecting it, and repairing from the scanned image with a
+vision-capable model, are left to future work.
 
 Our contributions are (i) a fact-centred, graded damage benchmark on BLN600 with nested spans, so the same place
 gets worse from level to level; (ii) a controlled comparison of masked infilling and few-shot generation under
@@ -64,16 +66,12 @@ falls to the no-repair floor; (2) which method wins at low vs high damage, and w
 effect; (3) the size of the BERTScore vs Fact Recovery gap.}
 
 % ---- OPEN POINTS ----
-%  1. RESOLVED 2026-09-27: "IS BERT GENAI?" answered in Related Work (Sec. 2, citing Wang and Cho 2019 for
-%     "BERT can generate", plus the fallback reading of BERT as the in-domain baseline the LLM must beat).
-%  2. KNOWN LOCATION is a strong assumption; justified in Method (OCR engines flag low-confidence regions).
-%  3. RESOLVED 2026-09-27: two \todo{get citation} gaps closed. Content-checked against full PDF text
-%     (not just abstract) in ref_dump/: nguyen2021survey's own introduction states digitisation is "for the
-%     purpose of text processing by computers (e.g., search...), ... easier access ... by a much wider
-%     audience"; booth-etal-2024-bln600 Sec 3.2 states BLN600 source images include some "too faded or
-%     damaged to read" and that "older newspapers suffer with quality issues ... particularly those with
-%     faded low-contrast print." Also fixed: vanstrien2020assessing was cited for "named entities among
-%     the most affected", but that paper actually finds OCR errors have a SMALLER impact on NER than on
-%     sentence segmentation (its own words). Decoupled: vanstrien2020assessing now backs only the general
-%     "harm downstream NLP tasks" claim (accurate: that is the paper's own subject), and hamdi2023indepth
-%     alone backs "named entities among the most affected" (verified: "NEs are particularly affected").
+%  1. RESOLVED 2026-09-27: "Is BERT GenAI?" answered in Related Work.
+%  2. CHANGED 2026-09-28: KNOWN LOCATION must NOT be justified by "OCR engines flag low-confidence regions":
+%     evershed2014correcting Sec. 5.1 tried OCR character confidences and abandoned them as unreliable
+%     (punctuation almost never flagged). Justify instead by (a) the standard detection/correction split
+%     (rigaud2019icdar; nguyen2021survey) and (b) known-position restoration in prior work (assael2019restoring;
+%     lazar2021filling). Fix the matching sentence in Method 3.3.
+%  3. RESOLVED 2026-09-27: citation gaps closed; vanstrien/hamdi decoupled.
+%  4. NEW: if the Tuesday/Monday example feels too MT-specific, move it to Related Work (SQ3) and keep only
+%     "may hide this error too \citep{zhang2020bertscore}" here.

@@ -14,43 +14,43 @@ Database file #1: references.bib
 Warning--empty booktitle in vanstrien2020assessing
 You've used 28 entries,
             3782 wiz_defined-function locations,
-            959 strings with 16418 characters,
-and the built_in function-call counts, 26143 in all, are:
-= -- 2383
-> -- 1273
-< -- 24
-+ -- 504
-- -- 376
-* -- 1779
-:= -- 3670
+            957 strings with 16293 characters,
+and the built_in function-call counts, 25913 in all, are:
+= -- 2364
+> -- 1255
+< -- 25
++ -- 496
+- -- 370
+* -- 1755
+:= -- 3641
 add.period$ -- 126
 call.type$ -- 28
-change.case$ -- 301
+change.case$ -- 299
 chr.to.int$ -- 29
 cite$ -- 29
-duplicate$ -- 1567
-empty$ -- 1829
-format.name$ -- 469
-if$ -- 5823
+duplicate$ -- 1558
+empty$ -- 1815
+format.name$ -- 465
+if$ -- 5777
 int.to.chr$ -- 1
 int.to.str$ -- 1
-missing$ -- 333
+missing$ -- 329
 newline$ -- 142
 num.names$ -- 112
-pop$ -- 826
+pop$ -- 821
 preamble$ -- 1
-purify$ -- 237
+purify$ -- 235
 quote$ -- 0
-skip$ -- 1374
+skip$ -- 1370
 stack$ -- 0
-substring$ -- 1117
-swap$ -- 960
+substring$ -- 1092
+swap$ -- 951
 text.length$ -- 34
 text.prefix$ -- 0
 top$ -- 0
 type$ -- 252
 warning$ -- 1
-while$ -- 148
+while$ -- 146
 width$ -- 0
-write$ -- 394
+write$ -- 393
 (There was 1 warning)

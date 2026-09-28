@@ -1,9 +1,58 @@
 \section{Interpretation and Conclusion}
-% BUDGET: ~1 page. Course asks: are results related to the objective, can it be reached completely or gradually, what does it mean for the field.
-% FACT SOURCE: notes/report_sources.md Sec. 5 and 8.
-% P1 Answer RQ directly: how far repair can be trusted as damage grows (name the level where it breaks).
-% P2 SQ2: which method and why (link to asymmetries: LLM reads letters directly, BERT multi-token parallel prediction, scale, contamination).
-% P3 SQ3: does semantic similarity overstate repair? Give one concrete fluent-but-wrong example if available.
-% P4 Generality and use: what an archive should do (flag repaired facts, do not trust names/numbers after level X).
-% P5 Short conclusion + future work: damage detection, real OCR pairs, image-assisted repair (dossier v2 Sec. 10).
-\todo{Draft after results.}
+\label{sec:interpretation}
+% BUDGET: ~1 page. Course asks: are results related to the objective, reached completely or gradually, meaning
+% for the field. FACT SOURCE: notes/report_sources.md Sec. 5 and 8.
+% DRAFT 1 (2026-09-28): P2 explanations, P4 caveats and P5 are result-independent and can stay as written.
+% Everything in [BRACKETS] or \todo needs TEST numbers. Where the outcome can go two ways, both variants are
+% given as comments; delete the one that does not apply.
+
+% ---- P1: answer the RQ and SQ1 directly ----
+\todo{P1, after results.} The objective was to find how far text repair can be trusted as the damaged share of a
+sentence grows. [VARIANT A, breakpoint:] Repair holds up to [LEVEL]: there, the anchor fact is restored in
+[X]\% of sentences by the better method, against [Y]\% without repair. Beyond [LEVEL], anchor recovery falls to
+[Z]\%, close to the no-repair floor. [VARIANT B, smooth decline:] Anchor recovery falls steadily from [X]\% at one
+damaged word to [Z]\% at 75\%, with no single level at which repair stops working. The objective is therefore reached
+gradually rather than completely: [one sentence on which part of the damage range repair can be trusted with].
+% Use anchor recovery first (same word at every level), FRR second (mixture changes, Table 2).
+
+% ---- P2: SQ2, which method and why ----
+\todo{P2, first sentence after results: which method wins, at which levels, and whether a crossing survives on
+valid-only LLM scores.} Three differences between the methods can explain this pattern. First, the two methods use
+the garbled letters differently: BERT never sees them as input, only through the reranking term and one slot at a
+time (Sec.~\ref{sec:models}), whereas the LLM reads all garbled forms at once and can use one to interpret another.
+This should favour the LLM as spans grow. Second, BERT fills masked pieces in parallel, which makes multi-piece
+words hard to fill \citep{shen2020blank}, and our search stops at three pieces per slot, so the 3.5\% of fact slots
+that need more cannot be restored at all. Third, the two methods differ in supervision and scale: BERT is fine-tuned
+on in-domain text, the LLM has [N] times more parameters but sees only three examples. [If the contamination probe
+found hits: add that memorised text may inflate the LLM's scores on the flagged sentences.]
+% VARIANT (LLM wins at high damage): the first explanation fits; check that the gap holds on valid-only scores.
+% VARIANT (BERT wins throughout): in-domain fine-tuning outweighs joint access to the letters, in line with
+%   debaene2025evaluating, where fine-tuned seq2seq models beat generative ones.
+% VARIANT (crossing is a format effect): say so plainly, the LLM repairs as well as or better than BERT where it
+%   answers, but fails to answer in the required format at high damage.
+
+% ---- P3: SQ3, meaning vs facts ----
+\todo{P3, after results.} [VARIANT A, gap found:] Span BERTScore stays at [X] at the [LEVEL] level while fact recovery
+drops to [Y]\%, so semantic similarity overstates how much factual content is restored. For example, [one repair
+from the test split where a wrong but plausible name scores high on BERTScore and zero on fact recovery]. This
+matches earlier findings from summarisation and translation \citep{maynez2020faithfulness,hanna2021finegrained} and
+shows that they carry over to text repair. [VARIANT B, no gap:] Span BERTScore and fact recovery fall together, so
+on repaired spans semantic similarity does not overstate factual accuracy. A likely reason is that span-level
+scoring leaves out the context that inflates sentence-level similarity (Sec.~\ref{sec:metrics}).
+
+% ---- P4: generality and use for archives (caveats are result-independent) ----
+\todo{P4, first sentence after results: the practical threshold, e.g.\ ``names and numbers restored beyond
+[LEVEL] should not be trusted without a check''.} This threshold holds under our conditions: character noise
+calibrated on real but mild OCR errors, a damaged region that is known in advance, and newspaper pages legible
+enough to have been transcribed \citep{booth-etal-2024-bln600}. On real damaged pages, the threshold is more likely
+to be lower than higher. Whatever the method, an archive should not replace damaged text silently. Repaired words
+should stay marked, so that a reader can still see where the evidence was damaged; Ithaca's pairing of model
+predictions with historians' judgement shows one way to do this \citep{assael2022restoring}.
+
+% ---- P5: conclusion and future work (result-independent) ----
+\todo{P5, one-sentence summary of the answer after results.} Three extensions follow directly from our assumptions.
+First, repair should be combined with detecting the damaged region, which we took as given. Second, the results
+should be checked on real OCR errors from damaged pages rather than on calibrated synthetic noise. Third, repair
+could draw on the scanned image itself, whether through image-level degradation as a test bed
+\citep{hamdi2020assessing} or through vision-capable models that read the damaged page directly
+\citep[cf.][]{kanerva2025ocr}.
