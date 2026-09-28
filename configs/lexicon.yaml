@@ -1,0 +1,8 @@
+# Dictionary lookup baseline (notebook 2b). Nothing is tuned: the word list comes from the gold text of
+# the excerpts outside the sample, and each damaged word takes the closest entry (edit distance, ties by
+# frequency). A change to the method gives a new version, so old predictions are never read by mistake.
+version: v1
+
+# The gate for the test split, as for the other tracks. Set to true (and commit) once the dev run is
+# checked; notebook 2b then allows SPLIT = "test" (together with ALLOW_TEST = True).
+frozen: false
