@@ -23,7 +23,21 @@ Metrics & BERTScore, \frr{} (primary); exact match, repair gain, format failures
 % Levels are nested within the same sentence, so all comparisons are paired (per sentence: better / same / worse).
 % Tuning: lambda grid on dev only (lambda 8; FRR 0.042 -> 0.126 from lambda 1 to 8, flat after). Test split was opened per
 %   method only after its config was frozen (a code gate), so no setting was chosen on test.
-\todo{Draft 4.1 (about 6 lines).}
+The design crosses three factors inside the same 150 test sentences: five damage
+levels (1 word, then 10, 25, 50, 75\% of the sentence, plus a clean level 0), three
+length bands (20--29, 30--44, 45--60 words), and three repair settings (BERT +
+reranking, LLM few-shot, no repair), with LLM + full article as a secondary check.
+All five damage levels reuse the same sentence and the same anchor word, so every
+comparison across levels is paired: for one sentence we can ask directly whether
+repair got better, worse, or stayed the same as damage grew, rather than comparing
+averages over different sentences. The 20 dev sentences (disjoint from test, held
+out from all reported numbers) were used only to pick settings before the test
+split was scored: the reranking weight $\lambda$ was chosen on dev alone
+(Section~\ref{sec:models}), and each method's setting was frozen by a code gate
+before its test rows were touched, so nothing reported here was chosen by looking
+at test results. One setting was still open at the time of writing, as already
+flagged in Section~\ref{sec:models}: the LLM's exact model, host and prompt
+version.
 
 \subsection{Metrics}
 \label{sec:metrics}
@@ -35,7 +49,24 @@ Metrics & BERTScore, \frr{} (primary); exact match, repair gain, format failures
 % DEVIL'S ADVOCATE (SQ3): a wrong name can still get a high BERTScore; that is the reason for FRR.
 %   Repair gain per row is dominated by short spans (one wrong word in a 1-word span gives CER > 1). Decide: pooled CER?
 % OPTIONAL: split FRR into visible vs dropped fact slots (68 of 692 fact slots have no letters).
-\todo{Draft 4.2 (about 8 lines).}
+We score the repaired span, not the whole sentence, since only the span was
+touched. BERTScore F1 \citep{zhang2020bertscore} compares the repaired span to the
+gold span using \texttt{roberta-large} (layer 17), rescaled against a baseline so a
+score can go below 0; this is our primary meaning-level metric. \frr{} is our
+primary fact-level metric: the share of gold fact tokens in the span that the
+repair restores exactly in their slot, punctuation ignored. As secondary metrics we
+report exact-word match, character error rate (CER, a Levenshtein distance
+normalised by gold span length) and repair gain (CER before minus CER after), the
+LLM's format-failure rate, and a contamination probe \citep{sainz2023contamination}
+that checks whether the LLM simply recites a memorised continuation of a clean test
+sentence rather than genuinely repairing damaged ones.\footnote{Repair gain is
+reported as a secondary number because it is dominated by short spans: one wrong
+character in a one-word span already gives CER $>1$, so it does not aggregate
+cleanly across levels; we do not pool it into a single figure.} A wrong-length LLM
+answer is a format failure and is scored as no repair, never retried or hand-fixed.
+BERTScore and \frr{} are both reported because they can disagree on purpose (SQ3):
+a repair that substitutes a wrong but plausible name can still score well on
+meaning while scoring zero on \frr{}, which is exactly the gap we want to measure.
 
 \subsection{Results}
 % Figure 2: level (x) vs span BERTScore and FRR (y), one line per method, no repair dashed. From notebook 04, TEST split.

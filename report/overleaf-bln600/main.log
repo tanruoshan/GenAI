@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (MiKTeX 26.5) (preloaded format=pdflatex 2026.9.27)  27 SEP 2026 20:28
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (MiKTeX 26.5) (preloaded format=pdflatex 2026.9.27)  28 SEP 2026 15:19
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -512,21 +512,22 @@ Underfull \vbox (badness 10000) has occurred while \output is active []
 LaTeX Font Info:    Font shape `T1/zi4/m/n' will be
 (Font)              scaled to size 10.95pt on input line 30.
  [3]
-Underfull \hbox (badness 10000) in paragraph at lines 73--89
+<figures/nested_spans.pdf, id=229, 498.663pt x 184.28851pt>
+File: figures/nested_spans.pdf Graphic file (type pdf)
+<use figures/nested_spans.pdf>
+Package pdftex.def Info: figures/nested_spans.pdf  used on input line 61.
+(pdftex.def)             Requested size: 219.08614pt x 80.96626pt.
+
+Underfull \hbox (badness 10000) in paragraph at lines 84--100
 \T1/ptm/b/n/10.95 (+20) (a) BERT + rerank-ing. \T1/ptm/m/n/10.95 (+20) We fine-tune
  []
 
-[4]) (sections/04_experiments.tex) (sections/05_interpretation.tex
-Underfull \vbox (badness 1902) has occurred while \output is active []
-
-) (sections/06_limitations.tex) (main.bbl [5]
+[4 <./figures/nested_spans.pdf>]) (sections/04_experiments.tex [5]) (sections/05_interpretation.tex) (sections/06_limitations.tex) (main.bbl [6]
 Underfull \hbox (badness 10000) in paragraph at lines 154--162
 \T1/ptm/m/n/10 (+20) Horowitz, Nathan Wasser-man, and Gabriel
  []
 
-[6]) (sections/07_appendix_outline.tex) [7
-
-] (main.aux)
+) (sections/07_appendix_outline.tex) [7] (main.aux)
  ***********
 LaTeX2e <2026-06-01>
 L3 programming layer <2026-08-10>
@@ -535,17 +536,17 @@ Package rerunfilecheck Info: File `main.out' has not changed.
 (rerunfilecheck)             Checksum: B42722485442013C2CCB96AC3DF13978;1530.
  ) 
 Here is how much of TeX's memory you used:
- 15902 strings out of 467441
- 255447 string characters out of 5407591
- 719958 words of memory out of 5000000
- 44493 multiletter control sequences out of 15000+600000
- 693899 words of font info for 359 fonts, out of 8000000 for 9000
+ 15928 strings out of 467441
+ 255921 string characters out of 5407591
+ 717286 words of memory out of 5000000
+ 44505 multiletter control sequences out of 15000+600000
+ 694514 words of font info for 367 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 89i,11n,93p,1050b,630s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 89i,11n,93p,1050b,604s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <C:/Users/Sunny/AppData/Local/Programs/MiKTeX/fonts/type1/public/inconsolata/Inconsolata-zi4r.pfb><C:/Users/Sunny/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi10.pfb><C:/Users/Sunny/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi6.pfb><C:/Users/Sunny/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi7.pfb><C:/Users/Sunny/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi9.pfb><C:/Users/Sunny/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Users/Sunny/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr9.pfb><C:/Users/Sunny/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/Sunny/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy9.pfb><C:/Users/Sunny/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/symbols/msam10.pfb><C:/Users/Sunny/AppData/Local/Programs/MiKTeX/fonts/type1/urw/times/utmb8a.pfb><C:/Users/Sunny/AppData/Local/Programs/MiKTeX/fonts/type1/urw/times/utmr8a.pfb><C:/Users/Sunny/AppData/Local/Programs/MiKTeX/fonts/type1/urw/times/utmri8a.pfb>
-Output written on main.pdf (7 pages, 242835 bytes).
+Output written on main.pdf (7 pages, 265471 bytes).
 PDF statistics:
- 389 PDF objects out of 1000 (max. 8388607)
- 60 named destinations out of 1000 (max. 500000)
- 60513 words of extra memory for PDF output out of 61914 (max. 10000000)
+ 441 PDF objects out of 1000 (max. 8388607)
+ 62 named destinations out of 1000 (max. 500000)
+ 60518 words of extra memory for PDF output out of 61914 (max. 10000000)
 

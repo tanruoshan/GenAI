@@ -26,8 +26,8 @@
 Given a sentence whose damaged span is known and whose garbled letters are visible, the task is to predict one word
 per damaged position; both repair methods take the same input and are scored by the same code (Sec.~\ref{sec:slot}).
 We build this task on \bln{} \citep{booth-etal-2024-bln600}, 600 excerpts of London crime reporting from 1830--1890s
-British newspapers (572 from three related weeklies), each with its source image, OCR output and a gold
-transcription, released under CC BY-NC-ND. We split excerpts into sentences with \texttt{pysbd} and pool sentences of
+British newspapers, each with its source image, OCR output and a gold
+transcription. We split excerpts into sentences with \texttt{pysbd} and pool sentences of
 20--60 words with at least two \emph{fact tokens}: a number, any word containing a digit or pound sign, or a
 capitalised word that is not the first word of the sentence (a short stop list excludes titles such as Mr, Mrs, The).
 This is a surface rule, not a named-entity tagger: it catches "Old" in "Old Bailey" and misses a lower-cased fact, and
@@ -39,20 +39,31 @@ never scored as a result.
 \subsection{Damage Simulation}
 \label{sec:damage}
 For each sentence we draw one anchor among its fact tokens -- always damaged, never dropped -- and damage one
-contiguous span of $k$ words around it, with $k$ set so the span covers 1 word, then 10, 25, 50 or 75\% of the
-sentence (half-up rounding); spans are nested, so the same place in the sentence gets worse from level to level
-rather than moving around. Each damaged word is dropped outright with probability 0.10 (never the anchor); a
+contiguous span of $k$ words that centers on it, with $k$ set so the span covers 1 word, then 10\%, 25\%, 50\% or
+75\% of the sentence (half-up rounding). Every larger span centers on the same anchor and fully contains every
+smaller one (Figure~\ref{fig:spans}), so a higher damage level adds more damaged words around a fixed center; it
+does not make any single word more damaged; the per-word alteration intensity below is drawn the same way
+regardless of the span size. Each damaged word is dropped outright with probability 0.10 (never the anchor); a
 surviving word has 20--30\% of its letters and digits altered, about 15\% of those by deletion (at most two per
 word) and the rest by substitution, drawn from a confusion table calibrated on 29 held-out \bln{} excerpts (85.7\% of
 substitutions), a capitalised table entry (3.6\%), a look-alike map such as O/0 or rn/m (4.9\%), or a random
 same-kind character (5.8\%); punctuation is never touched. The 20--30\% band was chosen to sit around the median
 per-word character error rate we measured on those held-out excerpts (0.25, IQR 0.17--0.40); an earlier 40--60\%
-setting sat above that range and was dropped. This calibration comes from mild, real OCR errors on aligned words, so
+setting sat above that range and was dropped. This calibration comes from real OCR errors on aligned words, so
 it models the kind of noise OCR output already contains, not a direct simulation of a torn or stained physical page
 (the Limitations section returns to this). Table~\ref{tab:damage} shows the result on the test split: sentence-level
 CER grows roughly in step with real \bln{} OCR error rates, but the share of damaged words that are themselves facts
 falls from 100\% at the 1-word level to 17\% at 75\%, so "fact recovery" is not measuring the same mixture of words
 at every level. About one in ten fact slots is dropped outright, leaving no visible letters for that fact at all.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/nested_spans.pdf}
+\caption{The damaged span at each level, for one example 24-word sentence. Every span centers on the same anchor
+word (the seeded fact token) and fully contains every smaller span, so a higher level does not change how heavily
+any single word is damaged -- only how many words around the anchor are included.}
+\label{fig:spans}
+\end{figure}
 
 \subsection{Shared Slot Input}
 \label{sec:slot}
