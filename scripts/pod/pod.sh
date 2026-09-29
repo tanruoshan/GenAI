@@ -68,7 +68,7 @@ rsync_to() {  # rsync_to ID SRC... DEST (DEST relative to REMOTE)
   local id="$1"; shift
   local ip port; read -r ip port <<< "$(endpoint "$id")"
   local dest="${!#}"; set -- "${@:1:$#-1}"
-  rsync -az -e "ssh ${SSH_OPTS[*]} -p $port" "$@" "root@$ip:$REMOTE/$dest"
+  rsync -rtz -e "ssh ${SSH_OPTS[*]} -p $port" "$@" "root@$ip:$REMOTE/$dest"  # no owner or group: the pod volume refuses chown
 }
 
 case "${1:-}" in
