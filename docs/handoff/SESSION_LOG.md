@@ -26,3 +26,21 @@ Append only: one entry per session, newest at the bottom. Each entry: date, sess
 - Report: no day-by-day plan; anything we want credit for must be in the paper (the defence is based on it); BART fine-tuning only if it fits in the paper.
 
 **Handed on** to "GenAI Worker 1" on 2026-09-29: next step = extend notebook 4 on dev (see `HANDOFF.md`).
+
+## 2026-09-29: "GenAI Worker 1" (took over as project lead)
+
+**Built and merged (branch `simon/baselines` into `writing`)**
+- PR #2 (`e68e837`, merge `cc39728`): notebook 4 scores five methods; `src/blnrepair/evaluation.py` (row scores with anchor recovery, visible and dropped fact slots, pooled CER and repair gain; bootstrap CIs over sentences; exact McNemar; Wilcoxon; Holm; the SQ3 rate) with tests; `scipy==1.17.1`.
+- PR #3 (merge `efb3b80`): BART fine-tuned as a denoiser (`scripts/train_bart.py`, `scripts/run_bart.py`, `src/blnrepair/bart_data.py`, `configs/bart_ft.yaml`, `configs/bart_repair.yaml`, notebook `02c_bart.ipynb`, `plots.fit_curves`), RunPod helper `scripts/pod/pod.sh`, notebook 4 with six methods.
+- Not yet merged: `56f6682` (BART frozen), `bd84f7e` (BART test predictions, 750 rows, 40 format failures; pod upload retries).
+
+**Decided by Simon**
+- Statistics: bootstrap CIs over sentences (reason must be in the Method text); SQ3 measure and the two tested pairs delegated to Claude (see the deviations log); every choice must be defensible in the oral defence.
+- BART: do it; everything on RunPod (the local smoke run crashed the 8 GB laptop twice); weights downloaded, pods terminated after each run (no idle cost); no further tuning ("more effort would be in the wrong place"); frozen and run on test.
+- Report drafts go into their own file `report/drafts/simon_sections.tex` (option 1).
+
+**Numbers**
+- Report length (main.pdf on `writing`, 28 Sep build, identical to a fresh compile): content ends at about 6.85 of 9 pages; pending parts estimated at about 1.95 pages minus 0.3 of placeholders; a BART paragraph plus one column about 0.35 to 0.4 pages.
+- BART training: best epoch 8, validation exact 0.672, probe 0.879 (learns training sentences), validation loss flat from epoch 6. Pods: 0.20 $ + 0.27 $.
+
+**Handed on** to the next session (or tomorrow): report drafts, then notebook 4 on test once Shan's run is complete (see `HANDOFF.md`).

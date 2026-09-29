@@ -1,6 +1,6 @@
 # Handoff: current state (Simon's sessions)
 
-Last updated: 2026-09-29, by session "GenAI Projekt Einstieg", for the next session ("GenAI Worker 1").
+Last updated: 2026-09-29 (night), by session "GenAI Worker 1" (the project lead since 2026-09-29), for its own next day or the next session.
 
 This file is the **current state**; it is rewritten at every handoff. The history is in `SESSION_LOG.md` (append only). Design decisions and numbers are in the deviations log at the end of `CLAUDE.md` (newest entries at the bottom). If this file and the code disagree, the code wins; say so.
 
@@ -34,26 +34,20 @@ This file is the **current state**; it is rewritten at every handoff. The histor
 
 ## Current state
 
-- **Frozen and done (test predictions stored, never scored yet):** BERT without dictionary (`bert_rerank_ftv1-l8-b5-n10-test`), dictionary lookup (`lexicon_v1-test`), BERT with dictionary candidates (`bert_rerank_ftv1-l64-b5-n10-x5-test`). All four configs have `frozen: true` (`bert_repair`, `bert_repair_lex`, `lexicon`, `llm`).
-- **Running (Shan):** the LLM test run (Qwen3-30B-A3B via SAIA: few-shot v4 and few-shot + article v3, plus the probe; about 1,650 requests over 2 days). Its files will be `runs/preds/llm_fewshot_v4-qwen3-30b-a3b-instruct-2507-exb46768-test.jsonl`, `llm_fewshot_article_v3-...-test.jsonl`, `llm_probe_v1-...-test.jsonl`.
-- **Merged:** PR #1 (dictionary baseline + BERT with dictionary candidates) into `writing` at `c9a7487`. `simon/baselines` = `writing` + nothing new yet (except this handoff).
-- **Nobody has seen test scores.** Notebook 4 has no gate of its own (it reads `SPLIT`); it scores a method on a split only when all its rows exist. Do not run it with `SPLIT = "test"` until the evaluation is final (see below).
-- Dev reference numbers (all 100 dev rows; exact words / Fact Recovery Rate): BERT no dictionary 0.267 / 0.126; lookup 0.528 / 0.426; BERT + dictionary 0.619 / 0.560. Qwen few-shot on the 15 scored dev sentences (notebook 4): exact 0.559, FRR 0.464, 7/75 format failures.
+- **Frozen, test predictions stored, never scored (6 methods):** BERT without dictionary (`bert_rerank_ftv1-l8-b5-n10-test`), dictionary lookup (`lexicon_v1-test`), BERT + dictionary (`bert_rerank_ftv1-l64-b5-n10-x5-test`), **BART** (`bart_ftv1-greedy-test`, 40 of 750 format failures, a count only). Configs `bert_repair`, `bert_repair_lex`, `lexicon`, `llm`, `bart_repair` all have `frozen: true`.
+- **Running (Shan):** the LLM test run (Qwen3-30B-A3B: few-shot v4, few-shot + article v3, probe). Files: `runs/preds/llm_fewshot_v4-qwen3-30b-a3b-instruct-2507-exb46768-test.jsonl`, `llm_fewshot_article_v3-...-test.jsonl`, `llm_probe_v1-...-test.jsonl`.
+- **Merged into `writing`:** PR #1 (dictionary methods), PR #2 (notebook 4: five methods, bootstrap CIs, McNemar/Wilcoxon with Holm, SQ3 rate), PR #3 (BART, notebook 2c, notebook 4 with six methods), at `efb3b80`. **Not yet merged:** `simon/baselines` commits `56f6682` (BART frozen) and `bd84f7e` (BART test predictions, pod upload retries).
+- **Notebook 4 is final on dev** (six methods). Nobody has seen test scores. Run it with `SPLIT = "test"` exactly once, after Shan's LLM files are complete.
+- **BART (notebook 2c):** `facebook/bart-base` fine-tuned on the training pool damaged by our generator, best epoch 8 of 10, 22.5 min on a RunPod A40; weights in `models/bart_ft_v1/` (local only, sha256 in `runs/bart_ft_v1.sha256`). Everything BART runs on a pod (`scripts/pod/pod.sh`): **never train or run BART on the laptop (8 GB; it crashed twice)**. RunPod balance 24.49 $.
+- Dev reference (15 scored sentences, span BERTScore 1w / 75): BART 0.83 / 0.67, BERT + dictionary 0.85 / 0.43, few-shot 0.86 / 0.17, lookup 0.73 / 0.40. No paired test significant on dev (expected with 15 sentences).
 
 ## Next steps (in this order)
 
-1. **Extend notebook 4 on `simon/baselines`, on dev first** (Simon's go; Shan is not editing notebook 4). Add:
-   - the two new methods next to BERT and the LLM: "dictionary lookup" (`lexicon`, `lexicon_version(load_lexicon_config(), SPLIT)`) and "BERT + dictionary" (`bert_rerank`, `repair_version(load_repair_config(ROOT / "configs" / "bert_repair_lex.yaml"), SPLIT)`); keep "BERT (fine-tuned)" as the no-dictionary reference (for the report: an ablation line, to save space);
-   - what Bea's `\todo`s in `report/overleaf-bln600/sections/04_experiments.tex` ask for: 95% bootstrap CIs over sentences (10,000 resamples) for every cell of the results table; per level, McNemar's test on anchor recovery and a Wilcoxon signed-rank test on span BERTScore (main pair: BERT + dictionary vs LLM few-shot); anchor recovery; Fact Recovery Rate split into visible vs dropped fact slots (slots carry `anchor`, `fact`, `dropped` flags from `build_slots`); span CER pooled per level and pooled repair gain; LLM scores over valid answers only; sentence-level BERTScore (already computed, column "BERTScore sentence");
-   - one number for SQ3, e.g. the share of rows with a high span BERTScore but a wrong fact (fix the threshold on dev before test).
-   - Functions over about 10 lines go to `src/blnrepair/` with tests; notebook cells stay thin. Keep the fixed method order and colours (`plots.level_lines`, `ORDER`). The scored rows stay as they are (5 few-shot example sentences left out on dev; all 150 sentences on test).
-   - Then commit, PR into `writing`, self-merge.
-2. **Report drafts for Simon to pass to Bea and Shan** (ask Simon where they should go before editing any `.tex` file; the sections belong to Bea): hypotheses H1 to H3 (+ H2b) for the Introduction (draft in `SESSION_LOG.md`, 2026-09-28); two short Method paragraphs (dictionary lookup as the "confusion only" side of "context beats confusion", Evershed and Fitch 2014, already cited; dictionary candidates for BERT); fixes still open in Method/Intro/Table 2: the LLM is Qwen3-30B-A3B-Instruct-2507, **5** solved examples (one per level), numbered slots, frozen (the text still says Llama and three examples).
-3. **When Shan's LLM test run is complete:** run notebook 4 once with `SPLIT = "test"`, commit the executed notebook, and hand the tables and the figure to the team for the Results section.
-4. **Optional, only if it fits in the paper and the team agrees:** fine-tune BART-base (the lecture's denoising model) on the training pool damaged with our own generator, on Simon's RunPod A40 (about $0.45 to $0.50 per hour; his thesis scripts show the RunPod REST workflow). Not started.
+1. **Report drafts (decided: option 1)** into a new file `report/drafts/simon_sections.tex` on `simon/baselines` (Bea's sections stay untouched; she takes over what she wants). Contents: hypotheses H1 to H3 + H2b for the Introduction (draft in `SESSION_LOG.md`, 2026-09-28); Method paragraphs for the dictionary lookup (Evershed and Fitch 2014), BERT + dictionary, and BART (trained on our own noise: optimistic, say so); the statistics paragraph (bootstrap over sentences and why, McNemar exact, Wilcoxon, Holm, only the two pre-stated pairs tested; references Koehn 2004, Dror et al. 2018, Dietterich 1998: add to `references.bib` if missing); the SQ3 measure (1 - AUC, anchor, per method); Limitations additions (single training run and seed; BART on in-distribution noise); fixes in Bea's text: the LLM is Qwen3-30B-A3B-Instruct-2507, **5** solved examples (one per level), numbered slots. Space: the report now ends at about 6.85 pages of content, estimated 8.5 to 8.9 with all pending parts (limit 9, references not counted); compact figures across both columns save space.
+2. **When Shan's LLM test run is complete:** check the three files (750 / 750 / 150 rows), run notebook 4 once with `SPLIT = "test"`, commit the executed notebook, PR into `writing`, hand tables and figure to the team for Results.
+3. Then Results text, Interpretation (P1 to P5 in `05_interpretation.tex`), Abstract, with the team.
 
 ## Open decisions (ask Simon)
 
-- Where the report drafts go (own `.tex` file on the branch, or a message to Bea).
-- Whether BART fine-tuning happens at all.
-- The choice `lex_n` 5 / lambda 64 was made by the agreed rule; `lex_n` 50 at lambda 32 has a slightly higher exact rate on dev (0.628 vs 0.619, noise level). Simon has not objected; changing it would be a new test run under a new version name (still clean, since nobody has seen test scores).
+- The choice `lex_n` 5 / lambda 64 (by the agreed rule; `lex_n` 50 / lambda 32 is 0.628 vs 0.619 exact on dev, noise level). Simon has not objected.
+- Which methods go into the main results table and which only into an ablation line (proposal: main = lookup, BERT + dictionary, few-shot, BART; ablation = BERT without dictionary, few-shot + article).
