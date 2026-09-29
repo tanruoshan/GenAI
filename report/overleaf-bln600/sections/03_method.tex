@@ -25,8 +25,9 @@ and a gold transcription. We split excerpts into sentences with \texttt{pysbd} a
 with at least two \emph{fact tokens}: a number, any word containing a digit or pound sign, or a capitalised word that
 is not the first word of the sentence (a short stop list excludes titles such as Mr, Mrs, The). This is a surface
 rule, not a named-entity tagger: it catches ``Old'' in ``Old Bailey'', misses a lower-cased fact, and flags dates
-only through capitalisation or digits. \todo{Optional: manual precision on 100 sampled fact tokens, e.g.\ ``X\% are
-names, places, numbers or dates''.} The pool holds 3,123 sentences from 592 excerpts. From it we draw, with a fixed
+only through capitalisation or digits.
+% (removed 2026-09-29: optional todo, manual precision on 100 sampled fact tokens; not done before submission)
+ The pool holds 3,123 sentences from 592 excerpts. From it we draw, with a fixed
 seed, 150 test and 20 dev sentences from 157 excerpts (at most three per excerpt, no excerpt in both splits,
 balanced across three sentence-length bands); dev is used only for tuning and is never scored as a result.
 
@@ -107,7 +108,7 @@ and correction \citep{nguyen2021survey,rigaud2019icdar} and the known-position s
 \begin{sloppypar}
 \textbf{(a) BERT + reranking.} We fine-tune \texttt{bert-base-cased} \citep{devlin2019bert} (110M parameters; cased
 because fact tokens are partly defined by capitalisation) on clean gold text from the 443 excerpts outside the
-sample (2,939 sentences; a further 10\% of these excerpts held out for validation, with zero excerpt or sentence
+sample (2,939 sentences, of which those from 10\% of the excerpts are held out for validation, with zero excerpt or sentence
 overlap with test or dev, which we verified directly). Training mirrors inference: for each target word, span words
 before it are left as gold text, the target is masked with its true number of subword pieces, and later span words
 each become one \texttt{[MASK]}. Fine-tuning settings are in Table~\ref{tab:settings}; the best checkpoint

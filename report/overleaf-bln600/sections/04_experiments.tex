@@ -39,8 +39,7 @@ The design crosses three factors inside the same 150 test sentences: five damage
 and 75\% of the sentence), three length bands (20--29, 30--44 and 45--60 words), and the repair methods of
 Sec.~\ref{sec:models} (Table~\ref{tab:design}). A clean level 0 serves only the contamination probe
 (Sec.~\ref{sec:metrics}). All damage levels reuse the same sentence and the same anchor word, so every comparison across levels is
-paired: for one sentence we can ask directly whether repair got better, worse or stayed the same as damage grew,
-rather than comparing averages over different sentences. The 20 dev sentences, disjoint from test, were used only to
+paired within the same sentence. The 20 dev sentences, disjoint from test, were used only to
 pick settings (Sec.~\ref{sec:models}); five of them are the LLM's examples, so 15 are scored. Each method's setting
 was frozen by a code gate before its test rows were touched, and all test scores were computed once, by one
 notebook, after every method's predictions were stored.
@@ -61,12 +60,12 @@ We score the repaired span, not the whole sentence, since only the span was touc
 \citep{zhang2020bertscore} compares the repaired span with the gold span using \texttt{roberta-large} (layer 17),
 rescaled against a baseline so that a score can go below 0; this is our primary meaning-level metric. We also report
 sentence-level BERTScore, where the intact context can raise the score. \frr{} is our primary fact-level metric: the
-share of gold fact tokens in the span that the repair restores exactly in their slot, punctuation ignored. Because
+share of gold fact tokens in the span that the repair restores exactly in their slot, punctuation ignored, averaged over sentences. Because
 the share of facts among damaged words falls as the span grows (Table~\ref{tab:damage}), we also report recovery of
 the anchor alone, which is the same word at every level and so gives a clean paired series for SQ1, and we split
 \frr{} into fact slots with visible letters and dropped slots, which the methods must fill from context alone.
 
-As secondary metrics we report exact-word match (the share of all span words restored exactly), span CER pooled per
+As secondary metrics we report exact-word match (the share of span words restored exactly, averaged over sentences), span CER pooled per
 level (all character edits divided by all gold characters of that level), repair gain (pooled CER before minus
 after repair),\footnote{We pool CER per level rather than averaging it per row, because on a one-word span a single
 wrong or over-long word can already give a row CER of 1 or more, so short spans would dominate the mean.} the LLM's
@@ -86,42 +85,49 @@ A value of 0 means BERTScore always ranks the right fact higher; 0.5 means it ca
 
 \subsection{Results}
 \label{sec:results}
-% Figure 2: level (x) vs span BERTScore and FRR (y), one line per method, no repair dashed, anchor recovery as
-%   a separate panel if space allows. From notebook 04, TEST split. CIs as shaded bands.
-% Table 3 below. Table 4 (optional): level x band, to separate damaged share from absolute gap length (SQ1).
-\begin{table}[t]
+% All numbers: notebooks/04_evaluation.ipynb, the one run on the TEST split (2026-09-29). Tables and figure are
+% generated from its outputs by scripts/paper_results.py; nothing here is recomputed.
+\input{tables/results}
+
+\begin{figure*}[t]
 \centering
-\small\setlength{\tabcolsep}{4pt}
-\begin{tabular}{lccccc}
-\toprule
-Level & BERT+dict. & LLM & Lookup & BART & None \\
-\midrule
-\multicolumn{6}{l}{\textit{BERTScore (span)}} \\
-1w   & \pending & \pending & \pending & \pending & \pending \\
-10\% & \pending & \pending & \pending & \pending & \pending \\
-25\% & \pending & \pending & \pending & \pending & \pending \\
-50\% & \pending & \pending & \pending & \pending & \pending \\
-75\% & \pending & \pending & \pending & \pending & \pending \\
-\midrule
-\multicolumn{6}{l}{\textit{\frr{}}} \\
-1w   & \pending & \pending & \pending & \pending & \pending \\
-10\% & \pending & \pending & \pending & \pending & \pending \\
-25\% & \pending & \pending & \pending & \pending & \pending \\
-50\% & \pending & \pending & \pending & \pending & \pending \\
-75\% & \pending & \pending & \pending & \pending & \pending \\
-\bottomrule
-\end{tabular}
-\caption{Test results, 150 sentences per level. None = no repair; BART is descriptive only. BERT without dictionary
-and LLM + article are reported in the text. \todo{95\% CIs per cell (notebook 4); LLM and BART format failures per
-level; LLM valid-only scores (footnote).}}
-\label{tab:results}
-\end{table}
-% Report in this order: (1) SQ1 curve shape and breakpoint, on anchor recovery first, then FRR; (2) band effect;
-%   (3) SQ2 paired BERT + dict. vs LLM per level (H2) and LLM vs lookup on fact words (H2b), Holm-corrected;
-%   (4) SQ3 BERTScore vs FRR gap and the 1 - AUC rate (H3), with one concrete wrong-name example;
-%   (5) LLM and BART format-failure rates and where they occur; (6) article vs few-shot and BERT without dict.
-%   (one sentence each); (7) BART, descriptively, with its caveat; (8) contamination rate on 116 sentences.
-% WATCH (from dev, to check on test): on dev the methods crossed at 50-75% only because the LLM's format failures
-%   are all there and are scored as no repair. If test shows the same, the valid-only scores are the evidence:
-%   say the crossing is a format effect, not better repair.
-\todo{Fill after the LLM test run and notebook 04 on test.}
+\includegraphics[width=\textwidth]{figures/results_levels.pdf}
+\caption{Test scores by damage level (150 sentences per level), with 95\% bootstrap bands. The dotted line is
+the LLM over its valid answers only (a shrinking subset at 50\% and 75\%, Table~\ref{tab:format}).}
+\label{fig:results}
+\end{figure*}
+
+\input{tables/format}
+
+\paragraph{Severity (SQ1).} Every method stays well above the no-repair floor, and we find no single level at
+which repair breaks down (Table~\ref{tab:results}, Figure~\ref{fig:results}). Span BERTScore falls for all methods as the span grows,
+but the fact scores of the letter-based methods fall only slightly: BERT + dictionary restores the anchor in 58\% of
+sentences at one damaged word and in 53\% at 75\%, and the context-free lookup in 51\% at every level. The LLM falls
+from 49\% to 25\%, most between 25\% and 50\%, BART from 47\% to 36\%; \frr{} follows the same pattern. Dropped fact words are almost never
+restored (at most 6\% for BERT + dict., 23\% for BART, on few slots). The LLM's decline is steepest in the longest
+sentences (span BERTScore below zero at 75\%), while BERT + dictionary stays at 0.39 to 0.43 in all length bands.
+
+\paragraph{Method (SQ2).} The LLM never restores more anchors than BERT + dictionary, which is ahead at every level
+(26 to 55 sentences where only it restores the anchor, against 13 to 16), significantly at 50\% and 75\% on both
+tests (Holm-adjusted $p < 0.01$) but not below ($p > 0.13$). The lookup also beats the LLM on anchors and span
+BERTScore at 50\% and 75\% ($p \le 0.04$); the LLM's only significant advantage over it is span BERTScore at 10\%
+($p = 0.039$), with no significant difference in anchor recovery. Descriptively, BERT + dictionary leads the lookup by only 0.01 to
+0.07 in \frr{}.
+
+\paragraph{Format failures.} The LLM returned the wrong number of words in 106 of 750 answers (14\%), 103 of them at
+50\% and 75\% (Table~\ref{tab:format}). Over its valid answers, its span BERTScore at 75\% is 0.40, as for BERT +
+dictionary, but its \frr{} stays lower (0.39 against 0.48); valid answers are a selected subset, so this is
+descriptive only.
+
+\paragraph{Metric validity (SQ3).} Beyond one word, the chance that a repair with the wrong anchor scores at least
+as high in span BERTScore as one with the right anchor is 0.11 to 0.45 for every main method, highest for BERT +
+dictionary and the lookup at 75\% (0.45, 0.43). BART shows the gap directly:
+from 10\% on it has the highest span BERTScore of the main methods (0.67 to 0.50) but restores fewer facts than BERT
++ dictionary at every level, writing for instance \emph{Alexander Fleming} for \emph{Alexander Tcmpl} (gold
+\emph{Temple}) and \emph{Burnley} for \emph{Hacley} (gold \emph{Hanley}).
+
+\paragraph{Ablations and contamination.} Without dictionary candidates, BERT restores almost no facts beyond one word
+(\frr{} 0.13 to 0.04) and makes the span worse than the damage (pooled repair gain $-0.18$ to $-0.34$). The article
+as context raises the LLM's \frr{} by 0.10 to 0.19, the highest fact scores of all up to 25\%, but its context is clean gold
+text, which real pages would not give. The probe found no near-verbatim continuation in 116 test sentences (median similarity
+0.26, maximum 0.51).

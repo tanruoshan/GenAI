@@ -71,9 +71,9 @@ vision-capable model, are left to future work.
 Our contributions are (i) a fact-centred, graded damage benchmark on BLN600 with nested spans, so the same place
 gets worse from level to level; (ii) a controlled comparison of masked infilling and few-shot generation under
 identical input and scoring, measured against a non-GenAI lookup; and (iii) a fact-level metric next to BERTScore that shows where semantic similarity and
-factual accuracy part ways. \todo{Key outcomes, from the TEST split only: (1) the level at which Fact Recovery Rate
-falls to the no-repair floor; (2) which method wins at low vs high damage, and whether a crossing is a format-failure
-effect; (3) the size of the BERTScore vs Fact Recovery gap.}
+factual accuracy part ways. On the test split, the best method restores about half of
+the facts at every level, the few-shot LLM does not beat a dictionary lookup on facts, and BERTScore ranks fluent
+repairs with wrong facts too high.
 
 % ---- OPEN POINTS ----
 %  1. RESOLVED 2026-09-27: "Is BERT GenAI?" answered in Related Work.

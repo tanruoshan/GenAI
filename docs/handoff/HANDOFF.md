@@ -1,8 +1,6 @@
 # Handoff: current state (Simon's sessions)
 
-Last updated: 2026-09-29 (night), by session "GenAI Worker 1" (the project lead since 2026-09-29), for its own next day or the next session.
-
-> **Update from Shan's session (2026-09-29 evening), read first.** (1) `simon/baselines` is merged into `writing` up to `ce12cac` (merge `8a6a988`): BART frozen and its test predictions are on `writing`. (2) Shan's LLM test run is committed (`d3da046`): few-shot 750/750, article 750/750, **probe 116/150, final** (Shan stopped it for API resources; do not wait for 150). (3) All six `*-test.jsonl` files were checked to cover exactly the 750 expected rows; no score was computed. **So next-step 2 (notebook 4 on test) can run now, and it is yours.** (4) Cleanup on `writing` (`6e9ecf7`, no code, config or notebook change): superseded LLM dev runs and prompts moved to the git-ignored `runs/_archive/`, LaTeX byproducts untracked, `message_to_shan.md` is now `docs/handoff/review_2026-09-28_simon.md`. Shan's separate cleanup branch is dropped. (5) **Next-step 1 is largely done in Bea's section files directly** (not in `report/drafts/simon_sections.tex`): hypotheses, Method paragraphs for lookup, BERT + dictionary and BART, Qwen3 with 5 examples, `tab:settings`, `tab:design`, `tab:results` layout, statistics paragraph, SQ3 number, probe details, Limitations. Please review there instead of drafting again. New references are in `references.bib` (Lewis 2020, Koehn 2004, Dror 2018, Holm 1979, Qwen3); McNemar and Wilcoxon are cited via Dror et al. 2018. Details: the last entry of the deviations log in `CLAUDE.md`.
+Last updated: 2026-09-29 (late night), by session "GenAI Worker 2" (project lead since the handoff from "GenAI Worker 1" the same evening).
 
 This file is the **current state**; it is rewritten at every handoff. The history is in `SESSION_LOG.md` (append only). Design decisions and numbers are in the deviations log at the end of `CLAUDE.md` (newest entries at the bottom). If this file and the code disagree, the code wins; say so.
 
@@ -30,26 +28,25 @@ This file is the **current state**; it is rewritten at every handoff. The histor
 ## Local setup (Simon's Mac)
 
 - Repo: `/Users/simonm/UniRGB_local/GenAI`. Data unpacked (git-ignored): `data/raw/BLN600/`, `data/processed/` (`corrupted_v2.jsonl` and `bert_train_pool.jsonl` hashes match `runs/`). Model: `models/bert_ft_v1/` (hash matches `runs/bert_ft_v1.sha256`).
-- Python: `.venv` (Python 3.11.5, torch 2.14.0 with MPS, transformers 5.17.0). Tests: `PYTHONUTF8=1 .venv/bin/python -m pytest -q` (137 passed, 3 skipped).
+- Python: `.venv` (Python 3.11.5, torch 2.14.0 with MPS, transformers 5.17.0). Tests: `PYTHONUTF8=1 .venv/bin/python -m pytest -q` (151 passed, 3 skipped).
 - **Notebooks:** execute with `PYTHONUTF8=1 .venv/bin/jupyter-nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=-1 --ExecutePreprocessor.kernel_name=genai-venv <nb>` and afterwards set the notebook's `metadata.kernelspec` back to `{"name": "python3", "display_name": ".venv", "language": "python"}`. Plain `python -m jupyter nbconvert` picks Anaconda's nbconvert and the wrong kernel (`No module named blnrepair`).
 - BERT on MPS gives exactly the same words as on the CPU (checked on 40 dev rows), about 2x to 10x faster.
 
 ## Current state
 
-- **Frozen, test predictions stored, never scored (6 methods):** BERT without dictionary (`bert_rerank_ftv1-l8-b5-n10-test`), dictionary lookup (`lexicon_v1-test`), BERT + dictionary (`bert_rerank_ftv1-l64-b5-n10-x5-test`), **BART** (`bart_ftv1-greedy-test`, 40 of 750 format failures, a count only). Configs `bert_repair`, `bert_repair_lex`, `lexicon`, `llm`, `bart_repair` all have `frozen: true`.
-- **Done (Shan), see the update above:** the LLM test run (Qwen3-30B-A3B: few-shot v4, few-shot + article v3, probe). Files: `runs/preds/llm_fewshot_v4-qwen3-30b-a3b-instruct-2507-exb46768-test.jsonl`, `llm_fewshot_article_v3-...-test.jsonl`, `llm_probe_v1-...-test.jsonl`.
-- **Merged into `writing`:** PR #1 (dictionary methods), PR #2 (notebook 4: five methods, bootstrap CIs, McNemar/Wilcoxon with Holm, SQ3 rate), PR #3 (BART, notebook 2c, notebook 4 with six methods), at `efb3b80`. `56f6682`, `bd84f7e` and `ce12cac` merged into `writing` by Shan on 2026-09-29 (`8a6a988`).
-- **Notebook 4 is final on dev** (six methods). Nobody has seen test scores. Run it with `SPLIT = "test"` exactly once, after Shan's LLM files are complete.
-- **BART (notebook 2c):** `facebook/bart-base` fine-tuned on the training pool damaged by our generator, best epoch 8 of 10, 22.5 min on a RunPod A40; weights in `models/bart_ft_v1/` (local only, sha256 in `runs/bart_ft_v1.sha256`). Everything BART runs on a pod (`scripts/pod/pod.sh`): **never train or run BART on the laptop (8 GB; it crashed twice)**. RunPod balance 24.49 $.
-- Dev reference (15 scored sentences, span BERTScore 1w / 75): BART 0.83 / 0.67, BERT + dictionary 0.85 / 0.43, few-shot 0.86 / 0.17, lookup 0.73 / 0.40. No paired test significant on dev (expected with 15 sentences).
+- **Test scores exist and are final.** Notebook 4 ran exactly once on the test split (PR #4, merge `5f1dad5` on `writing`): six methods, 150 sentences x 5 levels, bootstrap CIs, paired tests with Holm, SQ3 rate, probe 0 of 116. **Never run notebook 4 on test again**; every paper number comes from its committed outputs.
+- **Report is complete apart from the literature run.** Results 4.3, Interpretation P1 to P5, Abstract and the Introduction's key outcomes are written from the test numbers (branch `simon/results`, see the last deviations-log entry in `CLAUDE.md`). Tables `tab:results`, `tab:format` and figure `fig:results` are generated by `scripts/paper_results.py` from the executed notebook 4 (rerun it after any change to the script; it never recomputes scores). No `\todo` left in the PDF.
+- **Page budget: zero slack.** Text including Limitations ends exactly at the bottom of page 9 (references from page 10 are not counted). Any added line needs an equal cut. Compile with `/usr/local/texlive/2026/bin/universal-darwin/latexmk -pdf main.tex` in `report/overleaf-bln600/`.
+- Headline test results (span BERTScore / Fact Recovery Rate, 1 word and 75%): BERT + dictionary 0.77 / 0.58 and 0.40 / 0.48; few-shot LLM 0.74 / 0.49 and 0.07 / 0.22 (106 format failures, 103 of them at 50% and 75%); lookup 0.72 / 0.51 and 0.37 / 0.43; BART 0.70 / 0.47 and 0.50 / 0.40. Verdicts: H1 partly, H2 not (tested pair), H2b not (tested pair), H3 beyond one word.
+- **Workflow (Simon, 2026-09-29):** the lead session keeps the lead and alone changes the repo; read-only workers do checks: Codex CLI `/Applications/ChatGPT.app/Contents/Resources/codex exec -C <repo> -s read-only -m gpt-6-sol|gpt-6-luna -c model_reasoning_effort=...` (Sol at most high, Luna at most medium), or Claude subagents (Sonnet, at most medium). It paid off: Sol found overclaims, Luna a misreported citation.
 
-## Next steps (in this order)
+## Next steps
 
-1. **Report drafts (decided: option 1)** into a new file `report/drafts/simon_sections.tex` on `simon/baselines` (Bea's sections stay untouched; she takes over what she wants). Contents: hypotheses H1 to H3 + H2b for the Introduction (draft in `SESSION_LOG.md`, 2026-09-28); Method paragraphs for the dictionary lookup (Evershed and Fitch 2014), BERT + dictionary, and BART (trained on our own noise: optimistic, say so); the statistics paragraph (bootstrap over sentences and why, McNemar exact, Wilcoxon, Holm, only the two pre-stated pairs tested; references Koehn 2004, Dror et al. 2018, Dietterich 1998: add to `references.bib` if missing); the SQ3 measure (1 - AUC, anchor, per method); Limitations additions (single training run and seed; BART on in-distribution noise); fixes in Bea's text: the LLM is Qwen3-30B-A3B-Instruct-2507, **5** solved examples (one per level), numbered slots. Space: the report now ends at about 6.85 pages of content, estimated 8.5 to 8.9 with all pending parts (limit 9, references not counted); compact figures across both columns save space.
-2. **Now (Shan's LLM test run is complete):** check the three files (750 / 750 / **116** rows), run notebook 4 once with `SPLIT = "test"`, commit the executed notebook, PR into `writing`, hand tables and figure to the team for Results.
-3. Then Results text, Interpretation (P1 to P5 in `05_interpretation.tex`), Abstract, with the team.
+1. **Shan's literature and source run before submission** (her plan): full texts are in `report/ref_dump/`. Two claims could not be checked from code and are worth a look: "15 of 15" Python answers of the first Llama prompt (Method (c); the file was never committed, only the deviations log records it) and Qwen3's "3.3B active" parameters (model card).
+2. Team read of Results and Interpretation (Bea, Shan). Keep the hypothesis wording as it is: it was fixed before the test run.
+3. Submission Thu 1 Oct 00:00: `main.pdf` from `writing`.
+4. Defence prep (14 Oct): the appendix outline (`sections/07_appendix_outline.tex`) lists what to show; the executed notebook 4 has every table.
 
-## Open decisions (ask Simon)
+## Open points
 
-- The choice `lex_n` 5 / lambda 64 (by the agreed rule; `lex_n` 50 / lambda 32 is 0.628 vs 0.619 exact on dev, noise level). Simon has not objected.
-- Which methods go into the main results table and which only into an ablation line (proposal: main = lookup, BERT + dictionary, few-shot, BART; ablation = BERT without dictionary, few-shot + article).
+- `simon/baselines` (local only) holds a merge of `writing` (`b449754`) and Worker 1's superseded drafts (`f39631e`, `e9b919c`); it is not needed anymore. Delete it or leave it; do not merge it into `writing`.
