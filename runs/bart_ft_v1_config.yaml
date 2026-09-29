@@ -1,0 +1,59 @@
+version: v1
+model_name: facebook/bart-base
+pool: data/processed/bert_train_pool.jsonl
+pool_sha256: runs/bert_train_pool.sha256
+train:
+  learning_rate: 5.0e-05
+  batch_size: 16
+  max_epochs: 10
+  patience: 2
+  warmup_frac_of_epoch: 0.1
+  weight_decay: 0.01
+  grad_clip: 1.0
+  max_length: 320
+  bf16_on_gpu: true
+  eval_batch_size: 64
+  log_every: 100
+smoke:
+  steps: 30
+  n_train_examples: 64
+  n_val_examples: 64
+  eval_batch_size: 16
+seed: 42
+damage_settings:
+  seed: 42
+  drop_prob: 0.1
+  max_deletions: 2
+  intensity_low: 0.2
+  intensity_high: 0.3
+  levels:
+  - '0'
+  - 1w
+  - '10'
+  - '25'
+  - '50'
+  - '75'
+  p_deletion: 0.15
+pool_hash: d5313c92a49b12de10a07807705dcb9ae8b245cbe7fa94249074188ff15935ae
+model_sha256: 28de207d162054bbe31359e3a33f66e50584c320784b23bd1734e05eb5695614
+code_commit: 298f782644d7255cb7fffd08f2c1004cb3b19c59
+best_epoch: 8
+best_val_loss: 0.26633
+epochs_run: 10
+steps: 8240
+steps_per_epoch: 824
+stop_reason: 'early stop: no lower validation loss for 2 epochs'
+n_train_examples_per_epoch: 13175
+n_val_examples: 1520
+n_probe_examples: 1520
+started: '2026-09-29T00:28:39+00:00'
+finished: '2026-09-29T00:51:11+00:00'
+minutes: 22.5
+device: NVIDIA A40
+bf16: true
+peak_gpu_memory_gb: 10.1
+versions:
+  torch: 2.8.0+cu128
+  transformers: 5.17.0
+  python: 3.12.3
+  cuda: '12.8'

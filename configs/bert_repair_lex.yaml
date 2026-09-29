@@ -1,0 +1,14 @@
+# BERT with dictionary candidates (notebook 2b). The same fine-tuned model and reranking as
+# configs/bert_repair.yaml (frozen, untouched), plus the lex_n word-list entries closest in spelling to each
+# damaged part as extra candidates (word list: lexicon.build_lexicon, the 443 excerpts outside the sample).
+# lam and lex_n are chosen on dev (notebook 2b, grid lex_n 5/10/20/50 x lam 1-64, plus lam 128 for lex_n 5). A change gives a
+# new version name, so old predictions are never read by mistake.
+model: models/bert_ft_v1
+model_tag: ftv1
+lam: 64        # chosen on dev (notebook 2b): exact words plateau from 16, fact recovery plateaus at 64-128
+beam: 5
+top_n: 10
+lex_n: 5       # chosen on dev: 5, 10, 20 and 50 differ by at most about 0.03, with no consistent winner; the smallest is kept
+
+# The gate for the test split. Set to true (and commit) once lam and lex_n are chosen.
+frozen: true

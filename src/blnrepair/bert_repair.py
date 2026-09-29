@@ -10,11 +10,19 @@ the BERT score counts there, and only there a punctuation-only answer is allowed
 B1 sub-slots: a slot whose damaged core has inner punctuation (a hyphen, an apostrophe) is filled part
 by part, keeping that punctuation; each part gets 1 to 3 masks. The model input is built from the
 slot view only (build_slots), never from gold text.
+
+Dictionary candidates (optional, notebook 2): BERT's own candidates come from the context only, so a
+word BERT does not propose can never be chosen, however close its letters are. With a word list, the
+lex_n entries closest in spelling to the damaged part (lexicon.LexiconLookup) join the candidates and
+get the same score. Their BERT score is read from the forward pass that is run anyway (the mask count
+equal to their number of pieces), so they cost no extra pass; a word of more than 3 pieces is skipped,
+as for BERT's own candidates. Without a word list the method is unchanged.
 """
 import itertools
 import json
 import math
 import re
+from collections import Counter
 from pathlib import Path
 
 import torch
@@ -32,9 +40,22 @@ def load_repair_config(path=None):
 
 def repair_version(cfg, split):
     """Version name of a stored BERT run: model and settings are in the name, so a new setting never
-    reads old predictions (for example ftv1-l1-b5-n10-dev)."""
-    return f"{cfg['model_tag']}-l{cfg['lam']:g}-b{cfg['beam']}-n{cfg['top_n']}-{split}"
+    reads old predictions (for example ftv1-l1-b5-n10-dev, or ftv1-l4-b5-n10-x20-dev with 20
+    dictionary candidates per part)."""
+    lex = f"-x{cfg['lex_n']}" if cfg.get("lex_n") else ""
+    return f"{cfg['model_tag']}-l{cfg['lam']:g}-b{cfg['beam']}-n{cfg['top_n']}{lex}-{split}"
 INNER = re.compile(r"([^0-9A-Za-zÀ-ɏ]+)")  # the letter class of subwords.parts_of
+
+
+def part_counts(counts):
+    """Word-list counts per part: every entry split at inner punctuation, as split_parts splits a slot,
+    so a part of 'Pol1ce-coart' is looked up among parts such as 'Police' and 'court'."""
+    parts = Counter()
+    for word, n in counts.items():
+        for part in INNER.split(word)[0::2]:
+            if part:
+                parts[part] += n
+    return parts
 
 
 def split_parts(slot):
@@ -77,9 +98,13 @@ def render(view, fills, current=None):
 class BertReranker:
     """predict(view) for the prediction store's runner: one word per slot."""
 
-    def __init__(self, model, tokenizer, lam=1.0, beam=5, top_n=10, max_masks=3, device="cpu"):
+    def __init__(self, model, tokenizer, lam=1.0, beam=5, top_n=10, max_masks=3, device="cpu", lexicon=None, lex_n=0):
         self.model, self.tok, self.device = model.to(device).eval(), tokenizer, torch.device(device)
         self.lam, self.beam, self.top_n, self.max_masks = lam, beam, top_n, max_masks
+        self.lex, self.lex_n = None, lex_n
+        if lexicon and lex_n:
+            from blnrepair.lexicon import LexiconLookup
+            self.lex = LexiconLookup(part_counts(lexicon))
         vocab = tokenizer.convert_ids_to_tokens(list(range(len(tokenizer))))
         special = torch.tensor([t.startswith("[") and t.endswith("]") for t in vocab])
         cont = torch.tensor([t.startswith("##") for t in vocab])
@@ -121,10 +146,26 @@ class BertReranker:
                 best[text] = max(score, best.get(text, -math.inf))
         return best
 
+    def dictionary_candidates(self, logps_by_m, damaged):
+        """The lex_n word-list parts closest to the damaged part, with their BERT score read from the
+        pass whose mask count equals their number of pieces (skipped above max_masks or with [UNK])."""
+        out = {}
+        for word in self.lex.closest(damaged, self.lex_n):
+            ids = self.tok(word, add_special_tokens=False)["input_ids"]
+            if not ids or len(ids) > self.max_masks or self.tok.unk_token_id in ids:
+                continue
+            lp = logps_by_m[len(ids) - 1]
+            out[word] = sum(lp[i, t].item() for i, t in enumerate(ids)) / len(ids)
+        return out
+
     def fill_part(self, view, fills, s, damaged):
         texts = [render(view, fills, (s, m)) for m in range(1, self.max_masks + 1)]
         dropped = view["slots"][s]["dropped"]
-        cands = self.candidates(self.mask_logprobs(texts), allow_punct=dropped)
+        logps = self.mask_logprobs(texts)
+        cands = self.candidates(logps, allow_punct=dropped)
+        if self.lex and not dropped and damaged:
+            for word, score in self.dictionary_candidates(logps, damaged).items():
+                cands[word] = max(score, cands.get(word, -math.inf))
         scored = [(c, b, 0.0 if dropped else char_sim(c, damaged)) for c, b in cands.items()]
         scored.sort(key=lambda x: -(x[1] + self.lam * x[2]))
         assert scored, f"no candidate for slot {s} of {view['id']} {view['severity']}"

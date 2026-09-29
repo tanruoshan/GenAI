@@ -53,7 +53,7 @@ def loss_curve(log, steps_per_epoch, best_epoch):
     return fig
 
 
-SERIES = ["#2a78d6", "#eb6834", "#1baf7a"]  # categorical slots 1 to 3 (validated palette), in fixed order
+SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300"]  # categorical slots 1 to 6 (validated palette), in fixed order
 
 
 def level_lines(means, metrics, titles, order, reference="no repair"):
@@ -80,5 +80,35 @@ def level_lines(means, metrics, titles, order, reference="no repair"):
         for side in ("top", "right"):
             ax.spines[side].set_visible(False)
     axes[0].legend(frameon=False, fontsize=8)
+    fig.tight_layout()
+    return fig
+
+
+PROBE_COLOR = "#1baf7a"  # categorical slot 3
+
+
+def fit_curves(log, best_epoch):
+    """BART fine-tuning (runs/bart_<version>_log.csv): left, loss per target token (training loss every
+    log_every steps, validation and probe loss after each epoch); right, the share of slots repaired exactly
+    on validation and probe. Probe = training sentences with unseen damage: a growing gap to validation means
+    the model learns the training sentences themselves."""
+    train, val, probe = (log[log["kind"] == k] for k in ("train", "val", "probe"))
+    fig, axes = plt.subplots(1, 2, figsize=(9, 3.4))
+    epochs_of_train = train["step"] / (val["step"].iloc[1] / val["epoch"].iloc[1])
+    axes[0].plot(epochs_of_train, train["loss"], color=TRAIN_COLOR, linewidth=1.5, label="training (running)")
+    for ax, metric in zip(axes, ["loss", "slot_exact"]):
+        ax.plot(val["epoch"], val[metric], color=VAL_COLOR, linewidth=2, marker="o", markersize=6, label="validation")
+        ax.plot(probe["epoch"], probe[metric], color=PROBE_COLOR, linewidth=2, marker="o", markersize=6,
+                label="probe (training sentences, new damage)")
+        ax.axvline(best_epoch, color=MUTED, linewidth=1, linestyle="--")
+        ax.set_xlabel("epoch")
+        ax.yaxis.grid(True, color="#e5e4e0", linewidth=0.8)
+        ax.set_axisbelow(True)
+        for side in ("top", "right"):
+            ax.spines[side].set_visible(False)
+    axes[0].set_title("Loss per target token", fontsize=10, color=INK, loc="left")
+    axes[1].set_title("Slots repaired exactly (greedy)", fontsize=10, color=INK, loc="left")
+    axes[0].legend(frameon=False, fontsize=8)
+    axes[1].text(best_epoch, axes[1].get_ylim()[0], " best epoch", color=MUTED, fontsize=8, va="bottom")
     fig.tight_layout()
     return fig
