@@ -2,23 +2,24 @@
 
 > **Session handoff (Simon's sessions):** start with `docs/handoff/HANDOFF.md` (current state, rules, next steps) and the last entries of `docs/handoff/SESSION_LOG.md`.
 
-Source of decisions: `docs/dossier.md` (the single dossier since 2026-09-29; `docs/dossier_v2.md` was merged into it and removed). Every fact the report needs, by report section: `docs/report_sources.md` (same file as `report/overleaf-bln600/notes/report_sources.md`). The Day 1 file is kept as `docs/claude_day1.md`; its fixed rules still hold. If this file and the dossier disagree on scope or design, the dossier wins; stop and ask. Items marked **[DECIDE]** are changes or open points the user must settle before code depends on them.
+Source of decisions: `docs/dossier.md` (the single dossier since 2026-09-29; `docs/dossier_v2.md` was merged into it and removed). Every fact the report needs, by report section: `docs/report_sources.md` (same file as `report/overleaf-bln600/notes/report_sources.md`). The Day 1 rules are in "Carried over from Day 1" below (`docs/claude_day1.md` never existed in this repo). If this file and the dossier disagree on scope or design, the dossier wins; stop and ask. Items marked **[DECIDE]** are changes or open points the user must settle before code depends on them.
 
-## Current status (2026-09-29)
+## Current status (2026-09-29, evening)
 - **Deadline:** submission Thu 1 Oct 2026, 00:00 (report 7 to 9 pages, ACL). Defence 14 Oct 2026, 10:30.
 - **Data:** frozen `data/processed/corrupted_v2.jsonl` (20-30% per-word intensity, sha256 in `runs/corrupted_v2.sha256`). Never edit or regenerate it; every notebook and script checks the hash first. v1 is removed from git (commit `fabab86` on `main`).
-- **Methods and test predictions (`runs/preds/`, 750 rows each = the 750 test rows with slots):**
-  - BERT + dictionary candidates (main MLM method): `bert_rerank_ftv1-l64-b5-n10-x5-test`, `configs/bert_repair_lex.yaml` frozen. Done.
-  - LLM few-shot, Qwen3-30B-A3B-Instruct-2507 on SAIA: `llm_fewshot_v4-...-exb46768-test`, `configs/llm.yaml` frozen. Done (750/750).
-  - LLM few-shot + article: `llm_fewshot_article_v3-...-exb46768-test`. Done (750/750).
-  - Dictionary lookup (non-GenAI baseline): `lexicon_v1-test`, `configs/lexicon.yaml` frozen. Done.
-  - BERT without dictionary (ablation line): `bert_rerank_ftv1-l8-b5-n10-test`, `configs/bert_repair.yaml` frozen. Done.
-  - BART fine-tuned denoiser (descriptive only): dev only; **test not run**; `configs/bart_repair.yaml` `frozen: false`. Needs a RunPod pod (`scripts/pod/pod.sh`, Simon).
-  - Contamination probe (Qwen, level 0): **116 of 150** test rows (Shan's SAIA run, resumable).
-- **Evaluation:** notebook 4 scores all six methods with bootstrap intervals, paired tests (H2, H2b), the SQ3 rate, anchor recovery, visible/dropped facts, pooled CER, LLM valid-only. **Run on dev only. Nobody has seen test scores.** Run it once on test after the probe and BART test runs are complete.
-- **Report (`report/overleaf-bln600/`, Bea's sections):** 9 pages with placeholders. Stale: Llama and "three examples" (Intro, 3.4(b), `tab:settings`); missing: hypotheses H1-H3 + H2b, Method paragraphs for the lookup, BERT + dictionary and BART, the statistics text, new references (BART, Koehn, Dror, Dietterich, Holm, Qwen3). Full list: `docs/dossier.md` §15.
-- **Branches:** `writing` is the active branch (code + report); Simon works on `simon/baselines` and merges by PR. Shan's cleanup branch (`shan/cleanup`) comes after the LLM test run and must not change behaviour (notebook 4 dev numbers identical before and after).
-- **Superseded predictions kept as a record, not used in the report:** Llama dev runs (`llm_fewshot_v2-meta-llama...`, `llm_fewshot_article_v1-meta-llama...`, `llm_probe_v1-meta-llama...`), Qwen few-shot v3 and article v2 dev runs, the BERT lambda and `lex_n` grid runs, `bert_rerank_base-check-v2`, `bert_rerank_ftv1-check-v2`.
+- **All six methods frozen, test predictions stored, none scored (`runs/preds/`, 750 rows each = the 750 test rows with slots; coverage checked 2026-09-29):**
+  - BERT + dictionary candidates (main MLM method): `bert_rerank_ftv1-l64-b5-n10-x5-test`, `configs/bert_repair_lex.yaml`.
+  - LLM few-shot, Qwen3-30B-A3B-Instruct-2507 on SAIA: `llm_fewshot_v4-...-exb46768-test`, `configs/llm.yaml`.
+  - LLM few-shot + article: `llm_fewshot_article_v3-...-exb46768-test`.
+  - Dictionary lookup (non-GenAI baseline): `lexicon_v1-test`, `configs/lexicon.yaml`.
+  - BERT without dictionary (ablation line): `bert_rerank_ftv1-l8-b5-n10-test`, `configs/bert_repair.yaml`.
+  - BART fine-tuned denoiser (descriptive only): `bart_ftv1-greedy-test`, `configs/bart_repair.yaml` `frozen: true` (Simon, RunPod A40; 40 of 750 format failures, a count only).
+  - Contamination probe (Qwen, level 0): **116 of 150 test sentences, final** (Shan stopped the SAIA run for API resources; the report says so). Notebook 4 reads whatever probe rows exist.
+- **Next step: notebook 4 on test, once (Simon).** Set `SPLIT = "test"`, run top to bottom, commit the executed notebook, hand tables and figure to the team. Nobody has seen test scores. Nothing else blocks it.
+- **Report (`report/overleaf-bln600/`):** hypotheses, the new Method paragraphs (BERT + dictionary, Qwen3 with 5 examples, lookup, BART), `tab:settings`, `tab:design`, statistics, SQ3 number, probe details, Limitations and appendix outline written on 2026-09-29 (Shan's session). Content ends at about 7.75 of 9 pages. Waiting for test numbers: `tab:results`, Figure 2, Results text, Interpretation verdicts, Abstract. Six checked references wait in `notes/pending_refs.bib` until Shan moves them into `references.bib` (never edit `references.bib` without her OK).
+- **Branches:** `writing` is the active branch (code + report). `simon/baselines` is fully merged into `writing` (up to `ce12cac`). Shan's planned cleanup branch was replaced by a cleanup commit directly on `writing` (no code or behaviour change, see the log entry of 2026-09-29 evening).
+- **Kept for the notebooks, not in the report:** the BERT lambda grid and `lex_n` x lambda grid dev runs (read by notebooks 2 and 2b), `bert_rerank_base-check-v2` and `bert_rerank_ftv1-check-v2` (notebook 2). **Archived locally (`runs/_archive/`, git-ignored, last tracked in `8a6a988`):** Llama dev runs, Qwen few-shot v3 and article v2 dev runs, prompts few-shot v2/v3 and article v1/v2.
+- **Git from Claude sessions on Shan's machine:** the working copy has CRLF endings and Shan's Windows git uses `core.autocrlf=true`; a Linux-side git must pass `-c core.autocrlf=true`, or every file shows as modified. No Claude co-author trailer in commits (Shan's rule).
 
 ## Status (Day 2 plan, kept for history)
 Data and damage are frozen: `data/processed/corrupted_v1.jsonl`, sha256 `75b28057...ea70` (full hash in `runs/corrupted_v1.sha256`). Never edit or regenerate it. Every notebook and script checks the hash first and stops on mismatch.
@@ -375,3 +376,12 @@ Every difference from the dossier or from this file is recorded here with its re
 - **C, merge conflict in this file fixed:** committed `writing` (`0e1aff0`) had `=======` and `>>>>>>>` lines without `<<<<<<<`, and the entry "Dossier docs updated to match the LLM freeze" was missing. Both sides are kept, markers removed. A "Current status (2026-09-29)" block replaces the Day 2 header as the entry point.
 - **N, test-run state (2026-09-29):** few-shot 750/750 and article 750/750 (150 sentences x 5 levels, no duplicate keys); probe 116/150; BART test not run.
 - **N, correction for the team:** the RunPod A40 ran BART only (training and dev). No LLM call ran on it; all LLM runs are SAIA.
+
+### Merge, cleanup and report update (2026-09-29 evening, Shan's session)
+- **D, `simon/baselines` merged into `writing` (the user asked; she believed it was already merged):** `8a6a988` brings in `56f6682` (BART `frozen: true`), `bd84f7e` (BART test predictions, 750 rows) and `ce12cac` (Simon's handoff). Conflict only in this file: both sides kept, Simon's BART entries first.
+- **D, LLM test run committed (`d3da046`):** few-shot 750/750, article 750/750, probe 116/150. **The probe stops at 116 (the user decided, API resources);** report, dossier and handoff say 116 of 150. With 0 hits the rule-of-three upper bound on the near-verbatim rate would be about 3/116 = 2.6% (vs 2.0% with 150), so the check loses little.
+- **C, test coverage checked without scores:** every `*-test.jsonl` of the six methods covers exactly the 750 expected (id, level) keys; the 116 probe rows are all level-0 test sentences. Notebook 4 needs no change: it scores a method when all its rows exist and prints the probe count.
+- **D, cleanup on `writing` (the user asked; Simon runs notebook 4, so no notebook was touched):** superseded LLM dev runs and prompts moved to `runs/_archive/` (none is read by code, notebooks or tests); LaTeX byproducts untracked and git-ignored (only `main.pdf` kept); `message_to_shan.md` filed as `docs/handoff/review_2026-09-28_simon.md`; notebook 00/01 report-number tables committed.
+- **C, report (the user asked):** hypotheses in the Introduction; Method (b) BERT + dictionary, (c) Qwen3 with 5 examples and the switch rule, (d) lookup, (e) BART with its caveat; `tab:settings`, `tab:design`, `tab:results` (five method columns, BERTScore and FRR blocks); statistics paragraph; SQ3 number; probe measure, prompt and 116/150; Related Work probe sentence fixed (our prompt does not name BLN600); Interpretation P2 and Limitations updated for the new methods. Local build: content ends at about 7.75 of 9 pages.
+- **D, new references not in `references.bib` (the user chose a separate file):** `report/overleaf-bln600/notes/pending_refs.bib` holds Lewis 2020, Koehn 2004, Dror 2018, Dietterich 1998, Holm 1979, Yang 2025 (Qwen3), each checked against its publisher page. They show as (?) until moved.
+- **N, "68 of 692" (Bea's question in 4.2) checked:** counted once per fact word at the 75% level (spans are nested): test 624 fact slots, 62 dropped; dev 68, 6 dropped.

@@ -2,13 +2,13 @@
 
 **One dossier (consolidated 2026-09-29).** Section numbers 1 to 11 and 13 keep the old `dossier.md` numbering, so references in the `CLAUDE.md` log (for example §5, §6, §7.1, §7.2a, §10) still point to the right place. This file replaces both `docs/dossier.md` (the long design record) and `docs/dossier_v2.md` (the short current-state version). `dossier_v2.md` is removed; its content is merged here. Superseded numbers are kept, labelled, where the report or the defence may need them.
 
-Where things live: decisions and numbers with their reasons in the deviations log at the end of `CLAUDE.md` (newest at the bottom); every fact the report needs, by report section, in `docs/report_sources.md` (same file as `report/overleaf-bln600/notes/report_sources.md`); Simon's session state in `docs/handoff/`. If this file and the code disagree on implementation, the code wins; on scope or design, this file wins.
+Where things live: decisions and numbers with their reasons in the deviations log at the end of `CLAUDE.md` (newest at the bottom); every fact the report needs, by report section, in `docs/report_sources.md` (same file as `report/overleaf-bln600/notes/report_sources.md`); Simon's session state in `docs/handoff/` (his review of 28 Sep: `docs/handoff/review_2026-09-28_simon.md`). If this file and the code disagree on implementation, the code wins; on scope or design, this file wins.
 
 Course: GenAI Master's coursework (6 ECTS), team of 3 (Bea Dippold, Ruo Shan Tan, Simon Manzenberger). Report: 7 to 9 pages, ACL style, no extensive appendix (GRIPS announcement "Project Report", 17 Jul 2026). Graded: report, demonstration, defence; explicitly "a constructive research hypothesis" and evaluation "according to state-of-the-art methods" (announcement "Online Week", 30 May). **Submission Thu 1 Oct 2026, 00:00. Defence Gruppe 4, 14 Oct 2026, 10:30**, based on the paper.
 
 ---
 
-## 0. Status (2026-09-29)
+## 0. Status (2026-09-29, evening)
 
 ### What is compared
 Every method gets the same input (§6, the slot view) and is scored by the same code on the same rows. Six methods plus the floor:
@@ -20,9 +20,9 @@ Every method gets the same input (§6, the slot view) and is scored by the same 
 | 3 | LLM few-shot + article | `llm_fewshot_article` `v3-...-exb46768` | secondary, vs 2 only | done, 750 rows |
 | 4 | **Dictionary lookup** (no AI) | `lexicon` `v1` | non-GenAI baseline (H2b) | done, 750 rows |
 | 5 | BERT without dictionary | `bert_rerank` `ftv1-l8-b5-n10` | ablation line | done, 750 rows |
-| 6 | **BART fine-tuned denoiser** | `bart` `ftv1-greedy` | added after the hypotheses, descriptive only | **not run** |
+| 6 | **BART fine-tuned denoiser** | `bart` `ftv1-greedy` | added after the hypotheses, descriptive only | done, 750 rows (40 format failures, a count only) |
 | - | No repair | (damaged text) | floor | n/a |
-| - | Contamination probe (Qwen) | `llm_probe` `v1-...` | LLM only | **running, 116 of 150** |
+| - | Contamination probe (Qwen) | `llm_probe` `v1-...` | LLM only | **116 of 150, final** (stopped for API resources) |
 
 ### Done
 - Data and damage frozen: `corrupted_v2.jsonl` (20-30% per-word intensity, sha256 `5798336d...`). v1 removed from git.
@@ -30,17 +30,18 @@ Every method gets the same input (§6, the slot view) and is scored by the same 
 - LLM frozen: Qwen3-30B-A3B-Instruct-2507 on GWDG SAIA, 5 few-shot examples (one per level), numbered-slot prompts v4 (few-shot) and v3 (article) (`configs/llm.yaml`).
 - Dictionary lookup (notebook 2b, `configs/lexicon.yaml`) and BERT + dictionary candidates (notebook 2b, `configs/bert_repair_lex.yaml`, `lex_n` 5, lambda 64): both frozen, test run stored. Merged as PR #1.
 - Notebook 4 extended to all methods: bootstrap intervals, paired tests, SQ3 number, anchor recovery, visible vs dropped facts, pooled CER, LLM valid-only. Scoring code in `src/blnrepair/evaluation.py`. Merged as PR #2. **Dev only so far.**
-- BART-base fine-tuned on a RunPod A40 (22.5 min, $0.20), dev predictions stored, notebook 2c. Merged as PR #3. `configs/bart_repair.yaml` is still `frozen: false`.
-- Note on the A40: it was used for **BART only** (training and the dev run). All LLM calls go through SAIA (Shan's runs), none ran on the A40.
+- BART-base fine-tuned on a RunPod A40 (22.5 min, $0.20), dev predictions stored, notebook 2c. Merged as PR #3. Frozen (`configs/bart_repair.yaml` `frozen: true`, `56f6682`) and run on test on a second A40 pod (`bd84f7e`, 750 rows, 40 format failures); BART in total $0.48. Merged into `writing` on 2026-09-29 (`8a6a988`).
+- LLM test run (Shan, SAIA): few-shot 750/750, article 750/750, probe 116/150 (`d3da046`).
+- Note on the A40: it was used for **BART only** (training, dev and test runs). All LLM calls go through SAIA (Shan's runs), none ran on the A40.
+- Repo cleanup on `writing` (`6e9ecf7`): superseded LLM dev runs and prompts moved to the git-ignored `runs/_archive/`; LaTeX byproducts untracked. No code, config or notebook changed.
 
 ### Open, in order
-1. **Probe test run:** 34 of 150 rows left (SAIA, resumable). If it cannot finish, report 116 of 150 and say so.
-2. **BART test run** (Simon, needs a new pod: `scripts/pod/pod.sh`; 750 rows at about 0.2-0.4 s per row). Needs `configs/bart_repair.yaml` `frozen: true` first. Without it, BART cannot appear in the test tables (notebook 4 scores a method only when all its rows exist).
-3. **Notebook 4 on test, once** (`SPLIT = "test"`), after 1 and 2. Nobody has seen test scores yet; keep it that way until the evaluation code is final. Commit the executed notebook.
-4. **Report text** (see §15): hypotheses, three new Method paragraphs, statistics text, stale LLM text (still says Llama and three examples), results tables and figure, new references.
-5. **Repo hygiene:** `CLAUDE.md` merge conflict fixed on 2026-09-29 (uncommitted); cleanup branch not created yet (waits for the LLM test run to finish).
+1. **Notebook 4 on test, once** (`SPLIT = "test"`), **Simon** (his handoff, step 2; one person per notebook). All inputs are complete: six methods x 750 rows, probe 116 rows. Commit the executed notebook and hand the tables and figure to the team.
+2. **Report, after the test run:** `tab:results` (BERTScore and FRR, columns BERT + dict., LLM, lookup, BART, none), Figure 2 (level x score with CIs), Results text in the order in `04_experiments.tex`, one verdict per hypothesis in the Interpretation, Abstract, the Introduction's key outcomes. About 1.25 pages are left (local build, 2026-09-29).
+3. **References:** move `report/overleaf-bln600/notes/pending_refs.bib` (6 checked entries) into `references.bib` (Shan's OK needed); until then they show as (?).
+4. **Before submission:** remove every `\todo`; check page count <= 9 without references; only test numbers in Results.
 
-### Hypotheses (from Simon's review, 2026-09-28; to go into the Introduction)
+### Hypotheses (from Simon's review, 2026-09-28; in the Introduction since 2026-09-29)
 - **H1 (severity):** repair quality falls as the damaged share grows, and fact recovery falls faster than span BERTScore.
 - **H2 (method):** with identical input, the few-shot LLM restores more fact words than fine-tuned BERT, because it reads all garbled forms together. Tested as BERT + dictionary vs few-shot.
 - **H2b (baseline):** GenAI repair beats a dictionary lookup on fact words, not only on common words. Tested as few-shot vs lookup.
@@ -127,7 +128,7 @@ Computed over the damaged span unless stated; format failures scored as no repai
 - **Intervals:** 95% bootstrap over sentences, 10,000 resamples, percentile, same resamples for all methods (Koehn 2004; Dror et al. 2018). Reason: slots of one sentence share context and are not independent.
 - **Paired tests, only for the two stated comparisons:** BERT + dictionary vs few-shot (H2) and few-shot vs lookup (H2b). Per level: exact McNemar on anchor recovery (Dietterich 1998), Wilcoxon signed-rank on span BERTScore; Holm over 2 pairs x 5 levels per test family. Everything else descriptive.
 - **SQ3 number (H3):** per method and level, the chance that a wrong-anchor repair gets at least as high a span BERTScore as a right-anchor repair (ties half) = 1 - AUC. 0 = BERTScore always ranks the right fact higher; 0.5 = BERTScore does not see the fact. No threshold to tune. Check: 0.00 at level 1w for every method on dev.
-- **Contamination probe:** first half of each clean sentence (level 0 rows), model continues; normalised Levenshtein similarity (`rapidfuzz`) to the true second half, cut to its length; >= 0.9 = near-verbatim. The prompt does not name BLN600, so it is a simplified guided completion without the control condition of Golchin & Surdeanu (2024).
+- **Contamination probe:** first half of each clean sentence (level 0 rows), model continues; normalised Levenshtein similarity (`rapidfuzz`) to the true second half, cut to its length; >= 0.9 = near-verbatim. The prompt does not name BLN600, so it is a simplified guided completion without the control condition of Golchin & Surdeanu (2024). Test: **116 of 150 sentences** (run stopped for API resources, final). With 0 hits the rule-of-three upper bound would be about 2.6% (vs 2.0% at 150).
 - Manual check: 18 repairs (6 sentences at levels 10, 25, 50, seeded) for fluent-but-wrong examples.
 
 ## 9. Experimental design summary
@@ -148,12 +149,12 @@ State in the report:
 1. How letters are used: LLM and BART read them directly; BERT only through the reranking score; the lookup uses nothing else.
 2. BERT predicts a word's pieces in parallel; words over 3 pieces are out of reach (0.9% of slots, 3.5% of fact slots).
 3. Supervision and scale differ: BERT fine-tuned on clean in-domain text; BART fine-tuned on text damaged by our own generator (optimistic); LLM sees 5 examples only.
-4. Possible LLM contamination: BLN600 public since 2024; Qwen3's pretraining cutoff still to be checked and stated.
+4. Possible LLM contamination: BLN600 public since 2024; the Qwen3 Technical Report (arXiv:2505.09388) states no pretraining cutoff, so the argument rests on the probe (116 of 150 test sentences).
 5. Format failures count as no repair (LLM and BART).
 6. Article variant uses gold context: upper bound.
 
 ## 11. Limitations
-Damage location given, no detection. Synthetic OCR-like character noise, one contiguous span, intensity per word, not spatially correlated; calibrated on mild OCR, so it likely understates real damage (Belinkov & Bisk 2018 on synthetic vs natural noise). Fact-centred by design (100% of damaged words at 1w, 17% at 75%); span content not controlled. FRR is a surface rule with exact match (`M'Donald` vs `McDonald` counts as wrong). 150 test sentences (26 in the longest band), one noise draw per sentence: trends, not powered effects. English, London crime reporting, mostly two weeklies; one LLM. `runs/preds/` holds derived BLN600 text: acceptable only while the repo stays private.
+Damage location given, no detection. Synthetic OCR-like character noise, one contiguous span, intensity per word, not spatially correlated; calibrated on mild OCR, so it likely understates real damage (Belinkov & Bisk 2018 on synthetic vs natural noise). Fact-centred by design (100% of damaged words at 1w, 17% at 75%); span content not controlled. FRR is a surface rule with exact match (`M'Donald` vs `McDonald` counts as wrong). 150 test sentences (26 in the longest band), one noise draw per sentence: trends, not powered effects. English, London crime reporting, mostly two weeklies; one LLM. One training run and seed per fine-tuned model; hypotheses written after dev; probe on 116 of 150 test sentences. `runs/preds/` holds derived BLN600 text: acceptable only while the repo stays private.
 
 ## 12. Dev numbers (tuning context only, never report as results)
 All from notebook 4 on the 15 scored dev sentences unless stated.
@@ -193,14 +194,16 @@ Damage detection in raw OCR; real OCR/gold pairs; image-assisted repair with a v
 - Sainz et al. (2023). NLP Evaluation in trouble. Findings of EMNLP 2023, pp. 10776-10787.
 - Petrak, Tran & Gurevych (2025). arXiv:2509.10833 (course example paper, structure only).
 - The full list used by the report is `report/overleaf-bln600/references.bib`.
-## 15. What the report still needs (checked against `report/overleaf-bln600/sections/*.tex`, 2026-09-29)
-The PDF is already 9 pages with placeholder tables, so every addition needs a cut.
-- **Introduction:** hypotheses H1, H2, H2b, H3 (course requirement); "three solved examples" -> five; key outcomes after the test run.
-- **Method 3.4:** (b) name Qwen3-30B-A3B-Instruct-2507, 5 examples, numbered slots, remove the Llama `\todo`; add short paragraphs for the dictionary lookup, the dictionary candidates for BERT, and BART with its caveat; Table `tab:settings` (still "dev default: Llama", "3 dev examples").
-- **Experiments 4.1-4.2:** methods in `tab:design`; statistics paragraph (replaces the `\todo`); SQ3 number definition; answer Bea's `\todo`s: level 0 is for the probe only (yes); anchor recovery and visible/dropped are computed (yes); probe measure is normalised Levenshtein and the prompt does not name BLN600; sentence BERTScore is computed (option a is free).
-- **Results:** `tab:results` needs more columns than fit; suggestion: main table = BERT + dictionary, few-shot, lookup, (BART), none; article and BERT without dictionary as one sentence or a figure line.
-- **Interpretation:** "three examples" and "BERT never sees letters" need updating for BERT + dictionary; one sentence per hypothesis: supported, partly, not.
-- **References to add to `references.bib`:** Lewis et al. 2020 (BART, ACL 2020, pp. 7871-7880); Koehn 2004 (EMNLP, pp. 388-395); Dror et al. 2018 (ACL, pp. 1383-1392); Dietterich 1998 (Neural Computation 10(7), 1895-1923); Holm 1979 (Scandinavian Journal of Statistics 6(2), 65-70); Qwen3 Technical Report (Yang et al. 2025, arXiv:2505.09388). Check each entry against the publisher page before adding.
+## 15. What the report still needs (checked against `report/overleaf-bln600/sections/*.tex`, 2026-09-29 evening)
+**Done on 2026-09-29 (Shan's session):** hypotheses H1, H2, H2b, H3 in the Introduction (and "five examples", lookup and BART named); Method (b) BERT + dictionary, (c) Qwen3-30B-A3B with 5 examples, numbered slots and the Llama switch rule, (d) dictionary lookup, (e) BART with its caveat, (f) no repair; `tab:settings` and `tab:design` updated; statistics paragraph and SQ3 number (1 - AUC); Bea's todos answered (level 0 = probe only; anchor and visible/dropped computed; probe measure and prompt; sentence BERTScore reported); probe 116 of 150; Related Work probe sentence fixed (our prompt does not name BLN600); Interpretation P2 and Limitations updated; appendix outline written.
+
+**Still open:**
+- **Results:** fill `tab:results` (now 5 method columns x BERTScore/FRR blocks) with CIs from notebook 4; Figure 2; BERT without dictionary and LLM + article as one sentence each; format failures and LLM valid-only as a footnote.
+- **Interpretation:** P1, P3, P4, P5 first sentences from test numbers; one verdict per hypothesis; delete the unused variant in each paragraph.
+- **Abstract** and the Introduction's key outcomes.
+- **RQ scope (team):** the RQ names two families; the lookup and BART are presented as reference lines. If BART leads on test, reconsider the RQ wording.
+- **References:** move `notes/pending_refs.bib` into `references.bib`: Lewis et al. 2020 (BART, ACL, pp. 7871-7880); Koehn 2004 (EMNLP, pp. 388-395); Dror et al. 2018 (ACL, pp. 1383-1392); Dietterich 1998 (Neural Computation 10(7), 1895-1923); Holm 1979 (Scand. J. Statistics 6(2), 65-70); Yang et al. 2025 (Qwen3 Technical Report, arXiv:2505.09388; it states no pretraining cutoff, so the contamination argument rests on the probe).
+- **Length:** content ends at about 7.75 of 9 pages; about 1.25 pages left.
 
 ## 16. Appendix outline (for the defence)
 Damage parameters, confusion table and the superseded 40-60% setting; BERT and BART training curves (BART over/underfitting record in `runs/bart_ft_v1_log.csv`); lambda and `lex_n` grids; full prompts, the v1 failure and system-message fix, the Llama run and switch; zero-shot dev run; subword ceiling; manual check; probe details; ablations not run.
