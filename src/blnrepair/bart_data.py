@@ -16,7 +16,7 @@ import random
 import re
 
 from blnrepair.corrupt import level_sizes, plan_word, seed_int, select_span
-from blnrepair.slots import build_slots
+from blnrepair.slots import build_slots, slot_core
 
 LEVELS_FOR_TRAINING = ["1w", "10", "25", "50", "75"]
 SLOT = re.compile(r"\{(.*?)\}")
@@ -82,6 +82,21 @@ def read_answer(text, k):
     return words if len(words) == k else None
 
 
+def slots_right(text, target, k):
+    """Per slot, whether the answer equals the gold word, compared as the evaluation does (slot_core: edge
+    punctuation ignored). None for a format failure."""
+    words, gold = read_answer(text, k), read_answer(target, k)
+    return None if words is None else [slot_core(w) == slot_core(g) for w, g in zip(words, gold)]
+
+
+def generation_settings(num_beams, max_length):
+    """Every decoding setting, given explicitly. facebook/bart-base ships summarisation defaults (4 beams,
+    no repeated 3-grams, early stopping). A repair copies most of the sentence and must be free to repeat
+    token sequences such as "} {", so no setting is taken from the model's config."""
+    return {"num_beams": num_beams, "do_sample": False, "no_repeat_ngram_size": 0, "early_stopping": False,
+            "length_penalty": 1.0, "max_length": max_length}
+
+
 def load_bart_repair_config(path=None):
     import yaml
     from pathlib import Path
@@ -109,9 +124,8 @@ class BartRepairer:
         enc = self.tokenizer(source, return_tensors="pt")
         assert enc["input_ids"].shape[1] <= self.max_length, f"{view['id']}: input longer than {self.max_length} tokens"
         with torch.no_grad():
-            out = self.model.generate(**enc.to(self.device), num_beams=self.num_beams, do_sample=False,
-                                      max_length=self.max_length)
-        text = self.tokenizer.decode(out[0], skip_special_tokens=True)
+            out = self.model.generate(**enc.to(self.device), **generation_settings(self.num_beams, self.max_length))
+        text = self.tokenizer.decode(out[0], skip_special_tokens=True, clean_up_tokenization_spaces=False)
         words = read_answer(text, len(view["slots"]))
         error = None if words else f"expected {len(view['slots'])} bracketed words, got {len(SLOT.findall(text))}"
         return {"raw_output": json.dumps({"source": source, "output": text}, ensure_ascii=False),

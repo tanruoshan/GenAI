@@ -11,7 +11,8 @@
 #   bash scripts/pod/pod.sh push    ID          # code + data to /workspace/GenAI, hash check, pip install
 #   bash scripts/pod/pod.sh run     ID "CMD"    # CMD in the background on the pod, log in runs/pod_run.log
 #   bash scripts/pod/pod.sh log     ID
-#   bash scripts/pod/pod.sh fetch   ID          # models/bart_ft_v1, runs/bart_*, runs/preds/bart_*, the log
+#   bash scripts/pod/pod.sh fetch   ID          # models/bart_ft_v1 (hash checked), runs/bart_*, runs/preds/bart_*,
+#                                               # the pod log as runs/bart_ft_v1_pod.log
 #   bash scripts/pod/pod.sh terminate ID
 #
 # The key: RUNPOD_API_KEY from .env of this repo, else from the thesis' experiments/.env (read only). It is
@@ -94,7 +95,8 @@ case "${1:-}" in
       && sha256sum data/processed/bert_train_pool.jsonl | cut -d' ' -f1 | grep -qx \$(cut -d' ' -f1 runs/bert_train_pool.sha256) \
       && sha256sum data/processed/corrupted_v2.jsonl | cut -d' ' -f1 | grep -qx \$(cut -d' ' -f1 runs/corrupted_v2.sha256) \
       && echo 'data hashes OK' \
-      && grep -v '^torch==' requirements.txt | pip install -q -r /dev/stdin && pip install -q -e . --no-deps \
+      && export PIP_BREAK_SYSTEM_PACKAGES=1 \
+      && pip install -q transformers==5.17.0 rapidfuzz pandas pyyaml pysbd scipy && pip install -q -e . --no-deps \
       && python -c 'import torch, transformers; print(torch.__version__, transformers.__version__, torch.cuda.get_device_name(0))'"
     ;;
   run)
@@ -110,7 +112,12 @@ case "${1:-}" in
     rsync -az -e "ssh ${SSH_OPTS[*]} -p $port" --include='bart_*' --include='pod_run.log' --exclude='*' \
       "root@$ip:$REMOTE/runs/" runs/
     rsync -az -e "ssh ${SSH_OPTS[*]} -p $port" --include='bart_*' --exclude='*' "root@$ip:$REMOTE/runs/preds/" runs/preds/ || true
+    [ -f runs/pod_run.log ] && mv runs/pod_run.log runs/bart_ft_v1_pod.log
     ls -la models/bart_ft_v1 runs/bart_* runs/preds/bart_* 2>/dev/null || true
+    if [ -f runs/bart_ft_v1.sha256 ] && [ -f models/bart_ft_v1/model.safetensors ]; then
+      [ "$(shasum -a 256 models/bart_ft_v1/model.safetensors | cut -d' ' -f1)" = "$(cut -d' ' -f1 runs/bart_ft_v1.sha256)" ] \
+        && echo "model hash OK" || die "model hash does not match runs/bart_ft_v1.sha256"
+    fi
     ;;
   terminate)
     api DELETE "/pods/$2" > /dev/null && echo "terminated $2"
