@@ -25,7 +25,7 @@ Upload the zip to Overleaf (New Project > Upload Project). Compiler: pdfLaTeX, m
 | Appendix outline + slack | 0.45 |
 
 ## Where each fact lives
-`notes/report_sources.md` merges `docs/dossier.md`, `docs/dossier_v2.md`, `CLAUDE.md` and the config/run files into one fact list ordered by report section, with a conflict table at the top. Every section stub points to its part of that file. Dev numbers are tuning context only and must not be reported as results.
+`notes/report_sources.md` merges `docs/dossier.md` (the single dossier; `dossier_v2.md` was merged into it on 2026-09-29), `CLAUDE.md` and the config/run files into one fact list ordered by report section, with a conflict table at the top. Every section stub points to its part of that file. Dev numbers are tuning context only and must not be reported as results.
 
 ## Blocked until results exist
 - Table 3 and Figure 2 (test predictions for BERT and LLM, then `04_evaluation.ipynb` on test).

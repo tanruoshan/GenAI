@@ -1,213 +1,207 @@
-# Project Dossier (Checkpoint): Repairing Damaged Historical Newspaper Text with GenAI
+# Project Dossier: Repairing Damaged Historical Newspaper Text with GenAI
 
-**For onboarding and day-to-day reference, read `docs/dossier_v2.md` instead: it is the short, current-state version.** This file stays as the complete record: the full design reasoning, and superseded numbers kept for the report's appendix material.
+**One dossier (consolidated 2026-09-29).** Section numbers 1 to 11 and 13 keep the old `dossier.md` numbering, so references in the `CLAUDE.md` log (for example §5, §6, §7.1, §7.2a, §10) still point to the right place. This file replaces both `docs/dossier.md` (the long design record) and `docs/dossier_v2.md` (the short current-state version). `dossier_v2.md` is removed; its content is merged here. Superseded numbers are kept, labelled, where the report or the defence may need them.
 
-Plan of record for the report. Implementation lives in the project notebooks (start with `01_dataset_and_damage_pipeline.ipynb`) and the `blnrepair` package. If the two disagree on implementation details, the notebook wins; if they disagree on scope or design, this dossier wins.
+Where things live: decisions and numbers with their reasons in the deviations log at the end of `CLAUDE.md` (newest at the bottom); every fact the report needs, by report section, in `docs/report_sources.md` (same file as `report/overleaf-bln600/notes/report_sources.md`); Simon's session state in `docs/handoff/`. If this file and the code disagree on implementation, the code wins; on scope or design, this file wins.
 
-Course: GenAI Master's coursework project (6 ECTS), team of 3. Report: max 9 pages in ACL style (excluding references), structured like the EMNLP example paper (Intro, Related Work, Method, Empirical Investigation, Interpretation).
+Course: GenAI Master's coursework (6 ECTS), team of 3 (Bea Dippold, Ruo Shan Tan, Simon Manzenberger). Report: 7 to 9 pages, ACL style, no extensive appendix (GRIPS announcement "Project Report", 17 Jul 2026). Graded: report, demonstration, defence; explicitly "a constructive research hypothesis" and evaluation "according to state-of-the-art methods" (announcement "Online Week", 30 May). **Submission Thu 1 Oct 2026, 00:00. Defence Gruppe 4, 14 Oct 2026, 10:30**, based on the paper.
 
-**Current status (2026-09-26):** data and damage are frozen as `corrupted_v2.jsonl` (20-30% per-word damage intensity; sha256 `5798336d...`, replaces the original 40-60% intensity of `corrupted_v1.jsonl`, which is kept only as a local, untracked comparison file). BERT is fine-tuned and has one full run on the dev split. The LLM track dropped zero-shot after dev testing and has both remaining variants run and scored on dev. The test split (the final BERT vs LLM comparison) has not started: see §0 for the three open decisions that block it and the steps to run it.
+---
 
-## 0. Handoff notes for the team (read this first)
-This section is the practical status: what is locked in, what is still open, and what to run next. Sections 1 to 14 below are the fuller design record for the report; where this section and a later one disagree on a number, this section is the more recent one.
+## 0. Status (2026-09-29)
 
-**What is being compared, in plain terms**
-Every comparison has the same shape: take a sentence with a damaged span (a run of words at one severity level: 0 (clean), 1 word, 10%, 25%, 50% or 75% of the sentence), give every method the exact same view of it (§6: context plus one "slot" per damaged word, showing its garbled letters), and score the repaired span against the original gold span. Three things are compared at every severity level:
-1. **BERT + reranking.** A fine-tuned `bert-base-cased` model fills the damaged span left to right, guided by how close its guesses are to the garbled letters shown.
-2. **LLM few-shot.** Llama 3.1 8B Instruct (via GWDG's SAIA API), given the same view plus 3 worked examples, asked to return one corrected word per slot.
-3. **No repair.** The damaged text as it is, with nothing done to it. This is the floor: how bad the text would be if no method were used.
+### What is compared
+Every method gets the same input (§6, the slot view) and is scored by the same code on the same rows. Six methods plus the floor:
 
-A fourth, secondary variant, **LLM few-shot + article**, gives the LLM the whole source article as extra context. It is compared only against the LLM's own few-shot run (does more context help the LLM), never against BERT, since BERT never sees that extra context and the comparison would not be fair.
+| # | Method (report name) | Stored as | Role | Test predictions |
+|---|---|---|---|---|
+| 1 | **BERT + dictionary** | `bert_rerank` `ftv1-l64-b5-n10-x5` | main MLM method (H2) | done, 750 rows |
+| 2 | **LLM few-shot** (Qwen3-30B-A3B) | `llm_fewshot` `v4-...-exb46768` | main LLM method (H2, H2b) | done, 750 rows |
+| 3 | LLM few-shot + article | `llm_fewshot_article` `v3-...-exb46768` | secondary, vs 2 only | done, 750 rows |
+| 4 | **Dictionary lookup** (no AI) | `lexicon` `v1` | non-GenAI baseline (H2b) | done, 750 rows |
+| 5 | BERT without dictionary | `bert_rerank` `ftv1-l8-b5-n10` | ablation line | done, 750 rows |
+| 6 | **BART fine-tuned denoiser** | `bart` `ftv1-greedy` | added after the hypotheses, descriptive only | **not run** |
+| - | No repair | (damaged text) | floor | n/a |
+| - | Contamination probe (Qwen) | `llm_probe` `v1-...` | LLM only | **running, 116 of 150** |
 
-Two headline scores are computed per severity level: **BERTScore** (does the repaired span mean the same as the original) and **Fact Recovery Rate** (were the names, numbers and dates recovered exactly). Secondary scores back these up: exact word match, whether the repair made the text better or worse (character error rate before versus after), how often the LLM returned the wrong number of words (format failure rate), and whether the LLM seems to have memorised the source text (contamination probe).
+### Done
+- Data and damage frozen: `corrupted_v2.jsonl` (20-30% per-word intensity, sha256 `5798336d...`). v1 removed from git.
+- BERT fine-tuned (`models/bert_ft_v1`); context-only reranking frozen (lambda 8, beam 5, top 10; `configs/bert_repair.yaml`).
+- LLM frozen: Qwen3-30B-A3B-Instruct-2507 on GWDG SAIA, 5 few-shot examples (one per level), numbered-slot prompts v4 (few-shot) and v3 (article) (`configs/llm.yaml`).
+- Dictionary lookup (notebook 2b, `configs/lexicon.yaml`) and BERT + dictionary candidates (notebook 2b, `configs/bert_repair_lex.yaml`, `lex_n` 5, lambda 64): both frozen, test run stored. Merged as PR #1.
+- Notebook 4 extended to all methods: bootstrap intervals, paired tests, SQ3 number, anchor recovery, visible vs dropped facts, pooled CER, LLM valid-only. Scoring code in `src/blnrepair/evaluation.py`. Merged as PR #2. **Dev only so far.**
+- BART-base fine-tuned on a RunPod A40 (22.5 min, $0.20), dev predictions stored, notebook 2c. Merged as PR #3. `configs/bart_repair.yaml` is still `frozen: false`.
+- Note on the A40: it was used for **BART only** (training and the dev run). All LLM calls go through SAIA (Shan's runs), none ran on the A40.
 
-**Done so far**
-- Data: `corrupted_v2.jsonl` frozen at 20-30% intensity (`runs/corrupted_v2.sha256`). It is the only version now: `corrupted_v1.jsonl` and its hash file are deleted.
-- BERT: fine-tuned (`models/bert_ft_v1`, hash in `runs/bert_ft_v1.sha256`). The tuning grid on dev (lambda 1, 2, 4, 8, 16; beam 5 and 10 candidates fixed) is done: lambda 8 is chosen (8 and 16 are equal within noise; 8 keeps more weight on the context). Settings are in `configs/bert_repair.yaml`. The full dev run with them is stored (`runs/preds/bert_rerank_ftv1-l8-b5-n10-dev.jsonl`). The test run has not been done yet (project owner).
-- LLM: prompts at v2 (a system message was added, needed to stop the model answering in Python code instead of JSON). Zero-shot was tried on dev, was weak, and was dropped from the study. Few-shot and few-shot + article both ran on the full dev split (17 of the 20 dev sentences; 3 are held out as the worked examples) and are scored.
-- Evaluation: `notebooks/04_evaluation.ipynb` reads the stored predictions for BERT and the LLM and scores them side by side on the same rows. It works on dev; for test it only needs the test predictions to exist. On dev (not a result), BERT scores BERTScore 0.24 and Fact Recovery Rate 0.10, few-shot 0.28 and 0.22, few-shot + article 0.26 and 0.24; BERT is behind at low severity, and level with or ahead of the LLM at 50% and 75%, where the LLM's format failures all occur.
-- Tests: the four older tests were pointed at v2 (commit `1842d6a`); the whole suite passes.
+### Open, in order
+1. **Probe test run:** 34 of 150 rows left (SAIA, resumable). If it cannot finish, report 116 of 150 and say so.
+2. **BART test run** (Simon, needs a new pod: `scripts/pod/pod.sh`; 750 rows at about 0.2-0.4 s per row). Needs `configs/bart_repair.yaml` `frozen: true` first. Without it, BART cannot appear in the test tables (notebook 4 scores a method only when all its rows exist).
+3. **Notebook 4 on test, once** (`SPLIT = "test"`), after 1 and 2. Nobody has seen test scores yet; keep it that way until the evaluation code is final. Commit the executed notebook.
+4. **Report text** (see §15): hypotheses, three new Method paragraphs, statistics text, stale LLM text (still says Llama and three examples), results tables and figure, new references.
+5. **Repo hygiene:** `CLAUDE.md` merge conflict fixed on 2026-09-29 (uncommitted); cleanup branch not created yet (waits for the LLM test run to finish).
 
-**Decisions**
-1. **LLM model and prompts (open, handed to a teammate).** The pre-registered rule in §7.2a says switch if the dev format failure rate is above 15%. It came in at 21% (few-shot) and 27% (few-shot + article) with Llama 3.1 8B, so the rule is triggered. The teammate tunes the model and prompts on dev on a machine with an own LLM (steps below). Either the failure rate comes down, or it is reported as a finding.
-2. **BERT settings (done).** Grid run on dev, lambda 8 chosen (see above).
-3. **How the test split is opened (decided).** There is no separate `runs/repair_config_v1.yaml`. Each method has its own `frozen` flag in its config: `frozen: true` in `configs/bert_repair.yaml` for BERT and in `configs/llm.yaml` for the LLM. A notebook refuses `SPLIT = "test"` unless its config is frozen and `ALLOW_TEST = True` is set. Reasons: the tuned values stay where they are used, each stored prediction already carries its settings in its version name (model, lambda, beam, candidates, prompt version, few-shot examples, split), the BERT weights hash is in `runs/bert_ft_v1.sha256`, and the two methods can be opened at different times. Freezing means: set the flag and commit the config.
+### Hypotheses (from Simon's review, 2026-09-28; to go into the Introduction)
+- **H1 (severity):** repair quality falls as the damaged share grows, and fact recovery falls faster than span BERTScore.
+- **H2 (method):** with identical input, the few-shot LLM restores more fact words than fine-tuned BERT, because it reads all garbled forms together. Tested as BERT + dictionary vs few-shot.
+- **H2b (baseline):** GenAI repair beats a dictionary lookup on fact words, not only on common words. Tested as few-shot vs lookup.
+- **H3 (metric):** span BERTScore overstates repair quality: at every level a share of wrong-fact repairs scores as high as right-fact repairs.
 
-**Then, to get the final comparison**
-- *Project owner, BERT:* set `frozen: true` in `configs/bert_repair.yaml`, then set `SPLIT = "test"` and `ALLOW_TEST = True` in notebook 02, section 7 (750 rows, about 1.7 hours on a laptop CPU; resumable).
-- *Teammate, LLM* (the README has the same five steps):
-  1. Change the API client to an own LLM: `.env` (`SAIA_BASE_URL`, `SAIA_API_KEY`), and `model` and `allowed_models` in `configs/llm.yaml`; open-weight models only.
-  2. Tune the prompts on dev: new prompt file versions (a used file is never edited), update the prompt version in `variant_versions` in `src/blnrepair/llm.py`, optionally the few-shot picks; run notebooks 3 and 4 on dev; aim for under 15% format failures.
-  3. Lock the config: `frozen: true` in `configs/llm.yaml`, commit; then `SPLIT = "test"` and `ALLOW_TEST = True` in notebook 3.
-  4. Run the LLM on the test split: 750 rows for each of the two variants plus the contamination probe on the 150 test sentences (about 1,650 requests, resumable).
-  5. Share the evaluation data: run notebook 4 with `SPLIT = "test"` (it needs the BERT test predictions first), and send back the executed notebook 4 and `runs/preds/llm_*-test.jsonl` for the report.
-- *Then, writing:* the final numbers come from notebook 4 on the test split: BERTScore and Fact Recovery Rate per method per severity level, plus the secondary scores.
+Honest framing for the report: the hypotheses were written **after** the dev results but **before** any test score was computed, and the paired tests were limited to H2 and H2b for that reason (§8). BART was added after the hypotheses and is compared descriptively only.
 
-**Loose ends, not blocking**
-- The stale 20-40% reports (`reports/cer_by_level_v2.json`, `reports/corruption_stats_v2.json`, `reports/review_v2.csv`) are deleted. `runs/config_snapshot_v2.yaml` is back on disk.
-- This file is git-ignored, so a teammate does not get it by git; the README carries the same handoff steps.
+---
 
 ## 1. Working title
-"How Much Can Be Torn Away? Measuring the Limits of GenAI-Based Repair of Damaged Historical Newspaper Text" (placeholder).
+Report (team decision 2026-09-27): "How Much Damage Can GenAI Repair? Fact Recovery in Damaged Historical Newspaper Text". Earlier: "How Much Can Be Torn Away? ..." (dropped: it implied image-level repair).
 
 ## 2. Problem, research question, sub-questions
-Historical newspapers suffer physical damage (tears, stains, tape, foreign objects). OCR on damaged regions produces garbled or missing words, which can shift or destroy the meaning of a passage, and the words most at risk are often the facts: names, places, dates, sums of money.
+Historical newspapers suffer physical damage; OCR on damaged regions gives garbled or missing words, and the words most at risk are often facts: names, places, dates, sums of money.
 
-**RQ:** When the damaged region of a sentence is known and its garbled letters are visible, how well can GenAI models restore the original words so that meaning and key facts are preserved, and how does this change as the damaged share of the sentence grows?
+**RQ (report wording, 2026-09-28):** When the damaged words of a sentence are known and their garbled letters are visible, how much of the original wording, and in particular its fact words such as names, places and numbers, can a fine-tuned masked language model and a few-shot instruction-following LLM restore, and how does this change as the damaged share of the sentence grows?
 
-- **SQ1 (severity):** Does repair quality decline smoothly with damage, or is there a point beyond which repair becomes unreliable? Does the absolute gap length matter beyond the damaged share?
-- **SQ2 (method):** Given identical input, does a fine-tuned masked language model (BERT) or a zero/few-shot generative LLM repair better?
-- **SQ3 (metric validity):** Does semantic similarity overstate repair quality? Can a repair read as "close in meaning" while getting names, numbers or dates wrong?
+- **SQ1 (severity):** smooth decline or breakdown point? Does absolute gap length matter beyond the damaged share?
+- **SQ2 (method):** given identical input, does a fine-tuned MLM or a few-shot LLM repair better? Since PR #1 also: does either beat a plain dictionary lookup?
+- **SQ3 (metric validity):** does semantic similarity overstate repair quality compared with exact fact recovery?
 
-## 3. Motivation (for the Introduction)
-Digitised newspaper archives are core sources for historical research, but OCR quality on damaged originals limits their use. GenAI models can fill in and correct text fluently, which creates a risk: plausible but invented content entering the historical record. Users need to know how far repair can be trusted as damage grows. This is a controlled robustness study of GenAI generation under increasing corruption, not a new system.
+Open point for the report: the RQ names two families; BART (a fine-tuned encoder-decoder) is a third. Either widen the RQ to "GenAI repair methods" or present BART as an extra reference line.
+
+## 3. Motivation
+Digitised newspaper archives are core sources; OCR on damaged originals limits their use. GenAI fills text fluently, which risks plausible but invented facts entering the record. This is a controlled robustness study, not a new system. Course links: BART is the lecture's denoising model ("reconstruct original text from corrupted input"); the diffusion slides' "hallucinate something similar" is the SQ3 point; the article variant is RAG-style context injection with perfect retrieval; the prompt has the lecture's five parts (task, context, examples, role, format).
 
 ## 4. Data and splits
-**BLN600** (Booth, Thomas & Gaizauskas, 2024): 600 excerpts from 19th-century British Library Newspapers (mostly London crime reporting, 1830s-1890s; 572 of 600 excerpts from three related publications: Lloyd's Weekly Newspaper (340), The Illustrated Police News (212) and Lloyd's Weekly London Newspaper (20)). Each excerpt has the source image, the original machine OCR, and a manually re-keyed gold transcription. License CC BY-NC-ND: fine for coursework analysis, do not redistribute a modified corpus (`data/processed/` is git-ignored).
+**BLN600** (Booth, Thomas & Gaizauskas, 2024): 600 excerpts of 19th-century British newspapers (London crime reporting, 1834-1894), 572 from Lloyd's Weekly Newspaper (340), Illustrated Police News (212), Lloyd's Weekly London Newspaper (20). Image, OCR and gold per excerpt. CC BY-NC-ND: `data/` is git-ignored; never redistribute derived text.
 
-- **Ground truth:** the gold transcription. The OCR field is used only to calibrate realistic character confusions.
-- **Sentence pool:** gold text split with `pysbd`; sentences of 20-60 words with at least 2 fact tokens: 3,123 sentences from 592 excerpts.
-- **Fact token:** a number or any word with a digit or a pound sign (`23`, `5s.`, `£100`), or a capitalised word that is not the first word of the sentence (names, places, days). Excluded: `I`, `Mr`, `Mrs`, `Dr`, `St`, `The`, `Miss`, `Sir`, `Rev`, `Messrs`, and a word right after a colon.
-- **Length bands:** 20-29, 30-44, 45-60 words (three bands).
-- **Evaluation sample (frozen):** 170 sentences from 157 excerpts, drawn with seed 42 and band quotas proportional to the pool: **150 test** (65 / 59 / 26 by band) and **20 dev** (9 / 8 / 3). At most 3 sentences per excerpt. No excerpt appears in both test and dev. Dev is used only to tune prompts and settings.
-- **Calibration excerpts:** 29 excerpts outside the sample (one more dropped for coverage 0.35), used to measure real OCR confusions.
-- **BERT training pool:** only excerpts outside the 157 sample excerpts (443 excerpts). No sentence from a test or dev excerpt may be used for training, because names repeat within an excerpt. The 29 calibration excerpts may be used for training; they shaped only the noise table, not the test data.
-- The source images are not used in this project (see §13).
+- Sentence pool: `pysbd`, 20-60 words, at least 2 fact tokens: 3,123 sentences from 592 excerpts.
+- Fact token: a number, any word with a digit or pound sign, or a capitalised non-initial word; stop list I, Mr, Mrs, Dr, St, The, Miss, Sir, Rev, Messrs; not after a colon. Surface rule, not NER.
+- Evaluation sample (seed 42): 170 sentences from 157 excerpts: **150 test** (65/59/26 by band 20-29/30-44/45-60), **20 dev** (9/8/3). At most 3 per excerpt; no excerpt in both. Dev for tuning only.
+- Scored dev set: **15 sentences**, 75 rows per method (the 5 few-shot example sentences are left out for every method).
+- Calibration: 29 excerpts outside the sample (confusion table only).
+- Training pool (BERT and BART): 443 excerpts outside the sample, 2,939 sentences (2,635 train / 304 validation), zero overlap with test/dev (tested). The dictionary word list is built from the same 443 excerpts (16,469 distinct words, 213,237 tokens).
 
-## 5. Damage simulation (frozen, `corrupted_v2.jsonl`; see §0 for the version history)
-- **Anchor:** each sentence gets one anchor word, drawn among its fact tokens with a fixed seed. The anchor is always damaged and never dropped, so every damaged level contains at least one visibly damaged fact.
-- **Span:** one contiguous block of damaged words around the anchor. Blocks are nested: every smaller block lies inside every larger one, so the same place gets worse across levels.
-- **Levels (independent variable):** 0 (clean), 1w (one word), then 10%, 25%, 50%, 75% of the sentence's words (rounded half up). 170 sentences x 6 levels = 1,020 rows (900 test, 120 dev).
-- **Per-word damage plan** (one plan per word, identical at every level that damages it): about 10% of damaged words are dropped completely (never the anchor); otherwise 20-30% of the word's letters and digits are altered (lowered from an initially-frozen 40-60%: that range sat above the third quartile of real OCR word-error severity measured in `reports/calibration.json`, so it was revised down to sit inside that real range; see §0 and the deviations log for the full reasoning); each altered character is deleted (about 15%, at most 2 per word) or substituted; substitutions come from the calibrated confusion table (85.5%), its lowercase entry written as a capital (3.1%), a look-alike map such as O/0, l/1/I, rn/m, cl/d (5.1%), or a random character of the same kind (6.3%). Cross-case confusions are allowed. Punctuation is never touched.
-- **Resulting sentence-level CER against gold, current file (`corrupted_v2.jsonl`, 20-30% intensity, mean):** 1w 0.0098, 10% 0.0319, 25% 0.0793, 50% 0.1549, 75% 0.2307. Real BLN600 OCR is about 0.07 per excerpt, so this sits much closer to real severity than the original file, and 75% is now about 3 times heavier rather than 5. (Superseded numbers, 40-60% intensity, `corrupted_v1.jsonl`, median: 1w 0.018, 10% 0.047, 25% 0.118, 50% 0.236, 75% 0.351; kept only for comparison, e.g. as appendix material.)
-- **Stored fields per row:** `gold_tokens`, `corrupted_text`, `span_start`, `span_end`, `k`, `damaged_idx`, `anchor_idx`, `fact_idx_in_span`, `ops_per_word` (gold word, damaged form `out`, `dropped` flag, edit ops), `frac`, `band`, `split`, `severity`.
-- **Damaged words per level (test, median):** 20-29 band: 1 / 2 / 6 / 12 / 18; 30-44: 1 / 4 / 9 / 18 / 26; 45-60: 1 / 5 / 13 / 26 / 38 (levels 1w / 10 / 25 / 50 / 75).
-- **Facts in the damaged span (test):** at least 1 at every level; mean 1.0 / 1.6 / 2.2 / 3.2 / 4.2. Share of damaged words that are facts: 100% / 48% / 26% / 19% / 17%.
-- **Implementation note:** in `corrupted_text` a dropped word simply disappears. Any model input must be built from `gold_tokens` + `ops_per_word`, not from `corrupted_text`, or dropped words become invisible and slot counts break.
+## 5. Damage simulation (frozen, `corrupted_v2.jsonl`)
+- One anchor per sentence among its fact tokens; always damaged, never dropped.
+- One contiguous span around the anchor, nested across levels. Levels: 0 (clean), 1w, 10/25/50/75% of words. 170 x 6 = 1,020 rows; 850 with slots (750 test, 100 dev).
+- Per damaged word: dropped with p 0.10 (never the anchor); else 20-30% of letters and digits altered; each altered character deleted (about 15%, at most 2 per word) or substituted. Substitution sources (realised): confusion table 85.7%, capitalised entry 3.6%, look-alike map 4.9%, random 5.8% (`reports/corruption_stats.json`; older figures 85.5/3.1/5.1/6.3 are superseded). Punctuation untouched.
+- Why 20-30%: the first setting, 40-60%, sat above the third quartile of real per-word error among misrecognised words (median 0.25, IQR 0.17-0.40); 20-30% sits around the median.
+- Sentence-level CER, mean: 1w 1.0%, 10% 3.2%, 25% 7.9%, 50% 15.5%, 75% 23.1% (real BLN600 OCR about 7% per excerpt). Superseded v1 (40-60%): 1.9 / 5.1 / 12.1 / 23.7 / 35.1% (appendix material only).
+- Facts in span (test, mean) 1.0 / 1.6 / 2.2 / 3.2 / 4.2; share of damaged words that are facts 100 / 48 / 26 / 19 / 17%. About 1 in 10 fact slots is dropped.
+- Build model input from `gold_tokens` + `ops_per_word`, never from `corrupted_text`.
+- Calibration limitation: it measures which characters get confused in mild OCR, not how heavy real physical damage is.
 
-## 6. Shared repair input: the slot view
-Both methods receive exactly the same information:
+## 6. Shared input: the slot view
+Context unchanged; one slot per damaged gold word showing its garbled form; a dropped word is `⟨?⟩`. So the damaged-word count is known to all methods. Example (test `3200810696-001`, level 10, gold "named Thomas Hurd, a"): `A POWERFULLY-BUILT man, ⟨same⟩ ⟨Bbonias⟩ ⟨Huicl,⟩ ⟨e⟩ commission agent, ...`. Every method returns one word per slot; the same splice code writes it back inside the gold word's edge punctuation.
 
-1. The undamaged context, unchanged.
-2. The location of the damaged span.
-3. One **slot** per damaged gold word, in order, showing that word's garbled form. A dropped word is an empty slot `⟨?⟩`. So the number of damaged gold words is known to both methods.
+Presentation differs, information does not: the LLM prompts number the slots (`⟨1: Hnrd⟩`); BART uses `{ word }` brackets because its byte-level tokenizer breaks ⟨ ⟩ into byte pieces.
 
-Example (test sentence `3200810696-001`, level 10, gold span "named Thomas Hurd, a"):
-`A POWERFULLY-BUILT man, ⟨same⟩ ⟨Bbonias⟩ ⟨Huicl,⟩ ⟨e⟩ commission agent, who refused his address, ...`
+Justification (report, 2026-09-28): the detection/correction split of post-OCR work (Nguyen et al. 2021; Rigaud et al. 2019) and known-position restoration (Assael et al. 2019; Lazar et al. 2021). **Not** "OCR engines flag low-confidence regions": Evershed & Fitch (2014, §5.1) found OCR confidences unreliable.
 
-Both methods return **one word per slot**. The same splice code writes the predictions back into the sentence, so context words are never rewritten and every score difference comes from the slots.
+## 7. Repair methods
 
-**Justification for the report:** OCR engines commonly flag low-confidence regions, and a reader of a damaged page still sees partial letters. Showing the garbled letters keeps the task an OCR-repair task and makes facts recoverable in principle (`1awsenc` -> `Lawrence`); hiding them would turn most fact repairs into pure guessing, which is not what archives face. Finding the damage without being told where it is stays future work (§13).
+### 7.1 BERT + reranking, context only (ablation line)
+`bert-base-cased` (110M), fine-tuned on clean gold text only, inference-matched masking (option b). lr 5e-5, batch 16, early stop (patience 2, max 10), best epoch 2 of 4, validation loss per piece 5.61 (pretrained) to 4.14. Inference: slots left to right, 1-3 masks per slot, beam 5, top 10 per mask count; score = mean log-probability per piece + lambda x (1 - normalised Levenshtein). Lambda grid on dev (1/2/4/8/16): exact 0.164/0.212/0.239/0.267/0.263, FRR 0.042/0.092/0.116/0.126/0.128; **lambda 8**. Weakness: candidates come from context only, so a word BERT does not propose can never win (`Wrighb` gives Smith, White, andooll).
 
-## 7. Repair methods (mapped to course lessons)
-### 7.1 Fine-tuned BERT with character-aware reranking (BERT lesson)
-- Model: `bert-base-cased`. Cased is required because fact tokens are partly defined by capitals, and an uncased model cannot output capitals at all.
-- **Fine-tuning:** standard masked language model training on gold text from the BERT training pool (§4), masking contiguous spans around a fact token with the same size distribution as the evaluation levels. BERT never needs garbled text during training.
-- **Inference (noisy-channel reranking):** fill slots left to right; later slots wait as `[MASK]`. For the current slot, try 1, 2 and 3 masks and collect candidate words from each (small beam over the pieces). Each candidate gets a score = BERT log-probability (mean per piece) + λ x character similarity to the slot's garbled form. The best candidate is written in and the next slot is filled. For a dropped slot `⟨?⟩` there is no garbled form, so only the BERT score counts. Trying 1-3 masks means BERT is never told the gold subword count.
-- **Character similarity:** plain normalised edit distance (1 minus Levenshtein distance divided by the longer length). The confusion-weighted version is an ablation only (§7.3), because the confusion table also generated most of the damage.
-- **λ, beam size and candidate count** are tuned on dev only. This mirrors the classic "context plus confusion" approach to OCR correction (Evershed & Fitch, 2014), in a basic form.
-- Ownership: coded by one team member, training run by another, in parallel with the LLM track.
+### 7.2 LLM few-shot (main LLM method; history in 7.2a)
+Qwen3-30B-A3B-Instruct-2507 (MoE, 3.3B active parameters) on GWDG SAIA, open-weight only (GWDG does not store prompts for self-hosted open-weight models). temperature 0, max 1024 tokens. System message (needed: without it Llama answered in Python in 15 of 15 dev cases); 5 solved dev examples, one per level (`3206323884-017` 1w, `3206270194-012` 10, `3200807881-004` 25, `3206225730-001` 50, `3206237078-010` 75); numbered slots; JSON list of exactly k strings. Wrong length, invalid JSON or cut-off = format failure = scored as no repair; LLM also scored over valid answers only. Zero-shot tried on dev and dropped.
 
-### 7.2 Generative LLM, zero/few-shot (GPT and LLM lessons)
-- **Access:** GWDG Chat AI (SAIA, OpenAI-compatible API). **Model (O2, proposed, needs your confirmation): Llama 3.1 8B Instruct**, open-weight, GWDG-hosted. Candidate upgrade if instruction-following on the slot format is too weak after dev tuning: Qwen 3 30B A3B Instruct 2507 (also open-weight, GWDG-hosted). Reasons in §7.2a. Fallback for infrastructure only: open-weight model on the FAU/Bayern KI HPC.
-- Prompt: the slot view, the number of slots, and an instruction to return a JSON list with exactly one corrected word per slot. Zero-shot, plus a few-shot variant with 2-3 examples from dev.
-- Decoding: temperature 0 (or the lowest setting available). Record the exact model name and version.
-- If the output list has the wrong length, record it as a format failure (report the rate), score those slots as wrong, and do not repair the output by hand.
-- **Contamination probe:** give the LLM the first half of each clean test sentence and ask it to continue. Count near-verbatim continuations (for example character similarity to the gold second half of 0.9 or more). Report the rate; if it is high, flag LLM results as possibly inflated.
-- **Update (2026-09-26):** zero-shot was tried on the full dev split and dropped from the study (weak results, and it was not needed to answer SQ2). The study now runs few-shot only, plus a secondary few-shot + article variant (whole source article as extra context, compared only against the LLM's own few-shot run, never against BERT). See §0 for current dev results and the open model-choice decision.
+**7.2a History (keep for the defence).** Llama-3.1-8B-Instruct was the first choice (licence/data handling; Thomas et al. 2024 lineage). Its dev format failures were 21% (few-shot) and 27% (article), above the pre-registered 15% line, so the team switched to Qwen on 2026-09-28. Prompt versions: few-shot v2 (Llama), v3 (answer-shape example), **v4 (numbered slots, final)**; article v1, v2, **v3 (final)**.
 
-### 7.2a Why Llama 3.1 8B Instruct (O2, proposed)
-Two reasons, not one:
-1. **License and data handling.** BLN600 is CC BY-NC-ND, and the project rule is to send its text only where necessary and with the least exposure. GWDG states that for open-weight models it hosts itself, prompts and outputs are never stored. That guarantee is stated only for the open-weight models, not for the third-party-hosted ones (Claude, GPT), which forward the request to Anthropic or OpenAI under their own terms. So an open-weight, GWDG-hosted model is the safer and more defensible choice for this corpus, independent of capability.
-2. **Precedent and fit.** Thomas, Gaizauskas & Lu (2024), the closest related work and the only prior study to run an LLM-family model on BLN600 itself, used a fine-tuned Llama 2 and found it beat a fine-tuned BART. Llama 3.1 8B Instruct continues that lineage as a newer generation, zero/few-shot rather than fine-tuned. It is also GWDG's own listed standard recommendation, and at 8B it is fast and cheap enough for the roughly 1,000 planned calls (§9), which matters given the limited SAIA quota.
+### 7.3 Optional ablations (not run; appendix only)
+Blank slots (letters hidden); confusion-weighted reranking (upper bound, since the table made 85.7% of substitutions).
 
-Trade-off to state in the report: 8B is a small model, so a higher format-failure rate than a larger model is plausible; that is itself a result (§8), not a flaw to hide. If dev tuning shows format failures above about 15% or clearly weak repairs, switch to Qwen 3 30B A3B Instruct 2507 (still open-weight and GWDG-hosted, stronger instruction following, still economical because only 3.3B parameters are active per token) and record the switch and why.
+### 7.4 LLM few-shot + article (secondary)
+Whole excerpt as context with the target sentence as slot view between `<<<` `>>>`; the other sentences are gold, so this is an upper bound. Compared only with 7.2 (paired, descriptive).
 
-**Update (2026-09-26): the switch rule has been triggered.** The full dev run came in at 21% format failures (few-shot) and 27% (few-shot + article), both above the 15% line. This is an open decision for the team (§0): switch to Qwen 3 30B A3B Instruct 2507 and rerun the dev prompts, or keep Llama 3.1 8B and report the high failure rate as a finding.
+### 7.5 Dictionary lookup (non-GenAI baseline, since 2026-09-28)
+Each damaged word is replaced by the closest word-list entry (plain case-sensitive Levenshtein, ties by frequency then alphabet). No context, no model: the pure "confusion" side of "context beats confusion" (Evershed & Fitch 2014). A dropped slot stays empty (counts as wrong). Answers the examiner question "does GenAI beat a spell checker?". The list holds 95% of damaged dev words but only 77% of damaged fact words (48 of 62): rare names are where a lookup cannot help.
 
-### 7.3 Optional ablations (cut first if short on time)
-1. **Blank slots:** both methods with garbled letters hidden (dropped-word count still given). Measures how much the partial letters help each method.
-2. **Confusion-weighted reranking:** BERT with edit distance weighted by the calibrated confusion table. Shows how much knowing the noise model helps. Report it as an upper bound, not as the main result: the same table produced 85.5% of the substitutions, so BERT would be using inside knowledge of the synthetic generator that the LLM does not get and real OCR would not match exactly.
+### 7.6 BERT + dictionary candidates (main MLM method, since 2026-09-29)
+The `lex_n` word-list entries closest in spelling to each damaged form join BERT's candidates and get the same score. Same model, BERT still never sees damaged text in training. Off by default in code, so the old run reproduces exactly (40 of 40 rows checked, CPU and MPS). Grid on all 100 dev rows (`lex_n` 5/10/20/50 x lambda 1-64, +128): chosen **`lex_n` 5, lambda 64** by the agreed rule (best exact rate once FRR plateaus). Dev: exact 0.619, FRR 0.560 (vs 0.267 / 0.126 without dictionary; lookup alone 0.528 / 0.426). Note for the defence: `lex_n` 50 at lambda 32 has a slightly higher exact rate (0.628), noise level; and at lambda 64 the letters decide most slots, BERT's context mainly breaks ties and fills dropped words.
 
-### 7.4 Link to related work
-The design mirrors the closest studies: a fine-tuned encoder or encoder-decoder versus a prompted generative LLM on historical OCR text. Thomas, Gaizauskas & Lu (2024) found an instruction-tuned generative LLM (Llama 2) beat a fine-tuned BART on post-OCR correction of BLN600 itself, while Debaene et al. (2025) found sequence-to-sequence models beat generative models on early modern Dutch. This project adds a controlled, fact-centred severity scale and a fact-level metric, under identical input for both methods, and moves from a fine-tuned Llama 2 to a zero/few-shot newer-generation open-weight model on the LLM side (§7.2a).
+### 7.7 BART fine-tuned denoiser (added 2026-09-29, descriptive only)
+`facebook/bart-base` (about 140M) reads the slot view and writes the sentence back with the gold word in each bracket; a wrong bracket count is a format failure. Trained on the training pool damaged by **our own generator** at all five levels (13,175 examples per epoch, new damage per epoch), same optimiser settings as BERT, greedy decoding with all settings passed explicitly (bart-base ships summarisation defaults, `no_repeat_ngram_size` 3, which would break copying). Best epoch 8 of 10 (validation loss 0.266, pretrained 2.507); validation exact 0.672. Overfitting visible: exact on training sentences with new damage 0.879 vs 0.672 on validation. **Must be defended:** unlike BERT and the LLM, BART is supervised on exactly the noise process of the test data, so its scores are optimistic. It links to Thomas et al. (2024), who compared a fine-tuned BART on BLN600.
 
-## 8. Evaluation
-All metrics are computed per sentence and level, over the damaged span only unless stated.
+## 8. Evaluation (as built in notebook 4, `src/blnrepair/evaluation.py`)
+Computed over the damaged span unless stated; format failures scored as no repair.
 
-- **Gap-level semantic similarity (primary):** BERTScore (Zhang et al., 2020) between the repaired span and the gold span. Full-sentence BERTScore is reported as a secondary number only: at low levels the unchanged context keeps full-sentence scores near the top of the range whatever the repair does.
-- **Fact Recovery Rate (primary):** share of gold fact tokens in the span (`fact_idx_in_span`) restored exactly in their slot (punctuation around the word ignored). Defined at every level, because every span contains the anchor fact. At level 1w it is 0 or 1 per sentence.
-- **Exact word recovery (secondary):** share of slots restored exactly.
-- **Repair gain (secondary):** character error rate of the span before repair (damaged) and after repair, against gold. Shows whether a method improves the text or makes it worse.
-- **Format failure rate (LLM):** share of outputs with the wrong number of slots.
-- **Contamination rate (LLM):** share of near-verbatim continuations in the probe (§7.2).
-- **Manual check (tertiary):** about 15-20 repairs across levels, to find fluent but wrong repairs for SQ3.
-- **Analysis:** main figure: level (x) against gap-level BERTScore and Fact Recovery Rate (y), one line per method. Second figure or table: level x band, to separate damaged share from absolute gap length (SQ1). Levels are nested within the same sentence, so use paired comparisons across levels and between methods.
+- **Primary:** span BERTScore F1 (`roberta-large`, layer 17, baseline-rescaled, can be negative; `bert-score` 0.3.13); **Fact Recovery Rate** (gold fact tokens in the span restored exactly, punctuation ignored; mean over sentences).
+- **Secondary:** anchor recovery (same word at every level, clean paired series for SQ1); FRR split into visible and dropped fact slots (pooled); exact-word rate; span CER before/after and repair gain, **pooled per level**; sentence-level BERTScore; LLM format failures per level and valid-only scores; contamination rate.
+- **Intervals:** 95% bootstrap over sentences, 10,000 resamples, percentile, same resamples for all methods (Koehn 2004; Dror et al. 2018). Reason: slots of one sentence share context and are not independent.
+- **Paired tests, only for the two stated comparisons:** BERT + dictionary vs few-shot (H2) and few-shot vs lookup (H2b). Per level: exact McNemar on anchor recovery (Dietterich 1998), Wilcoxon signed-rank on span BERTScore; Holm over 2 pairs x 5 levels per test family. Everything else descriptive.
+- **SQ3 number (H3):** per method and level, the chance that a wrong-anchor repair gets at least as high a span BERTScore as a right-anchor repair (ties half) = 1 - AUC. 0 = BERTScore always ranks the right fact higher; 0.5 = BERTScore does not see the fact. No threshold to tune. Check: 0.00 at level 1w for every method on dev.
+- **Contamination probe:** first half of each clean sentence (level 0 rows), model continues; normalised Levenshtein similarity (`rapidfuzz`) to the true second half, cut to its length; >= 0.9 = near-verbatim. The prompt does not name BLN600, so it is a simplified guided completion without the control condition of Golchin & Surdeanu (2024).
+- Manual check: 18 repairs (6 sentences at levels 10, 25, 50, seeded) for fluent-but-wrong examples.
 
 ## 9. Experimental design summary
 | Factor | Levels |
 |---|---|
-| Damage | one contiguous span around a fact anchor, character-level OCR noise, about 10% of words dropped (frozen v2, 20-30% per-word intensity; see §0) |
-| Severity | 0, 1w, 10%, 25%, 50%, 75% of sentence words |
+| Severity | 1w, 10, 25, 50, 75% (level 0 only for the probe) |
 | Length band | 20-29, 30-44, 45-60 words |
-| Input to models | slot view: span location, one slot per gold word, garbled letters visible, dropped words as empty slots |
-| Methods | fine-tuned `bert-base-cased` + reranking by plain edit distance (1-3 masks per slot); Llama 3.1 8B Instruct few-shot via SAIA, zero-shot tried and dropped (§7.2, §0); secondary: LLM few-shot + whole-article context, compared only to the LLM's own few-shot run |
-| Optional ablations | blank slots for both methods; confusion-weighted reranking for BERT |
-| Evaluation data | 150 test sentences (20 dev for tuning only; test split not yet run, see §0) |
-| Metrics | gap-level BERTScore, Fact Recovery Rate (primary); exact word recovery, repair gain, full-sentence BERTScore, format failures, contamination rate (secondary); manual check |
+| Input | slot view, garbled letters visible, dropped words as empty slots |
+| Methods | BERT + dictionary; LLM few-shot; dictionary lookup; no repair. Secondary: LLM + article (vs few-shot), BERT without dictionary (ablation), BART (descriptive) |
+| Data | 150 test sentences, 750 rows per method; dev 20 (15 scored) for tuning |
+| Metrics | span BERTScore, FRR (primary); anchor recovery, visible/dropped FRR, exact words, pooled CER and repair gain, sentence BERTScore, format failures, valid-only, SQ3 rate, contamination |
+| Statistics | bootstrap 95% intervals; McNemar + Wilcoxon with Holm for H2 and H2b only |
 
-## 10. Fairness checklist and remaining asymmetries
-Controlled:
-- Same sentences, same slots, same garbled letters, same context for both methods.
-- Both output one word per slot; identical splicing and scoring code.
-- BERT is not told the gold subword count (1-3 masks tried per slot).
-- The main reranking does not use the confusion table that generated the damage.
-- No test or dev excerpt in BERT training; few-shot examples and all tuned settings from dev only.
-- Deterministic decoding.
+## 10. Fairness and asymmetries
+Controlled: same sentences, slots, letters and context; same splice and scoring; BERT not told the piece count; main reranking does not use the confusion table; no test/dev excerpt in any training data or word list; all settings chosen on dev; code gate (`frozen: true` + `ALLOW_TEST`) before any test run; deterministic decoding.
 
-Remaining asymmetries (state in the report):
-1. **How the letters are used.** The LLM reads garbled letters directly; BERT uses them only through the reranking score. This is a real property of the two approaches, not a setup error.
-2. **Parallel prediction inside a slot.** BERT predicts the pieces of a multi-piece word in one pass, which weakens it on long rare names (Shen et al., 2020 note this for multi-token blanks). Words needing more than 3 pieces cannot be produced exactly.
-3. **Scale and pretraining.** BERT-base has about 110M parameters and is fine-tuned in-domain; the LLM (Llama 3.1 8B Instruct) is larger and instruction-tuned but gets no in-domain training. SQ2 compares two practical approaches, not two architectures at equal size.
-4. **Possible LLM data contamination.** BLN600 has been public since 2024, so the LLM may have seen the gold text (Sainz et al., 2023). Measured by the probe in §7.2, not removed. `bert-base-cased` predates the dataset; Llama 3.1's pretraining cutoff should be checked against the dataset's 2024 release and stated in the report.
+State in the report:
+1. How letters are used: LLM and BART read them directly; BERT only through the reranking score; the lookup uses nothing else.
+2. BERT predicts a word's pieces in parallel; words over 3 pieces are out of reach (0.9% of slots, 3.5% of fact slots).
+3. Supervision and scale differ: BERT fine-tuned on clean in-domain text; BART fine-tuned on text damaged by our own generator (optimistic); LLM sees 5 examples only.
+4. Possible LLM contamination: BLN600 public since 2024; Qwen3's pretraining cutoff still to be checked and stated.
+5. Format failures count as no repair (LLM and BART).
+6. Article variant uses gold context: upper bound.
 
-## 11. Limitations for the report
-- The damage location is given. Real use needs a detection step first; neither method is tested on that.
-- Damage is synthetic, one contiguous span per sentence, and heavier than typical BLN600 OCR from level 10% up.
-- Damage is centred on a fact token by design, so facts are over-represented in the damaged span (100% of damaged words at 1w, 17% at 75%). Results describe fact-centred damage, not random damage, and the fact mix changes across levels.
-- Severity is the controlled variable, but what sits in the span (a stock phrase versus a rare name) strongly affects difficulty and is not controlled.
-- Small sample (150 test sentences; only 26 in the 45-60 band): trends, not statistically powered effects.
-- Fact Recovery Rate uses surface rules (numbers, capitals, money). It misses facts in lowercase words and counts exact matches only.
-- English, 19th-century London crime reporting, mostly three related publications.
-- The asymmetries in §10.
+## 11. Limitations
+Damage location given, no detection. Synthetic OCR-like character noise, one contiguous span, intensity per word, not spatially correlated; calibrated on mild OCR, so it likely understates real damage (Belinkov & Bisk 2018 on synthetic vs natural noise). Fact-centred by design (100% of damaged words at 1w, 17% at 75%); span content not controlled. FRR is a surface rule with exact match (`M'Donald` vs `McDonald` counts as wrong). 150 test sentences (26 in the longest band), one noise draw per sentence: trends, not powered effects. English, London crime reporting, mostly two weeklies; one LLM. `runs/preds/` holds derived BLN600 text: acceptable only while the repo stays private.
 
-## 12. Team split and phases
-1. **Data and damage (done, frozen).** Build the slot view from `gold_tokens` + `ops_per_word` (§5 note).
-2. **Repair, in parallel:**
-   - BERT: build the training pool, span-masking fine-tuning, reranking inference with 1-3 masks per slot and plain edit distance, tuning of λ, beam and candidate count on dev.
-   - LLM: SAIA setup with Llama 3.1 8B Instruct (§7.2a), zero-shot and few-shot prompts with JSON slot output, logging of model version and format failures, contamination probe.
-   - Shared: one slot-view builder, one splice function and one scoring module used by both tracks.
-3. **Evaluation:** all metrics per level, band and method; figures; manual check; optional ablations (§7.3).
-4. **Handoff:** the LLM tuning and test run are done by a teammate on an own machine (§0, README).
-5. **Writing:** Method and Empirical Investigation first, then Introduction, Related Work, Interpretation and Limitations. Trim to 9 pages; list appendix material for the winter-term defence.
+## 12. Dev numbers (tuning context only, never report as results)
+All from notebook 4 on the 15 scored dev sentences unless stated.
 
-## 13. Future work (out of scope for this report)
-- **Repair without a given location:** methods must first find the damage in raw OCR text, then repair it.
-- **Transfer to real OCR errors:** evaluate on real OCR/gold word pairs (for example the calibration pairs) to check whether conclusions from synthetic damage hold.
-- **Image-assisted repair:** give a vision-capable model the source scan with the damaged region blurred. BLN600 images have no word-level boxes, so words must first be located (e.g. with `pytesseract`, matched by reading order). Plain BERT cannot read images; vision-language BERT variants (VisualBERT, ViLBERT, LXMERT, VL-BERT) need separate region features and their own pretraining, so a vision-capable LLM is the practical tool. Precedent: "Reading the unreadable: creating a dataset of 19th century English newspapers using image-to-text language models" (Digital Scholarship in the Humanities; confirm authors before citing).
-- **Other languages:** German historical newspapers.
+| Span BERTScore | 1w | 10 | 25 | 50 | 75 |
+|---|---|---|---|---|---|
+| BART | 0.83 | 0.77 | 0.73 | 0.69 | 0.67 |
+| BERT + dictionary | 0.85 | 0.71 | 0.48 | 0.44 | 0.43 |
+| LLM few-shot | 0.86 | 0.65 | 0.45 | 0.44 | 0.17 |
+| Dictionary lookup | 0.73 | | 0.43 | | 0.40 |
+| BERT, no dictionary | 0.59 | | 0.16 | | -0.03 |
 
-## 14. Verified references
-- Booth, C. W., Thomas, A., & Gaizauskas, R. (2024). BLN600: A Parallel Corpus of Machine/Human Transcribed Nineteenth Century Newspaper Texts. LREC-COLING 2024, pp. 2440-2446.
-- Thomas, A., Gaizauskas, R., & Lu, H. (2024). Leveraging LLMs for Post-OCR Correction of Historical Newspapers. LT4HALA @ LREC-COLING 2024, pp. 116-121.
-- Debaene, F., Maladry, A., Lefever, E., & Hoste, V. (2025). Evaluating Transformers for OCR Post-Correction in Early Modern Dutch Theatre. COLING 2025, pp. 10367-10374.
-- Lyu, L., Koutraki, M., Krickl, M., & Fetahu, B. (2021). Neural OCR Post-Hoc Correction of Historical Corpora. TACL, 9, 479-493.
-- Evershed, J., & Fitch, K. (2014). Correcting Noisy OCR: Context Beats Confusion. DATeCH 2014, pp. 45-51.
-- Zhu, W., Hu, Z., & Xing, E. (2019). Text Infilling. arXiv:1901.00158.
-- Shen, T., Quach, V., Barzilay, R., & Jaakkola, T. (2020). Blank Language Models. EMNLP 2020, pp. 5186-5198.
-- Wettig, A., Gao, T., Zhong, Z., & Chen, D. (2023). Should You Mask 15% in Masked Language Modeling? EACL 2023.
-- Zhang, T., Kishore, V., Wu, F., Weinberger, K. Q., & Artzi, Y. (2020). BERTScore: Evaluating Text Generation with BERT. ICLR 2020.
-- Devlin, J., Chang, M.-W., Lee, K., & Toutanova, K. (2019). BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding. NAACL 2019.
-- Raffel, C., et al. (2020). Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer. JMLR, 21(140), 1-67.
-- Sainz, O., Campos, J., García-Ferrero, I., Etxaniz, J., Lopez de Lacalle, O., & Agirre, E. (2023). NLP Evaluation in trouble: On the Need to Measure LLM Data Contamination for each Benchmark. Findings of EMNLP 2023, pp. 10776-10787.
-- Petrak, D., Tran, T. T., & Gurevych, I. (2025). Towards Automated Error Discovery: A Study in Conversational AI. arXiv:2509.10833. (The course's example paper; structural template only.)
+(Empty cells: not recorded in a doc; read them from notebook 4 if needed.)
+
+- Anchor recovery: BERT + dictionary 0.53-0.60, few-shot 0.40-0.60, lookup 0.40 at every level, BART 0.53 at every level. No method restores a dropped fact slot (10 on dev).
+- Pooled repair gain positive for every method except BERT without dictionary (-0.16 to -0.35).
+- No paired test significant after Holm (smallest Holm p 0.73): 15 sentences are far too few; the test needs its 150.
+- SQ3 rate at 25%: 0.45 (few-shot) to 0.70 (BERT + dictionary); BART 0.00 / 0.16 / 0.21 / 0.29 / 0.36 by level.
+- LLM valid-only: at 75% few-shot span BERTScore 0.45 on its 10 valid rows vs 0.17 with failures as no repair, so its drop at 75% is mostly format failures (5 of 15).
+- Qwen format failures: few-shot v4 7/75 (25: 1, 50: 1, 75: 5); article v3 7/75 (50: 2, 75: 5). Probe on dev: 0 of 20 near-verbatim (median 0.25, max 0.31).
+- Two Qwen exact-word numbers exist and differ by definition: 0.487 (pooled over slots, quick script) and 0.559 (mean over sentences, notebook 4). Use notebook 4's definition in the report.
+- Superseded (Llama 3.1 8B, 17 dev sentences, kept as a record): span BERTScore few-shot 1w 0.73 ... 75% -0.10; FRR 0.22; format failures 21% / 27%.
+
+**Pattern to watch on test (a reason to check, not a finding):** on dev, BART leads from 25% up, BERT + dictionary and few-shot are close, and the lookup is strong. If test agrees, the story shifts from "BERT vs LLM" to "letter evidence and supervision on the noise matter more than model size", with the BART caveat in §7.7.
+
+## 13. Future work
+Damage detection in raw OCR; real OCR/gold pairs; image-assisted repair with a vision-capable model (BLN600 images have no word boxes); whole-excerpt context for all methods (BERT's 512-token limit); German newspapers.
+
+## 14. Verified references (already used)
+- Booth, Thomas & Gaizauskas (2024). BLN600. LREC-COLING 2024, pp. 2440-2446.
+- Thomas, Gaizauskas & Lu (2024). Leveraging LLMs for Post-OCR Correction of Historical Newspapers. LT4HALA 2024, pp. 116-121.
+- Debaene, Maladry, Lefever & Hoste (2025). COLING 2025, pp. 10367-10374.
+- Evershed & Fitch (2014). Correcting Noisy OCR: Context Beats Confusion. DATeCH 2014, pp. 45-51.
+- Shen, Quach, Barzilay & Jaakkola (2020). Blank Language Models. EMNLP 2020, pp. 5186-5198.
+- Zhang, Kishore, Wu, Weinberger & Artzi (2020). BERTScore. ICLR 2020.
+- Devlin, Chang, Lee & Toutanova (2019). BERT. NAACL 2019.
+- Sainz et al. (2023). NLP Evaluation in trouble. Findings of EMNLP 2023, pp. 10776-10787.
+- Petrak, Tran & Gurevych (2025). arXiv:2509.10833 (course example paper, structure only).
+- The full list used by the report is `report/overleaf-bln600/references.bib`.
+## 15. What the report still needs (checked against `report/overleaf-bln600/sections/*.tex`, 2026-09-29)
+The PDF is already 9 pages with placeholder tables, so every addition needs a cut.
+- **Introduction:** hypotheses H1, H2, H2b, H3 (course requirement); "three solved examples" -> five; key outcomes after the test run.
+- **Method 3.4:** (b) name Qwen3-30B-A3B-Instruct-2507, 5 examples, numbered slots, remove the Llama `\todo`; add short paragraphs for the dictionary lookup, the dictionary candidates for BERT, and BART with its caveat; Table `tab:settings` (still "dev default: Llama", "3 dev examples").
+- **Experiments 4.1-4.2:** methods in `tab:design`; statistics paragraph (replaces the `\todo`); SQ3 number definition; answer Bea's `\todo`s: level 0 is for the probe only (yes); anchor recovery and visible/dropped are computed (yes); probe measure is normalised Levenshtein and the prompt does not name BLN600; sentence BERTScore is computed (option a is free).
+- **Results:** `tab:results` needs more columns than fit; suggestion: main table = BERT + dictionary, few-shot, lookup, (BART), none; article and BERT without dictionary as one sentence or a figure line.
+- **Interpretation:** "three examples" and "BERT never sees letters" need updating for BERT + dictionary; one sentence per hypothesis: supported, partly, not.
+- **References to add to `references.bib`:** Lewis et al. 2020 (BART, ACL 2020, pp. 7871-7880); Koehn 2004 (EMNLP, pp. 388-395); Dror et al. 2018 (ACL, pp. 1383-1392); Dietterich 1998 (Neural Computation 10(7), 1895-1923); Holm 1979 (Scandinavian Journal of Statistics 6(2), 65-70); Qwen3 Technical Report (Yang et al. 2025, arXiv:2505.09388). Check each entry against the publisher page before adding.
+
+## 16. Appendix outline (for the defence)
+Damage parameters, confusion table and the superseded 40-60% setting; BERT and BART training curves (BART over/underfitting record in `runs/bart_ft_v1_log.csv`); lambda and `lex_n` grids; full prompts, the v1 failure and system-message fix, the Llama run and switch; zero-shot dev run; subword ceiling; manual check; probe details; ablations not run.
+

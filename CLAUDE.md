@@ -1,13 +1,31 @@
-# CLAUDE.md: BLN600 damage study, Day 2 (repair methods, dossier §6 and §7)
+# CLAUDE.md: BLN600 damage study (repair methods, evaluation, report)
 
-Source of decisions: `docs/dossier.md` (§6 slot view, §7 repair methods, §10 fairness). The Day 1 file is kept as `docs/claude_day1.md`; its fixed rules still hold. If this file and the dossier disagree on scope or design, the dossier wins; stop and ask. Items marked **[DECIDE]** are changes or open points the user must settle before code depends on them.
+> **Session handoff (Simon's sessions):** start with `docs/handoff/HANDOFF.md` (current state, rules, next steps) and the last entries of `docs/handoff/SESSION_LOG.md`.
 
-## Status
+Source of decisions: `docs/dossier.md` (the single dossier since 2026-09-29; `docs/dossier_v2.md` was merged into it and removed). Every fact the report needs, by report section: `docs/report_sources.md` (same file as `report/overleaf-bln600/notes/report_sources.md`). The Day 1 file is kept as `docs/claude_day1.md`; its fixed rules still hold. If this file and the dossier disagree on scope or design, the dossier wins; stop and ask. Items marked **[DECIDE]** are changes or open points the user must settle before code depends on them.
+
+## Current status (2026-09-29)
+- **Deadline:** submission Thu 1 Oct 2026, 00:00 (report 7 to 9 pages, ACL). Defence 14 Oct 2026, 10:30.
+- **Data:** frozen `data/processed/corrupted_v2.jsonl` (20-30% per-word intensity, sha256 in `runs/corrupted_v2.sha256`). Never edit or regenerate it; every notebook and script checks the hash first. v1 is removed from git (commit `fabab86` on `main`).
+- **Methods and test predictions (`runs/preds/`, 750 rows each = the 750 test rows with slots):**
+  - BERT + dictionary candidates (main MLM method): `bert_rerank_ftv1-l64-b5-n10-x5-test`, `configs/bert_repair_lex.yaml` frozen. Done.
+  - LLM few-shot, Qwen3-30B-A3B-Instruct-2507 on SAIA: `llm_fewshot_v4-...-exb46768-test`, `configs/llm.yaml` frozen. Done (750/750).
+  - LLM few-shot + article: `llm_fewshot_article_v3-...-exb46768-test`. Done (750/750).
+  - Dictionary lookup (non-GenAI baseline): `lexicon_v1-test`, `configs/lexicon.yaml` frozen. Done.
+  - BERT without dictionary (ablation line): `bert_rerank_ftv1-l8-b5-n10-test`, `configs/bert_repair.yaml` frozen. Done.
+  - BART fine-tuned denoiser (descriptive only): dev only; **test not run**; `configs/bart_repair.yaml` `frozen: false`. Needs a RunPod pod (`scripts/pod/pod.sh`, Simon).
+  - Contamination probe (Qwen, level 0): **116 of 150** test rows (Shan's SAIA run, resumable).
+- **Evaluation:** notebook 4 scores all six methods with bootstrap intervals, paired tests (H2, H2b), the SQ3 rate, anchor recovery, visible/dropped facts, pooled CER, LLM valid-only. **Run on dev only. Nobody has seen test scores.** Run it once on test after the probe and BART test runs are complete.
+- **Report (`report/overleaf-bln600/`, Bea's sections):** 9 pages with placeholders. Stale: Llama and "three examples" (Intro, 3.4(b), `tab:settings`); missing: hypotheses H1-H3 + H2b, Method paragraphs for the lookup, BERT + dictionary and BART, the statistics text, new references (BART, Koehn, Dror, Dietterich, Holm, Qwen3). Full list: `docs/dossier.md` §15.
+- **Branches:** `writing` is the active branch (code + report); Simon works on `simon/baselines` and merges by PR. Shan's cleanup branch (`shan/cleanup`) comes after the LLM test run and must not change behaviour (notebook 4 dev numbers identical before and after).
+- **Superseded predictions kept as a record, not used in the report:** Llama dev runs (`llm_fewshot_v2-meta-llama...`, `llm_fewshot_article_v1-meta-llama...`, `llm_probe_v1-meta-llama...`), Qwen few-shot v3 and article v2 dev runs, the BERT lambda and `lex_n` grid runs, `bert_rerank_base-check-v2`, `bert_rerank_ftv1-check-v2`.
+
+## Status (Day 2 plan, kept for history)
 Data and damage are frozen: `data/processed/corrupted_v1.jsonl`, sha256 `75b28057...ea70` (full hash in `runs/corrupted_v1.sha256`). Never edit or regenerate it. Every notebook and script checks the hash first and stops on mismatch.
 
 **Update (2026-09-26): a second version exists.** `data/processed/corrupted_v2.jsonl` (sha256 in `runs/corrupted_v2.sha256`) lowers the per-word corruption intensity from 40-60% to **20-30%** (first frozen at 20-40%, refrozen at 20-30% on 2026-09-26; see the deviations log, "Section 5 revisited"), to sit inside the interquartile range of real OCR word-error severity measured in `reports/calibration.json`. **v1 is removed from the git repository (commit `fabab86` on `main`); the local files `data/processed/corrupted_v1.jsonl` and `runs/corrupted_v1.sha256` are kept on disk only, untracked.** v2 is the primary version. `load_frozen()` now defaults to `v2`; call sites may still pass the version explicitly.
 
-## Goal today
+## Goal today (Day 2, done)
 Working code for both repair tracks, each run on a few **dev** rows. Not today: any call or prediction on the test split, the λ/beam grid, metrics beyond the sanity check below (no BERTScore, fact recovery, repair gain), ablations (§7.3), `04_evaluation.ipynb`, report text.
 
 ## Human in the loop (hard rules)
@@ -304,7 +322,7 @@ Every difference from the dossier or from this file is recorded here with its re
 
 ### Dossier docs updated to match the LLM freeze (2026-09-28)
 - **D, `docs/dossier.md`, `docs/dossier_v2.md` and `docs/report_sources.md` updated (the user asked)** to reflect the "LLM track: model switch and prompt versions (2026-09-28)" entry above: model frozen at `qwen3-30b-a3b-instruct-2507`, 5 few-shot examples (one per level, numbered slots v4/v3), `configs/llm.yaml` and `configs/bert_repair.yaml` both `frozen: true`. Superseded Llama-3.1-8B text and the old 3-example, 17-of-20-dev numbers are kept in place as labelled history (this project's existing convention, e.g. §7.2a's own "Update (2026-09-26)" note), not deleted, with a dated update appended pointing to the current state. `docs/dossier_v2.md`'s dev-results paragraph now carries both the old (Llama, superseded, kept as a record) and current (Qwen, pooled exact-word/fact-slot rates from this file's 2026-09-28 entry) numbers side by side; no per-level BERTScore table for Qwen exists in a doc yet, so none was invented. **Still stale, not touched here:** the LaTeX report itself (`01_introduction.tex` line 55, `03_method.tex` lines 128/130/177, Table 4) -- separate task, flagged to the team in the report review.
-=======
+
 ### Dictionary lookup baseline (notebook 2b, 2026-09-28, branch `simon/baselines`)
 - **D, a non-GenAI baseline is added (Simon, agreed with the team via the review dossier):** a dictionary lookup that replaces each damaged word by the closest entry of a word list built from the gold text of the 443 excerpts outside the sample. No context, no model: the "confusion" side of "context beats confusion" (Evershed and Fitch 2014). Reason: on dev, a quick check showed this lookup beating BERT at every level and coming close to Qwen, so the report has to answer "does GenAI beat a spell checker?". Dossier §7 and §9: add it as a third reference next to "no repair".
 - **D, a dropped slot gets an empty answer** (Simon chose, option A): the lookup has no letters to go on, so the word stays missing and counts as wrong. The alternative (guess the most frequent word) was declined as making the baseline artificially better.
@@ -348,4 +366,10 @@ Every difference from the dossier or from this file is recorded here with its re
 - **N, dev check (`runs/preds/bart_ftv1-greedy-dev.jsonl`, 100 rows, greedy, 0.2 to 0.36 s per row on the A40):** exact slots 1w 0.650, 10 0.674, 25 0.733, 50 0.744, 75 0.738; 2 format failures (one at 50, one at 75). Visible errors are fluent substitutions: `icyclc` -> `yacht` (gold `bicycle`), `£1,` -> `£6,` (gold `£2,`), `Southon` -> `Southwark` (gold `Southend`).
 - **N, notebook 4 on dev with BART (15 sentences, not a result):** span BERTScore 1w / 10 / 25 / 50 / 75: BART 0.83 / 0.77 / 0.73 / 0.69 / 0.67, BERT + dictionary 0.85 / 0.71 / 0.48 / 0.44 / 0.43, few-shot 0.86 / 0.65 / 0.45 / 0.44 / 0.17. Fact Recovery Rate BART 0.53 to 0.58, anchor recovery 0.53 at every level (the anchor's damage is the same at every level), 0 format failures on the 75 scored rows. SQ3 rate for BART 0.00 / 0.16 / 0.21 / 0.29 / 0.36. BART is compared descriptively only (it was added after the hypotheses).
 - **C, notebook `02c_bart.ipynb`** (new, 16 cells): input and target, training data, the training record with over/underfitting curves (`plots.fit_curves`, new), per-level exact shares at the best epoch, the model hash check, the dev check and examples. It reads files only and loads no model (the laptop cannot train or run BART). **C, notebook 4** now scores six methods (BART in slot 6 of the palette, green); `multiword_count` reads BART's dict output without that field.
->>>>>>> efb3b8027b680a31698bf8f5536dee991e5f3c3a
+
+### Docs consolidated after Simon's merges (2026-09-29, Shan's session)
+- **D, one dossier (the user asked):** `docs/dossier_v2.md` merged into `docs/dossier.md` and removed; the dossier now covers all six methods, the hypotheses, notebook 4's statistics, current dev numbers, the open items and a checklist of what the report still needs (§15). The same consolidation was done for the claude.ai project docs.
+- **D, `docs/report_sources.md` updated (the user asked)** for PR #1 to #3 and the Qwen freeze: new Method sections 3.6 (lookup), 3.7 (BERT + dictionary), 3.8 (BART), statistics and SQ3 number in 4.2, current dev numbers in 4.3, new conflict rows 12 to 18. The two copies (`docs/` and `report/overleaf-bln600/notes/`) had drifted apart; both now hold the same file, including the team decisions of 2026-09-27 that were only in the notes copy.
+- **C, merge conflict in this file fixed:** committed `writing` (`0e1aff0`) had `=======` and `>>>>>>>` lines without `<<<<<<<`, and the entry "Dossier docs updated to match the LLM freeze" was missing. Both sides are kept, markers removed. A "Current status (2026-09-29)" block replaces the Day 2 header as the entry point.
+- **N, test-run state (2026-09-29):** few-shot 750/750 and article 750/750 (150 sentences x 5 levels, no duplicate keys); probe 116/150; BART test not run.
+- **N, correction for the team:** the RunPod A40 ran BART only (training and dev). No LLM call ran on it; all LLM runs are SAIA.
