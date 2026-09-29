@@ -1,6 +1,6 @@
 # Project Dossier: Repairing Damaged Historical Newspaper Text with GenAI
 
-**One dossier (consolidated 2026-09-29).** Section numbers 1 to 11 and 13 keep the old `dossier.md` numbering, so references in the `CLAUDE.md` log (for example §5, §6, §7.1, §7.2a, §10) still point to the right place. This file replaces both `docs/dossier.md` (the long design record) and `docs/dossier_v2.md` (the short current-state version). `dossier_v2.md` is removed; its content is merged here. Superseded numbers are kept, labelled, where the report or the defence may need them.
+**One dossier (consolidated 2026-09-29; the claude.ai project copy `claude/project-dossier.md` is the same file).** Section numbers 1 to 11 and 13 keep the old `dossier.md` numbering, so references in the `CLAUDE.md` log (for example §5, §6, §7.1, §7.2a, §10) still point to the right place. This file replaces both `docs/dossier.md` (the long design record) and `docs/dossier_v2.md` (the short current-state version). `dossier_v2.md` is removed; its content is merged here. Superseded numbers are kept, labelled, where the report or the defence may need them.
 
 Where things live: decisions and numbers with their reasons in the deviations log at the end of `CLAUDE.md` (newest at the bottom); every fact the report needs, by report section, in `docs/report_sources.md` (same file as `report/overleaf-bln600/notes/report_sources.md`); Simon's session state in `docs/handoff/` (his review of 28 Sep: `docs/handoff/review_2026-09-28_simon.md`). If this file and the code disagree on implementation, the code wins; on scope or design, this file wins.
 
@@ -119,6 +119,9 @@ The `lex_n` word-list entries closest in spelling to each damaged form join BERT
 
 ### 7.7 BART fine-tuned denoiser (added 2026-09-29, descriptive only)
 `facebook/bart-base` (about 140M) reads the slot view and writes the sentence back with the gold word in each bracket; a wrong bracket count is a format failure. Trained on the training pool damaged by **our own generator** at all five levels (13,175 examples per epoch, new damage per epoch), same optimiser settings as BERT, greedy decoding with all settings passed explicitly (bart-base ships summarisation defaults, `no_repeat_ngram_size` 3, which would break copying). Best epoch 8 of 10 (validation loss 0.266, pretrained 2.507); validation exact 0.672. Overfitting visible: exact on training sentences with new damage 0.879 vs 0.672 on validation. **Must be defended:** unlike BERT and the LLM, BART is supervised on exactly the noise process of the test data, so its scores are optimistic. It links to Thomas et al. (2024), who compared a fine-tuned BART on BLN600.
+
+### 7.8 Link to related work
+Closest studies compare a fine-tuned encoder or encoder-decoder with a prompted generative LLM on historical OCR text: Thomas, Gaizauskas & Lu (2024) found an instruction-tuned Llama 2 beat a fine-tuned BART on BLN600 itself; Debaene et al. (2025) found fine-tuned seq2seq models beat generative ones on early modern Dutch. This project adds a controlled, fact-centred severity scale, a fact-level metric, identical input for all methods, a non-GenAI lookup baseline, and a few-shot newer open-weight LLM. Our BART line connects directly to Thomas et al.'s BART comparison.
 
 ## 8. Evaluation (as built in notebook 4, `src/blnrepair/evaluation.py`)
 Computed over the damaged span unless stated; format failures scored as no repair.
