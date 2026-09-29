@@ -9,6 +9,7 @@
 #   bash scripts/pod/pod.sh create [--go]       # dry run without --go
 #   bash scripts/pod/pod.sh status  ID
 #   bash scripts/pod/pod.sh push    ID          # code + data to /workspace/GenAI, hash check, pip install
+#   bash scripts/pod/pod.sh push-model ID       # models/bart_ft_v1 up again (needs runs/bart_ft_v1.sha256 committed)
 #   bash scripts/pod/pod.sh run     ID "CMD"    # CMD in the background on the pod, log in runs/pod_run.log
 #   bash scripts/pod/pod.sh log     ID
 #   bash scripts/pod/pod.sh fetch   ID          # models/bart_ft_v1 (hash checked), runs/bart_*, runs/preds/bart_*,
@@ -88,7 +89,7 @@ case "${1:-}" in
     [ -z "$(git status --porcelain -- src scripts configs runs/*.sha256 requirements.txt)" ] \
       || die "uncommitted changes in src, scripts, configs or hashes: commit first, the pod runs HEAD"
     on_pod "$2" "mkdir -p $REMOTE/data/processed"
-    git archive --format=tar HEAD src scripts configs reports runs/bert_train_pool.sha256 runs/corrupted_v2.sha256 \
+    git archive --format=tar HEAD src scripts configs reports runs/bert_train_pool.sha256 runs/corrupted_v2.sha256 $(git ls-files runs/bart_ft_v1.sha256) \
         requirements.txt pyproject.toml | on_pod "$2" "tar -x -C $REMOTE"
     rsync_to "$2" data/processed/bert_train_pool.jsonl data/processed/corrupted_v2.jsonl data/processed/
     on_pod "$2" "cd $REMOTE && echo \"$(git rev-parse HEAD)\" > POD_COMMIT \
@@ -98,6 +99,12 @@ case "${1:-}" in
       && export PIP_BREAK_SYSTEM_PACKAGES=1 \
       && pip install -q transformers==5.17.0 rapidfuzz pandas pyyaml pysbd scipy && pip install -q -e . --no-deps \
       && python -c 'import torch, transformers; print(torch.__version__, transformers.__version__, torch.cuda.get_device_name(0))'"
+    ;;
+  push-model)   # for a later pod (the test run): the fetched model back up, hash checked on the pod
+    on_pod "$2" "mkdir -p $REMOTE/models"
+    rsync_to "$2" models/bart_ft_v1 models/
+    on_pod "$2" "cd $REMOTE && sha256sum models/bart_ft_v1/model.safetensors | cut -d' ' -f1 \
+      | grep -qx \$(cut -d' ' -f1 runs/bart_ft_v1.sha256) && echo 'model hash OK'"
     ;;
   run)
     on_pod "$2" "cd $REMOTE && mkdir -p runs && nohup bash -c 'PYTHONUTF8=1 timeout 3h $3; echo \"EXIT \$?\"' >> runs/pod_run.log 2>&1 < /dev/null & echo started"
