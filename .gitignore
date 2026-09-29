@@ -30,3 +30,13 @@ data/processed/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# LaTeX build byproducts (Overleaf and latexmk rebuild them; only main.pdf is kept)
+report/overleaf-bln600/main.aux
+report/overleaf-bln600/main.bbl
+report/overleaf-bln600/main.blg
+report/overleaf-bln600/main.fdb_latexmk
+report/overleaf-bln600/main.fls
+report/overleaf-bln600/main.log
+report/overleaf-bln600/main.out
+report/overleaf-bln600/main.synctex.gz

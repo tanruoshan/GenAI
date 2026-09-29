@@ -1,0 +1,9 @@
+Report location,Quantity,Value (recomputed here)
+§3.1 Task and Data,sentence pool,"3,123 sentences from 592 excerpts (20–60 words, ≥2 fact token(s))"
+§3.1 Task and Data,eval sample,"150 test + 20 dev sentences, 157 excerpts, seed 42"
+§3.2 Damage Simulation,calibration excerpts used,"29 of 30 attempted (dropped: 1, below 60% word coverage)"
+§3.2 Damage Simulation,"per-word error median (IQR) – real erroneous words, ≥4 letters, all aligned pairs","median 0.25, IQR 0.17–0.40 (n=788)"
+§3.2 Damage Simulation,intensity band chosen (config.yaml),20%–30% (set to bracket the median above)
+§3.2 Damage Simulation / confusion table,"characters deleted, of all aligned gold characters",0.2%
+§3.2 Damage Simulation / confusion table,top-3 calibrated confusions (of 59 with count ≥ 3),"c→o (21x), h→b (19x), o→e (18x)"
+§3.2 Damage Simulation,isolated whole-word drops (calibration check),0.0002 per gold word
