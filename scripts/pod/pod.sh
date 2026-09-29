@@ -102,7 +102,12 @@ case "${1:-}" in
     ;;
   push-model)   # for a later pod (the test run): the fetched model back up, hash checked on the pod
     on_pod "$2" "mkdir -p $REMOTE/models"
-    rsync_to "$2" models/bart_ft_v1 models/
+    # a slow home upload can break off: retry, appending to the part already on the pod (the hash check below
+    # catches any corrupt result)
+    for try in 1 2 3; do
+      rsync_to "$2" --append --inplace --timeout=120 models/bart_ft_v1 models/ && break
+      echo "upload broke off, retry $try"
+    done
     on_pod "$2" "cd $REMOTE && sha256sum models/bart_ft_v1/model.safetensors | cut -d' ' -f1 \
       | grep -qx \$(cut -d' ' -f1 runs/bart_ft_v1.sha256) && echo 'model hash OK'"
     ;;

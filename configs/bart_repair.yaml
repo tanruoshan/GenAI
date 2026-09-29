@@ -7,4 +7,4 @@ num_beams: 1          # greedy
 max_length: 320       # assert, never truncate
 
 # The gate for the test split, as for the other tracks. Set to true (and commit) once the dev run is checked.
-frozen: false
+frozen: true
