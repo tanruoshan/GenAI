@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/workspace/GenAI/scripts/run_bart.py", line 31, in <module>
+    model = AutoModelForSeq2SeqLM.from_pretrained(ROOT / cfg["model"])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/models/auto/auto_factory.py", line 402, in from_pretrained
+    return model_class.from_pretrained(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/modeling_utils.py", line 4218, in from_pretrained
+    checkpoint_files, sharded_metadata = _get_resolved_checkpoint_files(
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/modeling_utils.py", line 630, in _get_resolved_checkpoint_files
+    raise OSError(
+OSError: Error no file named model.safetensors, or pytorch_model.bin, found in directory /workspace/GenAI/models/bart_ft_v1.
+EXIT 1
+Loading weights:   0%|          | 0/260 [00:00<?, ?it/s]Loading weights: 100%|██████████| 260/260 [00:00<00:00, 7329.30it/s]
+bart ftv1-greedy-test: 750 rows stored (750 new), 40 format failures, device cuda
+EXIT 0
