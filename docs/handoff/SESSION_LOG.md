@@ -44,3 +44,19 @@ Append only: one entry per session, newest at the bottom. Each entry: date, sess
 - BART training: best epoch 8, validation exact 0.672, probe 0.879 (learns training sentences), validation loss flat from epoch 6. Pods: 0.20 $ + 0.27 $.
 
 **Handed on** to the next session (or tomorrow): report drafts, then notebook 4 on test once Shan's run is complete (see `HANDOFF.md`).
+
+## 2026-09-29 (late night): "GenAI Worker 2" (took over as project lead from "GenAI Worker 1")
+
+**Done**
+- Synced with `origin/writing` (Shan's report text, LLM test files, cleanup); tests 151 passed, 3 skipped. Checked all seven test files (six methods x 750 unique keys, probe 116) and that notebook 4 resolves to them.
+- **Notebook 4 on the test split, run exactly once** (Simon's explicit go): PR #4, merge `5f1dad5`. This is the result record of the study.
+- Report (branch `simon/results`, PR into `writing`): `scripts/paper_results.py` generates `tab:results`, `tab:format` and `fig:results` from the executed notebook; Results 4.3, Interpretation P1 to P5, Abstract and key outcomes written from test numbers; code-check fixes in the existing text; one citation corrected (Debaene et al. 2025) after checking the full text; text fits 9 pages with no slack.
+- Read-only reviews: Codex `gpt-6-sol` (effort high) on results and interpretation, 15 findings, all but one applied (hypothesis wording kept: fixed before the test run); `gpt-6-luna` (effort medium) on the Debaene citation and on every number of the new text.
+
+**Decided by Simon**
+- Explicit go for the one test run of notebook 4; the report work delegated to this session; `lex_n` 5 / lambda 64 kept; results table filled by this session; workers read-only, only the lead changes the repo; literature is checked only against full texts (Shan's run before submission).
+
+**Numbers**
+- Test headline: see `HANDOFF.md`; every number is in the notebook 4 outputs and the last two deviations-log entries in `CLAUDE.md`.
+
+**Handed on**: Shan's literature run, team read, submission (see `HANDOFF.md`).
