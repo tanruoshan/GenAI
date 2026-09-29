@@ -8,7 +8,9 @@
 % which golchin2024time Sec. 3 warns about ("partial replicas can also arise by happenstance"). (d) repair gain:
 % pooled CER per level proposed; footnote corrected. (e) todos: level 0, anchor recovery, visible vs dropped,
 % statistics, span vs sentence BERTScore, LLM valid-only.
-% OPEN (from 3.4b): LLM model/host/prompt not frozen; see configs/llm.yaml.
+% UPDATE 2026-09-29 (Shan's session): all six methods in tab:design and tab:results; statistics paragraph, SQ3 number
+% and probe details written; Bea's todos answered (level 0 = probe only; anchor and visible/dropped computed in
+% notebook 4; sentence BERTScore computed). koehn/dror/dietterich/holm keys are in notes/pending_refs.bib.
 
 \subsection{Experimental Design}
 \label{sec:design}
@@ -21,10 +23,10 @@ Factor & Levels \\
 \midrule
 Severity & 1 word, 10, 25, 50, 75\% of words; clean level 0 for the contamination probe only \\
 Length band & 20--29, 30--44, 45--60 words \\
-Methods & BERT + rerank; LLM few-shot; no repair (secondary: LLM + article) \\
-Data & 150 test sentences, 750 rows per method; dev 20 (tuning only) \\
+Methods & BERT + dict.; LLM few-shot; dictionary lookup; no repair. Secondary: LLM + article, BERT (no dict.), BART (descriptive) \\
+Data & 150 test sentences, 750 rows per method; dev 20 (15 scored, tuning only) \\
 Metrics & BERTScore, \frr{} (primary); anchor recovery, exact match, pooled span CER, repair gain, format
-failures, LLM valid-only scores, contamination (secondary) \\
+failures, LLM valid-only scores, sentence BERTScore, contamination (secondary) \\
 \bottomrule
 \end{tabular}
 \caption{Experimental design.}
@@ -34,34 +36,35 @@ failures, LLM valid-only scores, contamination (secondary) \\
 % Tuning: lambda grid on dev only (lambda 8; FRR 0.042 -> 0.126 from lambda 1 to 8, flat after). Test split was
 %   opened per method only after its config was frozen (a code gate), so no setting was chosen on test.
 The design crosses three factors inside the same 150 test sentences: five damage levels (1 word, then 10, 25, 50
-and 75\% of the sentence), three length bands (20--29, 30--44 and 45--60 words), and three repair settings (BERT +
-reranking, LLM few-shot, no repair), with LLM + full article as a secondary check (Table~\ref{tab:design}). A clean
-level 0 serves only the contamination probe (Sec.~\ref{sec:metrics}). \todo{team: confirm level 0 is used only for
-the probe.} All damage levels reuse the same sentence and the same anchor word, so every comparison across levels is
+and 75\% of the sentence), three length bands (20--29, 30--44 and 45--60 words), and the repair methods of
+Sec.~\ref{sec:models} (Table~\ref{tab:design}). A clean level 0 serves only the contamination probe
+(Sec.~\ref{sec:metrics}). All damage levels reuse the same sentence and the same anchor word, so every comparison across levels is
 paired: for one sentence we can ask directly whether repair got better, worse or stayed the same as damage grew,
 rather than comparing averages over different sentences. The 20 dev sentences, disjoint from test, were used only to
-pick settings: $\lambda$ was chosen on dev alone (Sec.~\ref{sec:models}), and each method's setting was frozen by a
-code gate before its test rows were touched, so nothing reported here was chosen by looking at test results.
-\todo{team: statistics. Suggested: ``We report 95\% bootstrap confidence intervals over sentences (10,000
-resamples) for every cell of Table~\ref{tab:results}, and compare BERT with the LLM at each level with paired tests:
-McNemar's test on anchor recovery and a Wilcoxon signed-rank test on span BERTScore.''}
+pick settings (Sec.~\ref{sec:models}); five of them are the LLM's examples, so 15 are scored. Each method's setting
+was frozen by a code gate before its test rows were touched, and all test scores were computed once, by one
+notebook, after every method's predictions were stored.
+
+\paragraph{Statistics.} Slots of one sentence share their context, so the sentence, not the slot, is our unit. Every
+cell gets a 95\% bootstrap interval over sentences (10,000 resamples, the same resamples for all methods;
+\citealp{koehn2004statistical,dror2018hitchhiker}). We test only the two comparisons that a hypothesis named before
+the test run: BERT + dict.\ vs LLM (H2) and LLM vs lookup (H2b). Per level we use an exact McNemar test on anchor
+recovery \citep{dietterich1998approximate} and a Wilcoxon signed-rank test on span BERTScore, with Holm's correction
+\citep{holm1979simple} over the ten tests of each family. All other comparisons are descriptive.
 
 \subsection{Metrics}
 \label{sec:metrics}
-% OPTIONAL (recommended): split FRR into visible vs dropped fact slots. Check the count "68 of 692": the test split
-%   has ~1,830 fact slots over all levels (150 x sum of Table 2 means), so 692 must refer to something else.
+% CHECKED 2026-09-29: "68 of 692" counts each fact word once (spans are nested, so the 75% span holds every fact
+%   slot of the sentence): test 624 fact slots, 62 dropped; dev 68, 6 dropped. 1,830 counts the same word again at
+%   every level. Visible vs dropped FRR is computed in notebook 4.
 We score the repaired span, not the whole sentence, since only the span was touched. BERTScore F1
 \citep{zhang2020bertscore} compares the repaired span with the gold span using \texttt{roberta-large} (layer 17),
-rescaled against a baseline so that a score can go below 0; this is our primary meaning-level metric.
-\todo{team, SQ3: span-level BERTScore leaves out the context that the SQ3 argument relies on, and at the 1-word
-level compares one word with one word. Either (a) add sentence-level BERTScore as a second column, or (b) keep span
-level and add: ``Because only the span is compared, context cannot inflate the score; the gap we measure for SQ3 is
-therefore a lower bound on what a sentence-level score would show.''} \frr{} is our primary fact-level metric: the
+rescaled against a baseline so that a score can go below 0; this is our primary meaning-level metric. We also report
+sentence-level BERTScore, where the intact context can raise the score. \frr{} is our primary fact-level metric: the
 share of gold fact tokens in the span that the repair restores exactly in their slot, punctuation ignored. Because
 the share of facts among damaged words falls as the span grows (Table~\ref{tab:damage}), we also report recovery of
 the anchor alone, which is the same word at every level and so gives a clean paired series for SQ1, and we split
 \frr{} into fact slots with visible letters and dropped slots, which the methods must fill from context alone.
-\todo{team: confirm both can be computed from existing predictions.}
 
 As secondary metrics we report exact-word match (the share of all span words restored exactly), span CER pooled per
 level (all character edits divided by all gold characters of that level), repair gain (pooled CER before minus
@@ -69,15 +72,17 @@ after repair),\footnote{We pool CER per level rather than averaging it per row, 
 wrong or over-long word can already give a row CER of 1 or more, so short spans would dominate the mean.} the LLM's
 format-failure rate and its scores over valid answers only (Sec.~\ref{sec:models}), and a contamination probe. The
 probe is a simplified guided completion \citep{golchin2024time,sainz2023contamination}: the LLM receives the first
-half of each clean test sentence and is asked to continue it, and a continuation whose similarity to the true
-remainder is at least 0.9 counts as near-verbatim. \todo{team: name the similarity measure; say whether the prompt
-names \bln{}.} Unlike \citet{golchin2024time}, the probe has no control condition without the dataset name, so a
+half of a clean test sentence and is asked to continue it, and a continuation whose normalised Levenshtein
+similarity to the true remainder (cut to the same length) is at least 0.9 counts as near-verbatim. Unlike
+\citet{golchin2024time}, the prompt does not name \bln{} and there is no second condition to compare with, so a
 formulaic phrase can pass the threshold by chance; we therefore read a low rate as reassuring and inspect any hit by
-hand.
+hand. Because of limited API resources, the probe covers 116 of the 150 test sentences.
 
 BERTScore and \frr{} are reported side by side because they can disagree by design (SQ3): a repair that substitutes
-a wrong but plausible name can still score well on meaning while scoring zero on \frr{}, which is exactly the gap we
-want to measure.
+a wrong but plausible name can still score well on meaning while scoring zero on \frr{}. To put one number on this
+gap (H3) without a threshold, we take for each method and level the chance that a repair with a wrong anchor gets
+at least as high a span BERTScore as a repair with the right anchor (ties count half), which is $1-\mathrm{AUC}$.
+A value of 0 means BERTScore always ranks the right fact higher; 0.5 means it cannot tell right from wrong facts.
 
 \subsection{Results}
 \label{sec:results}
@@ -87,26 +92,35 @@ want to measure.
 \begin{table}[t]
 \centering
 \small\setlength{\tabcolsep}{4pt}
-\begin{tabular}{lcccccc}
+\begin{tabular}{lccccc}
 \toprule
- & \multicolumn{3}{c}{BERTScore (span)} & \multicolumn{3}{c}{\frr{}} \\
-\cmidrule(lr){2-4}\cmidrule(lr){5-7}
-Level & BERT & LLM & None & BERT & LLM & None \\
+Level & BERT+dict. & LLM & Lookup & BART & None \\
 \midrule
-1w   & \pending & \pending & \pending & \pending & \pending & \pending \\
-10\% & \pending & \pending & \pending & \pending & \pending & \pending \\
-25\% & \pending & \pending & \pending & \pending & \pending & \pending \\
-50\% & \pending & \pending & \pending & \pending & \pending & \pending \\
-75\% & \pending & \pending & \pending & \pending & \pending & \pending \\
+\multicolumn{6}{l}{\textit{BERTScore (span)}} \\
+1w   & \pending & \pending & \pending & \pending & \pending \\
+10\% & \pending & \pending & \pending & \pending & \pending \\
+25\% & \pending & \pending & \pending & \pending & \pending \\
+50\% & \pending & \pending & \pending & \pending & \pending \\
+75\% & \pending & \pending & \pending & \pending & \pending \\
+\midrule
+\multicolumn{6}{l}{\textit{\frr{}}} \\
+1w   & \pending & \pending & \pending & \pending & \pending \\
+10\% & \pending & \pending & \pending & \pending & \pending \\
+25\% & \pending & \pending & \pending & \pending & \pending \\
+50\% & \pending & \pending & \pending & \pending & \pending \\
+75\% & \pending & \pending & \pending & \pending & \pending \\
 \bottomrule
 \end{tabular}
-\caption{Test results, 150 sentences per level. None = no repair. \todo{95\% CIs per cell; LLM format failures per
-level; LLM valid-only scores (column or footnote).}}
+\caption{Test results, 150 sentences per level. None = no repair; BART is descriptive only. BERT without dictionary
+and LLM + article are reported in the text. \todo{95\% CIs per cell (notebook 4); LLM and BART format failures per
+level; LLM valid-only scores (footnote).}}
 \label{tab:results}
 \end{table}
 % Report in this order: (1) SQ1 curve shape and breakpoint, on anchor recovery first, then FRR; (2) band effect;
-%   (3) SQ2 paired BERT vs LLM per level; (4) SQ3 BERTScore vs FRR gap, with one concrete wrong-name example;
-%   (5) LLM format-failure rate and where it occurs; (6) article vs few-shot (paired); (7) contamination rate.
+%   (3) SQ2 paired BERT + dict. vs LLM per level (H2) and LLM vs lookup on fact words (H2b), Holm-corrected;
+%   (4) SQ3 BERTScore vs FRR gap and the 1 - AUC rate (H3), with one concrete wrong-name example;
+%   (5) LLM and BART format-failure rates and where they occur; (6) article vs few-shot and BERT without dict.
+%   (one sentence each); (7) BART, descriptively, with its caveat; (8) contamination rate on 116 sentences.
 % WATCH (from dev, to check on test): on dev the methods crossed at 50-75% only because the LLM's format failures
 %   are all there and are scored as no repair. If test shows the same, the valid-only scores are the evidence:
 %   say the crossing is a format effect, not better repair.

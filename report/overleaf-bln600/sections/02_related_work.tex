@@ -53,14 +53,14 @@ numbers poorly (as reviewed ibid.). A repaired span that restores every word but
 candidate. Since this evidence comes from other tasks, SQ3 checks it directly by scoring the same repairs with
 BERTScore and with the Fact Recovery Rate. A second concern is memorisation. \citet{thomas2024leveraging} chose
 BLN600 over the ICDAR benchmarks to avoid contamination, but BLN600 itself has been public since 2024, so a newer LLM
-may have seen it in pretraining \citep{sainz2023contamination}. We probe for this with guided completion, prompting
-the model with the dataset name and the start of a test instance and comparing its continuation with the true
-remainder \citep{golchin2024time}.
+may have seen it in pretraining \citep{sainz2023contamination}. We probe for this with a simplified form of guided completion
+\citep{golchin2024time}, prompting the model with the start of a test sentence and comparing its continuation with
+the true remainder.
 
 No single element of our design is new; the combination is. Table~\ref{tab:position} places our study against the
 three closest lines of work, and Section~\ref{sec:method} builds each missing element: graded nested damage
-(Sec.~\ref{sec:damage}), a shared slot input (Sec.~\ref{sec:slot}), two repair families under identical input
-(Sec.~\ref{sec:models}), and a fact-level score next to BERTScore (Sec.~\ref{sec:metrics}).
+(Sec.~\ref{sec:damage}), a shared slot input (Sec.~\ref{sec:slot}), two repair families and a non-GenAI lookup
+under identical input (Sec.~\ref{sec:models}), and a fact-level score next to BERTScore (Sec.~\ref{sec:metrics}).
 
 \begin{table}[t]
 \centering

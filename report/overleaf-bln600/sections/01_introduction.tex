@@ -45,22 +45,32 @@ the sentence grows?
 damaged share of a sentence grows, or break down beyond some level? \textbf{SQ2} (method): given identical input,
 does a fine-tuned masked language model or a few-shot LLM repair better? \textbf{SQ3} (metric validity): does
 semantic similarity overstate repair quality compared with exact fact recovery?
+% HYPOTHESES added 2026-09-29 (Simon's review, agreed by the team). Written after dev tuning, before any test score.
+% OPEN (team): the RQ names two families; the lookup and BART are presented as reference lines, not widened into
+%   the RQ. If BART leads on test, reconsider the RQ wording.
+We fixed four hypotheses after tuning on dev but before computing any test score. \textbf{H1}: repair quality falls
+as the damaged share grows, and \frr{} falls faster than BERTScore. \textbf{H2}: with identical input, the few-shot
+LLM restores more fact words than fine-tuned BERT, because it reads all garbled forms of a sentence together.
+\textbf{H2b}: GenAI repair beats a plain dictionary lookup on fact words, not only on common words. \textbf{H3}:
+BERTScore overstates repair quality: at every level, some repairs with a wrong fact score as high as repairs with
+the right one.
 
 Answering these questions needs damage whose amount we control and whose original text we know, which real damaged
 pages cannot give. We therefore build a controlled experiment on BLN600 \citep{booth-etal-2024-bln600}: in each of
 150 test sentences we damage one block of words around a fact at five nested levels, from one word to 75\% of the
-sentence, with character noise calibrated on the corpus's own OCR errors. Both methods see the same input, the
+sentence, with character noise calibrated on the corpus's own OCR errors. All methods see the same input, the
 intact context plus the garbled form of each damaged word, so only the repair differs. We compare masked infilling
-with BERT \citep{devlin2019bert}, fine-tuned on in-domain gold text and guided by letter similarity in the spirit of
-``context beats confusion'' \citep{evershed2014correcting}, with an open-weight LLM prompted with three solved
-examples. We score the repaired words with BERTScore \citep{zhang2020bertscore} for meaning and with a Fact Recovery
+with BERT \citep{devlin2019bert}, fine-tuned on in-domain gold text and guided by letter similarity and dictionary
+candidates in the spirit of ``context beats confusion'' \citep{evershed2014correcting}, with an open-weight LLM
+prompted with five solved examples. As reference lines we add a dictionary lookup that uses no model at all and,
+descriptively, BART \citep{lewis2020bart} fine-tuned as a denoiser. We score the repaired words with BERTScore \citep{zhang2020bertscore} for meaning and with a Fact Recovery
 Rate for exact facts, and probe the LLM for memorised test text \citep{sainz2023contamination}. Repair works on text
 only and assumes the damaged region is known; detecting it, and repairing from the scanned image with a
 vision-capable model, are left to future work.
 
 Our contributions are (i) a fact-centred, graded damage benchmark on BLN600 with nested spans, so the same place
 gets worse from level to level; (ii) a controlled comparison of masked infilling and few-shot generation under
-identical input and scoring; and (iii) a fact-level metric next to BERTScore that shows where semantic similarity and
+identical input and scoring, measured against a non-GenAI lookup; and (iii) a fact-level metric next to BERTScore that shows where semantic similarity and
 factual accuracy part ways. \todo{Key outcomes, from the TEST split only: (1) the level at which Fact Recovery Rate
 falls to the no-repair floor; (2) which method wins at low vs high damage, and whether a crossing is a format-failure
 effect; (3) the size of the BERTScore vs Fact Recovery gap.}

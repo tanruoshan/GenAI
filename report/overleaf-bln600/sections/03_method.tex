@@ -9,17 +9,17 @@
 % comments; licence argument softened (NC-ND does not by itself forbid API use); boros2024 cited for system
 % message (Sec. 6); valid-only scoring added (kanerva2025ocr Table 3); training asymmetry stated.
 %
+% UPDATE 2026-09-29 (Shan's session): LLM frozen (Qwen3-30B-A3B-Instruct-2507, 5 examples, numbered slots);
+%   new paragraphs (b) BERT + dictionary, (d) dictionary lookup, (e) BART; Table tab:settings updated.
+%   Citations lewis2020bart and yang2025qwen3 are in notes/pending_refs.bib until moved into references.bib.
 % FLAGGED FOR THE TEAM:
-%  - Conflict #5: configs/llm.yaml frozen: false. Model/host/prompt not final (teammate). Text below names the
-%    dev model only as provisional; replace \todo{final id} once frozen. Intro and Related Work say only
-%    "an open-weight LLM" -- keep it that way until then.
 %  - Conflict #10: noise calibrated on mild real OCR errors, not physical damage; stated in 3.2, argued in
 %    Limitations.
 %  - NEW: valid-only scoring for the LLM (3.4b) needs a column or footnote in Table 5 / Sec. 4.3.
 
 \subsection{Task and Data}
 Given a sentence whose damaged span is known and whose garbled letters are visible, the task is to predict one word
-per damaged position; the number of damaged words is therefore also given. Both repair methods take the same input
+per damaged position; the number of damaged words is therefore also given. All repair methods take the same input
 and are scored by the same code (Sec.~\ref{sec:slot}). We build this task on \bln{} \citep{booth-etal-2024-bln600},
 600 excerpts of London crime reporting from British newspapers of 1834--1894, each with its source image, OCR output
 and a gold transcription. We split excerpts into sentences with \texttt{pysbd} and pool sentences of 20--60 words
@@ -90,7 +90,7 @@ any single word is damaged -- only how many words around the anchor are included
 
 \subsection{Shared Slot Input}
 \label{sec:slot}
-Both methods see the same \emph{slot view}: the sentence's undamaged context is left untouched, and each damaged
+All methods see the same \emph{slot view}: the sentence's undamaged context is left untouched, and each damaged
 gold word is replaced by a slot showing its garbled form (a dropped word becomes an empty slot, written
 $\langle ?\rangle$). This view is built from the gold tokens and the per-word edit operations, never from the raw
 corrupted text, so it cannot leak an easier version of the task. A predicted word is spliced back inside the
@@ -121,15 +121,25 @@ $\lambda(1-d)$, where $d$ is the normalised Levenshtein distance to the garbled 
 pulled back toward what the damaged letters actually show. This is a direct, modern instance of ``context beats
 confusion'' \citep{evershed2014correcting}. We chose $\lambda = 8$ from a grid over $\{1,2,4,8,16\}$ on dev, where it
 gave the best exact-word rate at a point where Fact Recovery Rate had already plateaued. Dropped slots, which have no
-garbled letters to match against, are scored on the language-model term alone.
+garbled letters to match against, are scored on the language-model term alone. We keep this context-only variant as
+an ablation (\emph{BERT, no dict.}).
 \end{sloppypar}
 
-\textbf{(b) LLM few-shot.} The LLM condition prompts an open-weight instruction-tuned model with a system message, a
-task instruction, three solved dev examples (held out from all scoring), and the same slot view as BERT, asking for a
-JSON list of exactly $k$ strings at temperature 0. \todo{Final model id and host. Until frozen: development runs used
-Llama-3.1-8B-Instruct \citep{grattafiori2024llama3} served through GWDG's SAIA API.} We use only open-weight models on
-academic infrastructure, so that the licensed \bln{} text (CC BY-NC-ND) is never sent to a commercial third-party
-service. The system message was necessary: without it, an early dev check found the model answering in Python or
+\textbf{(b) BERT + dictionary.} Reranking cannot choose a word that BERT never proposes: on dev, BERT's top
+candidates for \emph{Wrighb} (gold \emph{Wright}) were \emph{Smith}, \emph{White} and \emph{andooll}. Our main MLM
+method therefore adds, for each slot, the five entries of a word list that are closest in spelling to the garbled
+form to BERT's candidates, and scores them with the same formula. The list holds the 16,469 distinct words of the
+gold text of the 443 excerpts outside the sample, so no dev or test text enters it. On a dev grid over list size
+(5, 10, 20, 50) and $\lambda$ (1 to 128) we chose 5 entries and $\lambda = 64$ by the same rule as above. At this
+weight the letters decide most slots, and BERT's context breaks near ties and fills dropped slots.
+
+\textbf{(c) LLM few-shot.} We prompt Qwen3-30B-A3B-Instruct-2507 \citep{yang2025qwen3}, a mixture-of-experts model
+with 30B parameters of which 3.3B are active per token, served through GWDG's SAIA API. The prompt holds a system
+message, a task instruction, five solved dev examples (one per level, held out from all scoring), and the same slot
+view as BERT with numbered slots, and asks for a JSON list of exactly $k$ strings at temperature 0. We first used
+Llama-3.1-8B-Instruct \citep{grattafiori2024llama3}, but its dev format-failure rates (21\% and 27\% for the two prompt variants) were above the 15\% limit
+we had set in advance for switching model. We use only open-weight models on academic infrastructure, so that the
+licensed \bln{} text (CC BY-NC-ND) is never sent to a commercial third-party service. The system message was necessary: without it, an early dev check found the model answering in Python or
 tool-call syntax in 15 of 15 cases, in line with the finding that stating the input type and output format helps
 LLM post-correction \citep{boros2024postcorrection}. An answer of the wrong length, not valid JSON, or cut off by the
 token limit counts as a \emph{format failure} and is scored as if no repair had been made, with no retry and no
@@ -138,13 +148,25 @@ manual correction. Because output formatting alone can swing LLM post-correction
 from failing to follow the format. A secondary variant supplies the whole surrounding article as context instead of
 just the sentence; its other sentences are gold, not damaged, so it is an upper bound rather than a fair comparison
 with BERT, and we compare it only against the LLM's own few-shot run. Zero-shot prompting was tried on dev and
-dropped, so this design cannot isolate how much of the LLM's performance comes from the three examples rather than
+dropped, so this design cannot isolate how much of the LLM's performance comes from the five examples rather than
 the instruction alone. The two methods also differ in supervision by design: BERT is fine-tuned on in-domain text,
-the LLM sees three examples. SQ2 therefore compares two practical repair set-ups, not two architectures under equal
+the LLM sees five examples. SQ2 therefore compares two practical repair set-ups, not two architectures under equal
 training.
 
-\textbf{(c) No-repair baseline.} The damaged text itself is scored as if it were a third method, giving the floor
-both repair methods have to beat. Table~\ref{tab:settings} summarises the settings of both repair methods.
+\textbf{(d) Dictionary lookup.} To ask whether GenAI beats a spell checker, each garbled word is replaced by the
+closest entry of the same word list (Levenshtein distance, ties by frequency); a dropped slot stays empty. The
+lookup uses letters only and no context, the pure ``confusion'' side of \citet{evershed2014correcting}. Its limit is
+coverage: on dev, the list holds 95\% of damaged words but only 77\% of damaged fact words.
+
+\textbf{(e) BART denoiser (descriptive).} \texttt{bart-base} (140M) \citep{lewis2020bart}, the model family that
+\citet{thomas2024leveraging} compared on \bln{}, reads the slot view and writes the sentence back with one word per
+slot. We fine-tune it on the BERT training sentences, damaged by our own generator at all five levels with new
+damage in each epoch (best epoch 8 of 10). Unlike the other methods, BART is thus trained on exactly the noise
+process of the test data, so its scores are optimistic. It was added after the hypotheses were set, and we report it
+descriptively only.
+
+\textbf{(f) No repair.} The damaged text itself is scored as if it were a method, giving the floor every repair has
+to beat. Table~\ref{tab:settings} summarises the settings.
 
 \begin{table}[t]
 \centering
@@ -167,18 +189,21 @@ Facts / damaged words (\%) & 100 & 48 & 26 & 19 & 17 \\
 \small\setlength{\tabcolsep}{3pt}
 \begin{tabular}{p{2.1cm}p{4.9cm}}
 \toprule
-\multicolumn{2}{l}{\textit{BERT + reranking}} \\
-Base model & bert-base-cased (110M) \\
+\multicolumn{2}{l}{\textit{BERT (both variants)}} \\
+Base model & bert-base-cased (110M), clean gold text \\
 Fine-tuning & lr $5\mathrm{e}{-5}$, batch 16, early stop (patience 2, max 10 ep.), best epoch 2 \\
-Val.\ loss & 5.61 (pretrained) $\rightarrow$ 4.14 \\
-Reranking & 1--3 masks/slot, beam 5, top 10, $\lambda=8$ \\
+Reranking & 1--3 masks/slot, beam 5, top 10; $\lambda=8$ (no dict.), $\lambda=64$ + 5 list words (dict.) \\
 \midrule
 \multicolumn{2}{l}{\textit{LLM few-shot}} \\
-Model & \todo{final id} (dev default: Llama-3.1-8B-Instruct) \\
-Prompt & system msg + 3 dev examples, JSON output \\
+Model & Qwen3-30B-A3B-Instruct-2507 (SAIA) \\
+Prompt & system msg + 5 dev examples, numbered slots, JSON \\
 Decoding & temperature 0, max 1024 tokens \\
+\midrule
+\multicolumn{2}{l}{\textit{BART and lookup}} \\
+BART & bart-base (140M), same optimiser as BERT, trained on our damage; best epoch 8; greedy \\
+Lookup & 16,469-word list, Levenshtein, no context \\
 \bottomrule
 \end{tabular}
-\caption{Implementation settings. $\lambda$ chosen on dev from $\{1,2,4,8,16\}$.}
+\caption{Implementation settings. $\lambda$ and list size chosen on dev only.}
 \label{tab:settings}
 \end{table}

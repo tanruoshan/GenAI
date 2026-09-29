@@ -13,19 +13,24 @@ sentence grows. [VARIANT A, breakpoint:] Repair holds up to [LEVEL]: there, the 
 [Z]\%, close to the no-repair floor. [VARIANT B, smooth decline:] Anchor recovery falls steadily from [X]\% at one
 damaged word to [Z]\% at 75\%, with no single level at which repair stops working. The objective is therefore reached
 gradually rather than completely: [one sentence on which part of the damage range repair can be trusted with].
+\todo{One line per hypothesis, from the test run: H1, H2, H2b, H3 supported, partly supported or not.}
 % Use anchor recovery first (same word at every level), FRR second (mixture changes, Table 2).
 
 % ---- P2: SQ2, which method and why ----
 \todo{P2, first sentence after results: which method wins, at which levels, and whether a crossing survives on
-valid-only LLM scores.} Three differences between the methods can explain this pattern. First, the two methods use
-the garbled letters differently: BERT never sees them as input, only through the reranking term and one slot at a
-time (Sec.~\ref{sec:models}), whereas the LLM reads all garbled forms at once and can use one to interpret another.
-This should favour the LLM as spans grow. Second, BERT fills masked pieces in parallel, which makes multi-piece
+valid-only LLM scores.} Three differences between the methods can explain this pattern. First, the methods use the
+garbled letters differently: BERT never sees them as input, only through its candidate list and reranking term and
+one slot at a time (Sec.~\ref{sec:models}), and the lookup uses them alone, without context, whereas the LLM and BART read all garbled
+forms at once and can use one to interpret another. This should favour the LLM as spans grow. Second, BERT fills masked pieces in parallel, which makes multi-piece
 words hard to fill \citep{shen2020blank}, and our search stops at three pieces per slot, so the 3.5\% of fact slots
-that need more cannot be restored at all. Third, the two methods differ in supervision and scale: BERT is fine-tuned
-on in-domain text, the LLM has [N] times more parameters but sees only three examples. [If the contamination probe
+that need more cannot be restored at all. Third, the methods differ in supervision and scale: BERT is fine-tuned on
+clean in-domain text and BART on our own damage, while the LLM has about 270 times more parameters than BERT (30
+times more active per token) but sees only five examples. If BART leads, its training on the test noise process is
+the first explanation to rule out, not a sign of a better architecture. [If the contamination probe
 found hits: add that memorised text may inflate the LLM's scores on the flagged sentences.]
 % VARIANT (LLM wins at high damage): the first explanation fits; check that the gap holds on valid-only scores.
+% VARIANT (lookup close to or above the LLM on facts): H2b fails; say where GenAI still adds value (dropped slots,
+%   names outside the word list: 77% of damaged fact words are in the list on dev).
 % VARIANT (BERT wins throughout): in-domain fine-tuning outweighs joint access to the letters, in line with
 %   debaene2025evaluating, where fine-tuned seq2seq models beat generative ones.
 % VARIANT (crossing is a format effect): say so plainly, the LLM repairs as well as or better than BERT where it

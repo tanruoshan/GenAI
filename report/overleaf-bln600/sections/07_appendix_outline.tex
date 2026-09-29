@@ -11,4 +11,10 @@
 % - Full prompts; the first prompt without a system message (15/15 format failures) and the fix.
 % - Zero-shot dev run (dropped), subword ceiling, manual check of 18 repairs, contamination probe details.
 % - Ablations planned but not run: blank slots (letters hidden) and confusion-weighted reranking (upper bound).
-\todo{One short paragraph listing these items.}
+% - lex_n x lambda grid for BERT + dictionary; BART training record (over/underfitting curves, runs/bart_ft_v1_log.csv);
+%   Llama-3.1-8B dev run and the switch rule; results per length band; the full paired-test table.
+At the defence we would add: the full damage parameters and confusion table, with the first, heavier noise setting
+we dropped; BERT and BART training curves; the $\lambda$ and word-list grids chosen on dev; the full prompts, the
+first prompt without a system message and the Llama-3.1-8B dev run that led to the model switch; the dropped
+zero-shot run; results by length band and the full paired-test table; the manual check of 18 repairs; the probe
+details; and two ablations we planned but did not run (letters hidden, confusion-weighted reranking).
