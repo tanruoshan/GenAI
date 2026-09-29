@@ -1,0 +1,69 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/259 [00:00<?, ?it/s]Loading weights: 100%|██████████| 259/259 [00:00<00:00, 6839.89it/s]
+device: NVIDIA A40, bf16: True
+step  1  loss 2.352
+step  2  loss 2.896
+step  3  loss 2.264
+step  4  loss 2.222
+step  5  loss 1.671
+step  6  loss 1.561
+step  7  loss 1.647
+step  8  loss 1.807
+step  9  loss 1.210
+step 10  loss 1.073
+step 11  loss 1.347
+step 12  loss 1.448
+step 13  loss 0.941
+step 14  loss 0.876
+step 15  loss 1.209
+step 16  loss 1.265
+step 17  loss 0.814
+step 18  loss 0.725
+step 19  loss 1.019
+step 20  loss 1.047
+step 21  loss 0.814
+step 22  loss 0.667
+step 23  loss 0.922
+step 24  loss 0.925
+step 25  loss 0.707
+step 26  loss 0.613
+step 27  loss 0.860
+step 28  loss 0.862
+step 29  loss 0.643
+step 30  loss 0.556
+Writing model shards:   0%|          | 0/1 [00:00<?, ?it/s]Writing model shards: 100%|██████████| 1/1 [00:01<00:00,  1.60s/it]Writing model shards: 100%|██████████| 1/1 [00:01<00:00,  1.61s/it]
+Loading weights:   0%|          | 0/260 [00:00<?, ?it/s]Loading weights:  43%|████▎     | 112/260 [00:00<00:00, 1107.95it/s]Loading weights:  87%|████████▋ | 227/260 [00:00<00:00, 1108.68it/s]Loading weights: 100%|██████████| 260/260 [00:00<00:00, 1171.97it/s]
+
+train loss 2.504 -> 0.687; validation {'loss': 0.9884418132066672, 'slot_exact': 0.01032448377581121, 'format_failures': 34, 'exact_1w': 0.0, 'exact_10': 0.11904761904761904, 'exact_25': 0.009345794392523364, 'exact_50': 0.004672897196261682, 'exact_75': 0.0}; loss after reload 0.9884
+example answer: ON Monday, at the { Celbral } Criminal Court, Mr. Henry William Pound, late managing director of a limited liability company, called Pound, Son, and Hutchings, now in liquidation, surrendered to take 
+0.09 s per step on cuda; one epoch = 824 steps = about 1.2 min
+smoke run OK
+EXIT 0
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/259 [00:00<?, ?it/s]Loading weights: 100%|██████████| 259/259 [00:00<00:00, 8254.18it/s]
+device: NVIDIA A40, bf16: True
+pretrained model, val: {'loss': 2.5066489480698024, 'slot_exact': 0.0, 'format_failures': 239, 'exact_1w': 0.0, 'exact_10': 0.0, 'exact_25': 0.0, 'exact_50': 0.0, 'exact_75': 0.0}
+pretrained model, probe: {'loss': 2.489373138688082, 'slot_exact': 0.0, 'format_failures': 276, 'exact_1w': 0.0, 'exact_10': 0.0, 'exact_25': 0.0, 'exact_50': 0.0, 'exact_75': 0.0}
+Writing model shards:   0%|          | 0/1 [00:00<?, ?it/s]Writing model shards: 100%|██████████| 1/1 [00:01<00:00,  1.57s/it]Writing model shards: 100%|██████████| 1/1 [00:01<00:00,  1.57s/it]
+epoch 1: val loss 0.3440, exact 0.396 (probe loss 0.2371, exact 0.446); best loss 0.3440 at epoch 1; train 1.4 min, with evaluation 2.1 min
+Writing model shards:   0%|          | 0/1 [00:00<?, ?it/s]Writing model shards: 100%|██████████| 1/1 [00:01<00:00,  1.51s/it]Writing model shards: 100%|██████████| 1/1 [00:01<00:00,  1.52s/it]
+epoch 2: val loss 0.2894, exact 0.528 (probe loss 0.1463, exact 0.639); best loss 0.2894 at epoch 2; train 1.4 min, with evaluation 2.1 min
+Writing model shards:   0%|          | 0/1 [00:00<?, ?it/s]Writing model shards: 100%|██████████| 1/1 [00:01<00:00,  1.50s/it]Writing model shards: 100%|██████████| 1/1 [00:01<00:00,  1.50s/it]
+epoch 3: val loss 0.2795, exact 0.592 (probe loss 0.1039, exact 0.731); best loss 0.2795 at epoch 3; train 1.4 min, with evaluation 2.1 min
+Writing model shards:   0%|          | 0/1 [00:00<?, ?it/s]Writing model shards: 100%|██████████| 1/1 [00:01<00:00,  1.69s/it]Writing model shards: 100%|██████████| 1/1 [00:01<00:00,  1.69s/it]
+epoch 4: val loss 0.2753, exact 0.602 (probe loss 0.0785, exact 0.791); best loss 0.2753 at epoch 4; train 1.3 min, with evaluation 2.1 min
+Writing model shards:   0%|          | 0/1 [00:00<?, ?it/s]Writing model shards: 100%|██████████| 1/1 [00:01<00:00,  1.53s/it]Writing model shards: 100%|██████████| 1/1 [00:01<00:00,  1.53s/it]
+epoch 5: val loss 0.2710, exact 0.618 (probe loss 0.0632, exact 0.815); best loss 0.2710 at epoch 5; train 1.4 min, with evaluation 2.1 min
+Writing model shards:   0%|          | 0/1 [00:00<?, ?it/s]Writing model shards: 100%|██████████| 1/1 [00:01<00:00,  1.73s/it]Writing model shards: 100%|██████████| 1/1 [00:01<00:00,  1.75s/it]
+epoch 6: val loss 0.2674, exact 0.649 (probe loss 0.0528, exact 0.851); best loss 0.2674 at epoch 6; train 1.4 min, with evaluation 2.1 min
+epoch 7: val loss 0.2691, exact 0.655 (probe loss 0.0457, exact 0.859); best loss 0.2674 at epoch 6; train 1.4 min, with evaluation 2.2 min
+Writing model shards:   0%|          | 0/1 [00:00<?, ?it/s]Writing model shards: 100%|██████████| 1/1 [00:01<00:00,  1.75s/it]Writing model shards: 100%|██████████| 1/1 [00:01<00:00,  1.76s/it]
+epoch 8: val loss 0.2663, exact 0.672 (probe loss 0.0408, exact 0.879); best loss 0.2663 at epoch 8; train 1.4 min, with evaluation 2.2 min
+epoch 9: val loss 0.2680, exact 0.678 (probe loss 0.0375, exact 0.891); best loss 0.2663 at epoch 8; train 1.4 min, with evaluation 2.2 min
+epoch 10: val loss 0.2701, exact 0.670 (probe loss 0.0362, exact 0.896); best loss 0.2663 at epoch 8; train 1.4 min, with evaluation 2.2 min
+Loading weights:   0%|          | 0/260 [00:00<?, ?it/s]Loading weights:  14%|█▍        | 37/260 [00:00<00:00, 300.22it/s]Loading weights:  28%|██▊       | 72/260 [00:00<00:00, 313.58it/s]Loading weights:  40%|████      | 104/260 [00:00<00:00, 281.85it/s]Loading weights: 100%|██████████| 260/260 [00:00<00:00, 682.64it/s]
+early stop: no lower validation loss for 2 epochs. Best epoch 8, validation loss 0.2663. Model sha256 28de207d162054bbe31359e3a33f66e50584c320784b23bd1734e05eb5695614
+EXIT 0
+Loading weights:   0%|          | 0/260 [00:00<?, ?it/s]Loading weights:  65%|██████▌   | 170/260 [00:00<00:00, 1668.93it/s]Loading weights: 100%|██████████| 260/260 [00:00<00:00, 1964.23it/s]
+bart ftv1-greedy-dev: 100 rows stored (100 new), 2 format failures, device cuda
+EXIT 0

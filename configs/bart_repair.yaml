@@ -1,0 +1,10 @@
+# BART repair (notebook 2c, scripts/run_bart.py). The fine-tuned model from scripts/train_bart.py and a fixed
+# decoding. Nothing is tuned on dev: greedy decoding is set before the dev run, so the dev run is a check only.
+# A change gives a new version name (bart_data.bart_version), so old predictions are never read by mistake.
+model: models/bart_ft_v1
+model_tag: ftv1
+num_beams: 1          # greedy
+max_length: 320       # assert, never truncate
+
+# The gate for the test split, as for the other tracks. Set to true (and commit) once the dev run is checked.
+frozen: false
