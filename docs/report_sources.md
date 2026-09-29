@@ -42,7 +42,7 @@ files beat prose.
 | 19 | Probe prompt | Related Work (before 2026-09-29): "prompting the model with the dataset name". | The probe prompt does **not** name BLN600 [S §4, notebook 3]. | Fixed in `02_related_work.tex` 2026-09-29. |
 | 20 | Probe coverage | Handoff step 2: "check 750 / 750 / 150 rows". | Probe stopped at **116 of 150** (Shan's decision, final). | Handoff, dossier and report (4.2, Limitations) say 116. |
 | 21 | "68 of 692" fact slots (Bea's 4.2 comment) | 1,830 = 150 x sum of per-level means. | 692 counts each fact word once at the 75% level (spans nested): test 624 (62 dropped), dev 68 (6 dropped) [checked on corrupted_v2]. | Use per-word counts; comment in `04_experiments.tex` updated. |
-| 22 | New references | Dossier §15: add six references to `references.bib`. | Checked entries sit in `report/overleaf-bln600/notes/pending_refs.bib`; `references.bib` untouched (Shan's rule). | Shan moves them; until then they show as (?). |
+| 22 | New references | Dossier §15: add six references to `references.bib`. | Five are in `references.bib` (Shan, Zotero, 2026-09-29); Dietterich 1998 dropped (no full-text access), McNemar and Wilcoxon cited via Dror et al. 2018 §3.2; `notes/pending_refs.bib` deleted. | Done. |
 
 ---
 
@@ -68,7 +68,7 @@ files beat prose.
 - Evershed & Fitch (2014): "context beats confusion"; our reranking is a basic form of context plus confusion [D §7.1].
 - Shen et al. (2020): multi-token blanks are hard for parallel prediction [D §10].
 - Dictionary lookup = the pure "confusion" side of Evershed & Fitch (2014); BERT + dictionary = context plus confusion with a larger candidate set [C 2026-09-28/29].
-- BART (Lewis et al. 2020, `lewis2020bart` in `notes/pending_refs.bib`): the course's denoising model; Thomas et al. (2024) compared a fine-tuned BART on BLN600, so our BART line links directly to them [S §6, C].
+- BART (Lewis et al. 2020, `lewis2020bart`): the course's denoising model; Thomas et al. (2024) compared a fine-tuned BART on BLN600, so our BART line links directly to them [S §6, C].
 - Zhang et al. (2020) BERTScore; Sainz et al. (2023) contamination per benchmark.
 - **Our delta** [D §7.4]: controlled, fact-centred severity scale; fact-level metric; identical input for both methods; few-shot newer open-weight LLM instead of fine-tuned Llama 2.
 - **Structure and draft, team decision 2026-09-27.** Related Work drafted in full prose (sections/02_related_work.tex), one paragraph per sub-question: RW-1 post-OCR correction (SQ1, gap), RW-2 restoring text at known gaps (SQ2 + task framing), RW-3 scoring meaning vs facts (SQ3), then a closing paragraph pointing to Method/Experiments and Table~1 (position table). Devil's-advocate points from the earlier audit are answered in-line: the "is this Pythia for newspapers" question is answered by the three-differences paragraph in RW-2 plus the table; the Intro/RW-1 wording mismatch is fixed (Intro P3 now says "post-OCR correction studies"); Hamdi et al. 2020 and 2023 are both kept, cited for different claims (2020 = graded synthetic degradation, RW-1; 2023 = in-depth NER/NEL analysis, Introduction). Belinkov & Bisk (2018) confirmed out of Related Work, earmarked for Limitations (synthetic-vs-natural-noise transfer threat) once that section is drafted.
@@ -125,7 +125,7 @@ files beat prose.
 - Zero-shot tried on dev and dropped; consequence: the study cannot say how much the examples themselves help [C].
 - Contamination probe: level 0 rows; first half of each clean sentence; prompt "Here is the beginning of a sentence from a 19th-century British newspaper. Continue it. Write only the rest of the sentence, nothing else." (does **not** name BLN600); normalised Levenshtein similarity (`rapidfuzz`) of the continuation, cut to the length of the true second half; >= 0.9 = near-verbatim [S §4, C].
 - Test run status 2026-09-29: few-shot 750/750, article 750/750 (150 sentences x 5 levels, no duplicates); probe **116/150, final** (stopped for API resources; stated in 4.2 and Limitations) [runs/preds].
-- Qwen3's pretraining cutoff: the Qwen3 Technical Report (Yang et al. 2025, arXiv:2505.09388, `yang2025qwen3` in `notes/pending_refs.bib`) states none, so the contamination argument rests on the probe.
+- Qwen3's pretraining cutoff: the Qwen3 Technical Report (Yang et al. 2025, arXiv:2505.09388, `yang2025qwen3`) states none, so the contamination argument rests on the probe.
 
 ### 3.6 Dictionary lookup, non-GenAI baseline [C 2026-09-28, cfg `lexicon.yaml`]
 - Word list from the gold text of the 443 excerpts outside the sample (no dev or test excerpt): 16,469 distinct words, 213,237 tokens; tokens reduced to their core by the slot view's punctuation rule, case kept.
@@ -164,8 +164,8 @@ Severity (1w, 10, 25, 50, 75; level 0 for the probe only) x length band (3) x me
 - Fact Recovery Rate: mean over sentences of the share of gold fact tokens in the span restored exactly, punctuation ignored. Split into visible and dropped fact slots (pooled over slots, since many sentences have no dropped fact). The count "68 of 692 fact slots dropped" (3.2) is questioned in Bea's 4.2 comment: recount from notebook 4 before using it.
 - Anchor recovery: same word at every level, one per row, never dropped.
 - Exact words; span CER pooled per level (all edits / all gold characters); repair gain = pooled CER before - after; format failures per level; LLM valid-only; multiword count; contamination rate.
-- **Intervals:** 95% bootstrap over sentences, 10,000 resamples, percentile, same resampled sets for all methods and levels, seed from `configs/config.yaml`. Reason: slots of one sentence share context, so resampling slots makes intervals too narrow. Cite Koehn 2004; Dror et al. 2018 (`koehn2004statistical`, `dror2018hitchhiker` in `notes/pending_refs.bib`).
-- **Paired tests, only H2 (BERT + dictionary vs few-shot) and H2b (few-shot vs lookup):** per level, exact McNemar on anchor recovery (Dietterich 1998), Wilcoxon signed-rank on span BERTScore (ties dropped, scipy default); Holm over 2 pairs x 5 levels = 10 tests per family. All other comparisons descriptive. Reason: test only what a hypothesis named before the test run.
+- **Intervals:** 95% bootstrap over sentences, 10,000 resamples, percentile, same resampled sets for all methods and levels, seed from `configs/config.yaml`. Reason: slots of one sentence share context, so resampling slots makes intervals too narrow. Cite Koehn 2004; Dror et al. 2018 (`koehn2004statistical`, `dror2018hitchhiker`).
+- **Paired tests, only H2 (BERT + dictionary vs few-shot) and H2b (few-shot vs lookup):** per level, exact McNemar on anchor recovery, Wilcoxon signed-rank on span BERTScore (ties dropped, scipy default); Holm over 2 pairs x 5 levels = 10 tests per family. All other comparisons descriptive. Reason: test only what a hypothesis named before the test run. Cite both tests via Dror et al. (2018, §3.2).
 - **SQ3 number (H3):** per method and level, P(wrong-anchor repair has span BERTScore >= right-anchor repair), ties half = 1 - AUC. 0 = BERTScore always ranks the right fact higher, 0.5 = blind to the fact. No threshold. Sanity: 0.00 at 1w on dev for every method.
 - Manual check: 18 repairs (6 sentences at levels 10, 25, 50, seeded).
 - Colours fixed: BERT + dictionary blue, few-shot orange, article aqua, lookup yellow, BERT without dictionary magenta, BART green.

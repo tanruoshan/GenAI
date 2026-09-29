@@ -10,7 +10,7 @@
 % statistics, span vs sentence BERTScore, LLM valid-only.
 % UPDATE 2026-09-29 (Shan's session): all six methods in tab:design and tab:results; statistics paragraph, SQ3 number
 % and probe details written; Bea's todos answered (level 0 = probe only; anchor and visible/dropped computed in
-% notebook 4; sentence BERTScore computed). koehn/dror/dietterich/holm keys are in notes/pending_refs.bib.
+% notebook 4; sentence BERTScore computed). McNemar and Wilcoxon cited via dror2018hitchhiker (Sec. 3.2 there), not Dietterich 1998.
 
 \subsection{Experimental Design}
 \label{sec:design}
@@ -49,8 +49,8 @@ notebook, after every method's predictions were stored.
 cell gets a 95\% bootstrap interval over sentences (10,000 resamples, the same resamples for all methods;
 \citealp{koehn2004statistical,dror2018hitchhiker}). We test only the two comparisons that a hypothesis named before
 the test run: BERT + dict.\ vs LLM (H2) and LLM vs lookup (H2b). Per level we use an exact McNemar test on anchor
-recovery \citep{dietterich1998approximate} and a Wilcoxon signed-rank test on span BERTScore, with Holm's correction
-\citep{holm1979simple} over the ten tests of each family. All other comparisons are descriptive.
+recovery and a Wilcoxon signed-rank test on span BERTScore, the standard non-parametric tests for paired binary
+outcomes and paired scores \citep{dror2018hitchhiker}, with Holm's correction \citep{holm1979simple} over the ten tests of each family. All other comparisons are descriptive.
 
 \subsection{Metrics}
 \label{sec:metrics}

@@ -38,7 +38,7 @@ Every method gets the same input (§6, the slot view) and is scored by the same 
 ### Open, in order
 1. **Notebook 4 on test, once** (`SPLIT = "test"`), **Simon** (his handoff, step 2; one person per notebook). All inputs are complete: six methods x 750 rows, probe 116 rows. Commit the executed notebook and hand the tables and figure to the team.
 2. **Report, after the test run:** `tab:results` (BERTScore and FRR, columns BERT + dict., LLM, lookup, BART, none), Figure 2 (level x score with CIs), Results text in the order in `04_experiments.tex`, one verdict per hypothesis in the Interpretation, Abstract, the Introduction's key outcomes. About 1.25 pages are left (local build, 2026-09-29).
-3. **References:** move `report/overleaf-bln600/notes/pending_refs.bib` (6 checked entries) into `references.bib` (Shan's OK needed); until then they show as (?).
+3. **References:** done. Lewis 2020, Koehn 2004, Dror 2018, Holm 1979 and Qwen3 are in `references.bib` (Shan, via Zotero); Dietterich 1998 dropped, Dror et al. (2018, §3.2) covers McNemar and Wilcoxon. `references.bib` also holds about 30 Zotero entries from other projects; uncited entries do not print.
 4. **Before submission:** remove every `\todo`; check page count <= 9 without references; only test numbers in Results.
 
 ### Hypotheses (from Simon's review, 2026-09-28; in the Introduction since 2026-09-29)
@@ -129,7 +129,7 @@ Computed over the damaged span unless stated; format failures scored as no repai
 - **Primary:** span BERTScore F1 (`roberta-large`, layer 17, baseline-rescaled, can be negative; `bert-score` 0.3.13); **Fact Recovery Rate** (gold fact tokens in the span restored exactly, punctuation ignored; mean over sentences).
 - **Secondary:** anchor recovery (same word at every level, clean paired series for SQ1); FRR split into visible and dropped fact slots (pooled); exact-word rate; span CER before/after and repair gain, **pooled per level**; sentence-level BERTScore; LLM format failures per level and valid-only scores; contamination rate.
 - **Intervals:** 95% bootstrap over sentences, 10,000 resamples, percentile, same resamples for all methods (Koehn 2004; Dror et al. 2018). Reason: slots of one sentence share context and are not independent.
-- **Paired tests, only for the two stated comparisons:** BERT + dictionary vs few-shot (H2) and few-shot vs lookup (H2b). Per level: exact McNemar on anchor recovery (Dietterich 1998), Wilcoxon signed-rank on span BERTScore; Holm over 2 pairs x 5 levels per test family. Everything else descriptive.
+- **Paired tests, only for the two stated comparisons:** BERT + dictionary vs few-shot (H2) and few-shot vs lookup (H2b). Per level: exact McNemar on anchor recovery, Wilcoxon signed-rank on span BERTScore (both cited via Dror et al. 2018, §3.2); Holm over 2 pairs x 5 levels per test family. Everything else descriptive.
 - **SQ3 number (H3):** per method and level, the chance that a wrong-anchor repair gets at least as high a span BERTScore as a right-anchor repair (ties half) = 1 - AUC. 0 = BERTScore always ranks the right fact higher; 0.5 = BERTScore does not see the fact. No threshold to tune. Check: 0.00 at level 1w for every method on dev.
 - **Contamination probe:** first half of each clean sentence (level 0 rows), model continues; normalised Levenshtein similarity (`rapidfuzz`) to the true second half, cut to its length; >= 0.9 = near-verbatim. The prompt does not name BLN600, so it is a simplified guided completion without the control condition of Golchin & Surdeanu (2024). Test: **116 of 150 sentences** (run stopped for API resources, final). With 0 hits the rule-of-three upper bound would be about 2.6% (vs 2.0% at 150).
 - Manual check: 18 repairs (6 sentences at levels 10, 25, 50, seeded) for fluent-but-wrong examples.
@@ -205,7 +205,7 @@ Damage detection in raw OCR; real OCR/gold pairs; image-assisted repair with a v
 - **Interpretation:** P1, P3, P4, P5 first sentences from test numbers; one verdict per hypothesis; delete the unused variant in each paragraph.
 - **Abstract** and the Introduction's key outcomes.
 - **RQ scope (team):** the RQ names two families; the lookup and BART are presented as reference lines. If BART leads on test, reconsider the RQ wording.
-- **References:** move `notes/pending_refs.bib` into `references.bib`: Lewis et al. 2020 (BART, ACL, pp. 7871-7880); Koehn 2004 (EMNLP, pp. 388-395); Dror et al. 2018 (ACL, pp. 1383-1392); Dietterich 1998 (Neural Computation 10(7), 1895-1923); Holm 1979 (Scand. J. Statistics 6(2), 65-70); Yang et al. 2025 (Qwen3 Technical Report, arXiv:2505.09388; it states no pretraining cutoff, so the contamination argument rests on the probe).
+- **References:** done (see §0, open item 3).
 - **Length:** content ends at about 7.75 of 9 pages; about 1.25 pages left.
 
 ## 16. Appendix outline (for the defence)

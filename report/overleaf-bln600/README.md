@@ -32,11 +32,10 @@ Upload the zip to Overleaf (New Project > Upload Project). Compiler: pdfLaTeX, m
 - Blocked on one step: `notebooks/04_evaluation.ipynb` run once with `SPLIT = "test"` (Simon). Then fill Table `tab:results` (BERTScore and FRR, five columns), Figure 2, Results text, Interpretation P1 to P5 with one verdict per hypothesis, Abstract and the Introduction's key outcomes.
 - Written on 2026-09-29: hypotheses H1, H2, H2b, H3 (Intro); Method (b) BERT + dictionary, (c) Qwen3 with 5 examples, (d) dictionary lookup, (e) BART; `tab:settings`, `tab:design`; statistics paragraph and SQ3 number (4.1, 4.2); probe details; Limitations and appendix outline.
 - Length with these additions: content ends at about 7.75 of 9 pages (local pdfLaTeX build), so about 1.25 pages remain for Figure 2, Results text and the Interpretation fills. Deleting the unused variant in each Interpretation paragraph gives back some space.
-- Six new citations (`lewis2020bart`, `koehn2004statistical`, `dror2018hitchhiker`, `dietterich1998approximate`, `holm1979simple`, `yang2025qwen3`) are checked and waiting in `notes/pending_refs.bib`. They show as (?) until Shan moves them into `references.bib`.
+- Five new citations (`lewis2020bart`, `koehn2004statistical`, `dror2018hitchhiker`, `holm1979simple`, `yang2025qwen3`) are in `references.bib` (added by Shan via Zotero). Dietterich (1998) was dropped: McNemar and Wilcoxon are cited via Dror et al. (2018, Sec. 3.2).
 
 ## Before submitting
 - [ ] Remove every `\todo` and the `\nocite` smoke-test line in `sections/02_related_work.tex`.
-- [ ] Move `notes/pending_refs.bib` into `references.bib` (no (?) citations left).
 - [ ] Check each `references.bib` entry against the ACL Anthology / arXiv / publisher page. Delete unused entries.
 - [ ] Insert real author names and affiliations.
 - [ ] Page count <= 9 without references.
