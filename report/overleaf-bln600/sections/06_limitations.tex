@@ -10,8 +10,7 @@
 faded pages: intensity is drawn per word rather than spatially correlated as in a real torn patch, and the
 confusion table comes from mild OCR errors on aligned words, so it shows which characters get confused but likely
 understates how heavy real damage is. Synthetic and natural noise can differ enough that results on one do not carry
-over to the other \citep{belinkov2018synthetic}; degrading page images before OCR \citep{hamdi2020assessing} would
-be a closer test. \bln{} itself excludes pages too faded or damaged to transcribe \citep{booth-etal-2024-bln600}.
+over to the other \citep{belinkov2018synthetic}. \bln{} itself excludes pages too faded or damaged to transcribe \citep{booth-etal-2024-bln600}.
 \emph{Task.} The damaged region and the number of damaged words are given, so no detection step is tested. Damage is
 centred on a fact by design, so facts make up 100\% of damaged words at the 1-word level but only 17\% at 75\%, and
 what else falls in the span, a stock phrase or a rare name, is not controlled. \emph{Measurement.} Fact tokens come
