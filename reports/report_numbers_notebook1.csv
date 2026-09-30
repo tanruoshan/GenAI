@@ -1,0 +1,8 @@
+Report location,Quantity,Value (recomputed here)
+§3.2 Damage Simulation,"word drop probability (config, not calibrated)",10%
+§3.2 Damage Simulation / noise-process figure,"realized share of damaged words dropped (simulation, level 75)",9.9%
+§3.2 Damage Simulation / noise-process figure,of a word's altered characters: deleted vs. substituted,"14.6% deleted, 85.4% substituted"
+§3.2 Damage Simulation / noise-process figure,substitution source shares,"table 85.7%, capitalised 3.6%, look-alike 4.9%, random 5.8%"
+"§3.2 Damage Simulation, short-word caveat",mean realized intensity by word length (1–3 / 4–6 / 7+ letters),45.1% / 23.4% / 25.6% (nominal target: 20–30%)
+Table: damage by level,sentence CER by level (mean),"0: 0.0%, 1w: 1.0%, 10: 3.2%, 25: 7.9%, 50: 15.5%, 75: 23.1%"
+Frozen dataset,rows written to corrupted_v2.jsonl,"1,020 (170 sentences x 6 levels), sha256 5798336d99ff..."

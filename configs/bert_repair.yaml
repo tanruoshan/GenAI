@@ -1,0 +1,12 @@
+# Settings for BERT repair (notebook 2) on a whole split. Notebook 4 reads the same file to find the stored run.
+# lambda was chosen on dev (notebook 2, section 8); beam and top_n are the defaults set before tuning. A change
+# gives a new version name, so old predictions are never read by mistake.
+model: models/bert_ft_v1   # the fine-tuned model (run record in runs/bert_ft_v1_config.yaml)
+model_tag: ftv1
+lam: 8                     # weight of the letter similarity against BERT's log-probability (chosen on dev, grid 1-16)
+beam: 5                    # top pieces per mask position
+top_n: 10                  # candidates kept per mask count
+
+# The gate for the test split. Leave false while tuning on dev. Set to true (and commit) when the settings
+# above are final; notebook 2 then allows SPLIT = "test" (together with ALLOW_TEST = True).
+frozen: true

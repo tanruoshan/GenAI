@@ -1,0 +1,32 @@
+# Settings for the SAIA (GWDG) client in src/blnrepair/llm.py. The base URL and the key are in .env, never here.
+
+# Only these model ids may be called (open-weight models hosted by GWDG). Never an external model.
+allowed_models:
+  - meta-llama-3.1-8b-instruct
+  - qwen3-30b-a3b-instruct-2507
+
+model: qwen3-30b-a3b-instruct-2507 # switched from meta-llama-3.1-8b-instruct: its dev format-failure rate (21%/27%)
+# was above the 15% limit set in advance for switching model (report, Sec. 3.4c). Qwen3-30B-A3B is a
+# mixture-of-experts model (30B parameters, 3B active per token) hosted by GWDG.
+
+# Few-shot examples: (dev sentence id, level). Their gold answers are shown in the prompt, so these
+# sentences are left out of every scored set. One per severity level (1w, 10, 25, 50, 75), each from a
+# different excerpt; the 10 and 50 picks were added to directly show a dropped word at those levels,
+# since format failures were concentrated at 50 and 75 with a dropped slot in most of them.
+fewshot_picks:
+  - ["3206323884-017", "1w"]
+  - ["3206270194-012", "10"]
+  - ["3200807881-004", "25"]
+  - ["3206225730-001", "50"]
+  - ["3206237078-010", "75"]
+
+temperature: 0
+max_tokens: 1024
+timeout_s: 120
+max_retries: 5 # retries only for 429, 5xx and timeouts, never because of what an answer says
+backoff_s: 2 # waits 2, 4, 8, ... seconds between retries, at most 60
+max_wait_s: 3700 # on a 429, wait until the reset the server reports (at most this long; the hourly limit resets within an hour)
+
+# The gate for the test split. Leave false while tuning the model, prompts and few-shot picks on dev. Set to
+# true (and commit) when they are final; notebook 3 then allows SPLIT = "test" (with ALLOW_TEST = True).
+frozen: true

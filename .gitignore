@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environment
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Stale results kept locally only (zero-shot was dropped from the study)
+runs/_archive/
+
+# Secrets
+.env
+
+# Model weights (fine-tuned checkpoints, cached downloads)
+models/
+
+# BLN600 is CC BY-NC-ND and coursework only: neither the raw data nor text derived from it is committed
+data/raw/
+data/processed/
+
+# Editor / OS
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Internal working notes and the report's LaTeX source: kept locally, not part of the reviewed repository
+# (the report PDF is submitted separately)
+CLAUDE.md
+AGENTS.md
+.claude/
+docs/
+report/
+message_to_shan.md

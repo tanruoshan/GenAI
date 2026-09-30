@@ -1,0 +1,30 @@
+version: v2
+seed: 42
+corruption:
+  drop_prob: 0.1
+  max_deletions: 2
+  intensity_low: 0.2
+  intensity_high: 0.3
+  p_deletion: 0.15
+  levels:
+  - '0'
+  - 1w
+  - '10'
+  - '25'
+  - '50'
+  - '75'
+level_sizes:
+  1w: k = 1
+  10, 25, 50, 75: k = (pct * n + 50) // 100, n = words in the sentence (integer half-up
+    rounding)
+span: start = clamp(anchor - k // 2, 0, n - k), length k; one seeded anchor per sentence
+  among its fact tokens, never dropped
+corrupted_file:
+  name: corrupted_v2.jsonl
+  sha256: 5798336d99ff2a8ada306e0752bcd25298287d0bf9f0ad4b5fc0c6468a6b9eb9
+inputs_sha256 (CRLF read as LF):
+  reports/calibration.json: 44f0e48e67bf56e1e5c658e2b9bb67f9c490c2bb9b7133c6db65441e9a5c1922
+  data/processed/sentences.jsonl: cdde36ee457853cdc5e706e29a473902016899a7edc94da44700ac2058bd70ca
+python: 3.13.14
+pysbd: 0.3.4
+rapidfuzz: 3.14.6
