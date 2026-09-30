@@ -38,7 +38,7 @@ contiguous span of $k$ words that centers on it, with $k$ set so the span covers
 75\% of the sentence (half-up rounding). Every larger span centers on the same anchor and fully contains every
 smaller one (Figure~\ref{fig:spans}), so a higher damage level adds more damaged words around a fixed center; it
 does not make any single word more damaged; the per-word alteration intensity below is drawn the same way
-regardless of the span size. Each damaged word may be dropped outright (except the anchor). A surviving word has 20--30\% of its
+regardless of the span size. Each damaged word may be dropped outright (except the anchor). A surviving word has 20--30\% (at least one) of its
 letters and digits altered, punctuation untouched, split between deletion and substitution as in
 Table~\ref{tab:damage-ops} (the substitution source is a fixed lookup order -- confusion table, then
 capitalization, then a look-alike map, then a random character -- not a random draw between them). 
@@ -50,7 +50,7 @@ The 20--30\% band was chosen to sit around the median per-word character error r
 % REVIEW (1): "All calibration" conflicts with Table 2: 14.3% of substitutions (capitalization, look-alike, random)
 %   and the 0.10 word drop are not calibrated from data. Suggest: "The confusion table and the per-word rate come
 %   from real OCR errors on aligned words, so the noise resembles what OCR output already contains."
-All calibration comes from real OCR errors on aligned words, so it models the kind of noise OCR output already contains.
+The confusion table and this band come from real OCR errors on aligned words; the drop rate and fallbacks are our choice.
 
 Table~\ref{tab:damage} shows the result on the test split: sentence-level CER grows roughly in step with real \bln{} OCR error rates, but
 the share of damaged words that are themselves facts falls from 100\% at the 1-word level to 17\% at 75\%. About one in ten fact slots is dropped outright, leaving no visible letters for that fact at all.
@@ -121,7 +121,7 @@ $\lambda(1-d)$, where $d$ is the normalised Levenshtein distance to the garbled 
 pulled back toward what the damaged letters actually show. This is a direct, modern instance of ``context beats
 confusion'' \citep{evershed2014correcting}. We chose $\lambda = 8$ from a grid over $\{1,2,4,8,16\}$ on dev, where it
 gave the best exact-word rate at a point where Fact Recovery Rate had already plateaued. Dropped slots, which have no
-garbled letters to match against, are scored on the language-model term alone. We keep this context-only variant as
+garbled letters to match against, are scored on the language-model term alone. We keep this variant without list words as
 an ablation (\emph{BERT, no dict.}).
 \end{sloppypar}
 
@@ -134,13 +134,13 @@ gold text of the 443 excerpts outside the sample, so no dev or test text enters 
 weight the letters decide most slots, and BERT's context breaks near ties and fills dropped slots.
 
 \textbf{(c) LLM few-shot.} We prompt Qwen3-30B-A3B-Instruct-2507 \citep{yang2025qwen3}, a mixture-of-experts model
-with 30B parameters of which 3.3B are active per token, served through GWDG's SAIA API. The prompt holds a system
+with 30B parameters of which 3B are active per token, served through GWDG's SAIA API. The prompt holds a system
 message, a task instruction, five solved dev examples (one per level, held out from all scoring), and the same slot
 view as BERT with numbered slots, and asks for a JSON list of exactly $k$ strings at temperature 0. We first used
 Llama-3.1-8B-Instruct \citep{grattafiori2024llama3}, but its dev format-failure rates (21\% and 27\% for the two prompt variants) were above the 15\% limit
 we had set in advance for switching model. We use only open-weight models on academic infrastructure, so that the
-licensed \bln{} text (CC BY-NC-ND) is never sent to a commercial third-party service. The system message was necessary: without it, an early dev check found the model answering in Python or
-tool-call syntax in 15 of 15 cases, in line with the finding that stating the input type and output format helps
+licensed \bln{} text (CC BY-NC-ND) is never sent to a commercial third-party service. The system message was necessary: without it, an early dev check found all 15 answers in the wrong format, mostly
+Python or tool-call code, in line with the finding that stating the input type and output format helps
 LLM post-correction \citep{boros2024postcorrection}. An answer of the wrong length, not valid JSON, or cut off by the
 token limit counts as a \emph{format failure} and is scored as if no repair had been made, with no retry and no
 manual correction. Because output formatting alone can swing LLM post-correction results

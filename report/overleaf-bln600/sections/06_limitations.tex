@@ -18,10 +18,10 @@ from a surface rule and are scored by exact match, so a correct spelling variant
 \emph{McDonald}) counts as a failure. With 150 test sentences, only 26 in the longest band, and one noise draw per
 sentence, we report trends rather than powered effects. \emph{Comparison.} The methods differ beyond the repair
 step: the LLM and BART read the garbled letters directly, BERT only through its candidates and reranking score; BERT predicts a word's
-pieces in parallel \citep{shen2020blank} and cannot produce words of more than three pieces; supervision, scale and
+pieces in parallel \citep{shen2020blank} and cannot produce a word part of more than three pieces; supervision, scale and
 pretraining differ; and the LLM may have seen \bln{}, which has been public since 2024. Format failures count as no
 repair, and the article variant uses gold context and is therefore an upper bound. BART is trained on the same damage
 generator as the test data, so its scores are optimistic, and each fine-tuned model comes from one training run
 with one seed. The hypotheses were written after tuning on dev, though before any test score, and the contamination
-probe covers only 116 of the 150 test sentences. Finally, all data are English
-London crime reporting, mostly from two weeklies (572 of 600 excerpts), and we test a single LLM.
+probe covers only 116 of the 150 test sentences. All data are English
+London crime reports, mostly from two weeklies (572 of 600 excerpts), and we test one LLM.

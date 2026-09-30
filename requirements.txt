@@ -17,3 +17,4 @@ openai==3.19.2
 python-dotenv==1.2.3
 bert-score==0.3.13
 scipy==1.17.1  # notebook 4: McNemar (exact binomial) and Wilcoxon signed-rank tests
+SciencePlots==2.2.2  # paper figures: matplotlib "science" style (scripts/paper_results.py, scripts/fig_nested_spans.py)

@@ -1,6 +1,6 @@
 # Handoff: current state (Simon's sessions)
 
-Last updated: 2026-09-30, by session "GenAI Worker 2", handing the lead to "GenAI Worker 3".
+Last updated: 2026-09-30, by session "GenAI Worker 3" (lead; Simon is ill, the group reads over the work).
 
 This file is the **current state**; it is rewritten at every handoff. The history is in `SESSION_LOG.md` (append only). Design decisions and numbers are in the deviations log at the end of `CLAUDE.md` (newest entries at the bottom). If this file and the code disagree, the code wins; say so.
 
@@ -42,7 +42,9 @@ This file is the **current state**; it is rewritten at every handoff. The histor
 
 ## Next steps
 
-1. **Shan's literature and source run before submission** (her plan): full texts are in `report/ref_dump/`. Two claims could not be checked from code and are worth a look: "15 of 15" Python answers of the first Llama prompt (Method (c); the file was never committed, only the deviations log records it) and Qwen3's "3.3B active" parameters (model card).
+0. **Done 2026-09-30 (Worker 3):** final fact check with fixes, coloured figures, the two unverifiable claims resolved, `docs/defence_questions.md` for the defence. The pre-check version is the tag `report-before-final-checks`.
+
+1. **Shan's literature and source run before submission** (her plan): full texts are in `report/ref_dump/`. The two claims not checkable from code are settled (see the deviations log, 2026-09-30).
 2. Team read of Results and Interpretation (Bea, Shan). Keep the hypothesis wording as it is: it was fixed before the test run.
 3. Submission Thu 1 Oct 00:00: `main.pdf` from `writing`.
 4. Defence prep (14 Oct): the appendix outline (`sections/07_appendix_outline.tex`) lists what to show; the executed notebook 4 has every table.
