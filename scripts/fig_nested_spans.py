@@ -41,6 +41,7 @@ def main():
     ax.set_xlim(-3.2, N_WORDS + 1.8)
     ax.set_ylim(-0.1, len(LEVELS) + 1.0)
     ax.axis("off")
+    OUT.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(OUT, bbox_inches="tight", pad_inches=0.02)
     print(f"written: {OUT.relative_to(ROOT)}")
 

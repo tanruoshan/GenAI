@@ -1,4 +1,4 @@
-"""Section 0b: the append-only prediction store and the runner both repair tracks use.
+"""The append-only prediction store and the runner both repair tracks use.
 
 One file per method version: runs/preds/<method>_<version>.jsonl. A row is never changed or removed.
 The key (id, severity, method, method_version) makes a rerun skip finished rows, so a crash or a

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # pod.sh -- run the BART fine-tuning and repair on a RunPod GPU pod (runs on the laptop).
 #
-# A slim version of the RunPod REST workflow of Simon's thesis. The pod gets exactly the committed code
+# Uses the RunPod REST API. The pod gets exactly the committed code
 # (git archive HEAD, no GitHub access needed on the pod) plus the two git-ignored data files, whose hashes
 # are checked there against runs/*.sha256.
 #
@@ -16,7 +16,7 @@
 #                                               # the pod log as runs/bart_ft_v1_pod.log
 #   bash scripts/pod/pod.sh terminate ID
 #
-# The key: RUNPOD_API_KEY from .env of this repo, else from the thesis' experiments/.env (read only). It is
+# The key: RUNPOD_API_KEY from .env of this repo (read only). It is
 # never printed and never sent to the pod.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
@@ -34,7 +34,7 @@ die() { echo "FATAL: $*" >&2; exit 1; }
 
 key() {
   local f
-  for f in .env /Users/simonm/dev/Bachelorarbeit/experiments/.env; do
+  for f in .env; do
     if [ -f "$f" ] && grep -q '^RUNPOD_API_KEY=' "$f"; then
       grep '^RUNPOD_API_KEY=' "$f" | head -1 | cut -d= -f2- | tr -d '"'"'"' \r'
       return 0

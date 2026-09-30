@@ -1,4 +1,4 @@
-"""Part B helpers: pool hash check, seeded batches, and labels only at the target's masks."""
+"""BERT fine-tuning helpers: pool hash check, seeded batches, and labels only at the target's masks."""
 import pandas as pd
 import pytest
 

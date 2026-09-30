@@ -1,4 +1,4 @@
-"""Calibration: real OCR errors (gold to OCR) as context for the synthetic damage (section E)."""
+"""Calibration: real OCR errors (gold to OCR) as context for the synthetic damage (notebook 0)."""
 import hashlib
 import json
 import re
@@ -29,7 +29,7 @@ def order_excerpts(all_ids, exclude, seed):
 
 
 def load_pair(raw_dir, doc_id):
-    """Gold and OCR text of one excerpt, cleaned the same way as in section B, as one line each."""
+    """Gold and OCR text of one excerpt, cleaned the same way as for the sentence pool (notebook 0), as one line each."""
     read = lambda folder: (Path(raw_dir) / folder / f"{doc_id}.txt").read_text(encoding="utf-8")
     return " ".join(normalize_gold(read("Ground Truth"))), " ".join(normalize_gold(read("OCR Text")))
 
@@ -227,7 +227,7 @@ def before_after(kept, floor=50):
 
 def save_calibration(path, seed, align_table, kept, pairs_a, confusions, op_mix, deletion_rate, per_word, drop_rate,
                      flags=None):
-    """Write reports/calibration.json in the shape section F reads."""
+    """Write reports/calibration.json in the shape the damage pipeline (notebook 1) reads."""
     dropped = align_table[~align_table["used"]]
     totals, wer = coverage_totals(align_table)
     out = {"seed": seed, "excerpts_used": list(kept),

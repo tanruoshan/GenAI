@@ -1,4 +1,4 @@
-"""Section A smoke test: the package installs and the config loads."""
+"""Smoke test: the package installs and the config loads."""
 from pathlib import Path
 
 import yaml

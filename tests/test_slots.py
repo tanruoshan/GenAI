@@ -1,4 +1,4 @@
-"""Section 0a: slot view and splice on the frozen data (all 1,020 rows)."""
+"""Slot view and splice on the frozen data (all 1,020 rows)."""
 import pytest
 
 from blnrepair.data import ROOT

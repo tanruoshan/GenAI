@@ -1,4 +1,4 @@
-"""Section 0c / CHECKPOINT 1: how many WordPiece pieces the gold words of the damaged slots need.
+"""Word-piece ceiling: how many WordPiece pieces the gold words of the damaged slots need.
 
 BERT gets 1 to 3 masks per slot, so a gold word needing more than 3 pieces cannot be produced exactly.
 Only the tokenizer is used here, no model.

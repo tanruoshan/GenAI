@@ -1,4 +1,4 @@
-"""Section 0b: prediction store, resume, test-split guard and the slot_exact sanity check."""
+"""Prediction store, resume, test-split guard and the slot_exact sanity check."""
 import pytest
 
 from blnrepair.data import ROOT

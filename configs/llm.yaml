@@ -6,9 +6,8 @@ allowed_models:
   - qwen3-30b-a3b-instruct-2507
 
 model: qwen3-30b-a3b-instruct-2507 # switched from meta-llama-3.1-8b-instruct: its dev format-failure rate (21%/27%)
-# was above the 15% line that was agreed would trigger this switch (dossier S7.2a). Qwen 3 30B A3B was the
-# pre-approved upgrade candidate: MoE, 3.3B active params so it stays fast despite 30B total, and GWDG lists
-# it for instruction-following. Re-run the dev prompts with this model before freezing (configs/llm.yaml frozen: true).
+# was above the 15% limit set in advance for switching model (report, Sec. 3.4c). Qwen3-30B-A3B is a
+# mixture-of-experts model (30B parameters, 3B active per token) hosted by GWDG.
 
 # Few-shot examples: (dev sentence id, level). Their gold answers are shown in the prompt, so these
 # sentences are left out of every scored set. One per severity level (1w, 10, 25, 50, 75), each from a

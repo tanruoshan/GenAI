@@ -1,4 +1,4 @@
-"""Section 0a: the slot view shared by both repair tracks, and the splice that writes predictions back.
+"""The slot view shared by both repair tracks, and the splice that writes predictions back.
 
 Model inputs are built from gold_tokens + ops_per_word, never from corrupted_text: a dropped word
 disappears from corrupted_text, so slots would be lost.

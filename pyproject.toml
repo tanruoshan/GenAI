@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "blnrepair"
 version = "0.1.0"
-description = "BLN600 damage-injection pipeline (GenAI coursework, Day 1)"
+description = "Fact recovery in synthetically damaged BLN600 newspaper text (GenAI coursework)"
 requires-python = ">=3.10"
 
 [tool.setuptools.packages.find]

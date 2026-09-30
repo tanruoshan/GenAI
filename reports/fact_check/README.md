@@ -1,7 +1,7 @@
 # Manual check of the fact-token rule
 
 Purpose: a plausibility check of the surface rule that defines fact tokens (the basis of the Fact Recovery Rate),
-not a validation. One annotator (Simon), 2026-09-30, no second annotator.
+not a validation. One annotator from the team, 2026-09-30, no second annotator.
 
 Sample: 50 fact slots drawn with the project seed from all 624 fact slots of the 150 test sentences at level 75
 (`scripts/fact_check_sample.py`; the 75% span holds every fact slot of a sentence). `fact_sample.csv` holds each

@@ -2,8 +2,8 @@
 Training sentences come only from excerpts outside the 157 sample excerpts (test and dev), so the
 fine-tuned model never sees a sample sentence. The 29 calibration excerpts stay in the pool: they
 were only used to measure OCR/gold alignment, never sampled as sentences. BERT is trained purely
-as a masked language model on clean gold text - it never sees garbled text in training, per the
-dossier's fairness rule that garbled letters enter only through the reranking score at inference.
+as a masked language model on clean gold text - it never sees garbled text in training: garbled
+letters enter only through the reranking score at inference (same input for all methods).
 """
 import json
 import random
@@ -98,7 +98,7 @@ def freeze_pool(pool, path, sha_path):
 
 def draw_training_span(sent_id, n_words, fact_idx, seed, epoch):
     """One seeded span draw for this sentence at this epoch: a random evaluation level and its k
-    (the Day 1 clamp rule: corrupt.level_sizes and corrupt.select_span), anchored on a random
+    (the evaluation's clamp rule: corrupt.level_sizes and corrupt.select_span), anchored on a random
     fact token. epoch enters the seed, so the draw differs every epoch ("new draw every epoch")."""
     level = random.Random(seed_int(seed, "bert_level", sent_id, epoch)).choice(LEVELS_FOR_TRAINING)
     k = level_sizes(n_words)[level]
@@ -108,19 +108,19 @@ def draw_training_span(sent_id, n_words, fact_idx, seed, epoch):
 
 
 def build_masked_input(tokens, span, target_pos, tokenize, mask_token="[MASK]"):
-    """One training example in the inference-matched format ([DECIDE] B2, option b). Span words
+    """One training example in the inference-matched format. Span words
     before target_pos are gold text (already "filled", matching the left-to-right fill order).
     The target word is masked at its true WordPiece piece count; loss is computed only there.
     Span words after target_pos are one [MASK] each, whatever their real piece count - a pending
     slot shows one mask until its turn, exactly as at inference. Context outside the span, and
     every word's leading and trailing punctuation, is never masked (punctuation is never damaged).
     A gold word that is punctuation only (its core is empty) is masked as the whole token,
-    matching the [DECIDE] 0a rule that scoring compares the whole token in that case.
+    matching the scoring rule that compares the whole token in that case.
 
     A word with an internal hyphen or apostrophe is masked here as one target with all its pieces
-    at once. This differs from B1 at inference, where such a word is split into punctuation
+    at once. This differs from inference, where such a word is split into punctuation
     sub-slots and filled one part at a time - a deliberate simplification: it affects under 1% of
-    slots (CHECKPOINT 1), and training does not share inference's 3-mask cap that B1 exists for.
+    slots (notebook 2, word-piece ceiling), and training does not share inference's 3-mask cap that the split exists for.
 
     Returns (the sentence as space-joined text with masks, the target's gold core)."""
     start, end = span["start"], span["end"]

@@ -1,7 +1,6 @@
-"""BLN600 damage-injection pipeline (GenAI coursework, Day 1).
+"""BLN600 damage and repair study: data, damage simulation, repair methods and evaluation.
 
-Modules are added section by section: data.py (B), facts.py (C),
-calibrate.py (E), corrupt.py (F). See CLAUDE.md for the section plan.
+See README.md for an overview and how to reproduce the results.
 """
 
 __version__ = "0.1.0"

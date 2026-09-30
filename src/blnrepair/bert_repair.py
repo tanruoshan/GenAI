@@ -1,4 +1,4 @@
-"""Notebook 2, Part C: fill the slots with BERT, reranked by letter similarity to the damaged form.
+"""Notebook 2: fill the slots with BERT, reranked by letter similarity to the damaged form.
 
 Slots are filled left to right. A slot still waiting shows one [MASK] with its visible punctuation
 (as waiting words looked in training). For the current slot BERT gets 1, 2 and 3 masks in one batched
@@ -7,7 +7,7 @@ forward pass; candidate words are built from the top pieces per mask, and each c
 with the similarity taken against the slot's damaged core. A dropped slot has no letters, so only
 the BERT score counts there, and only there a punctuation-only answer is allowed.
 
-B1 sub-slots: a slot whose damaged core has inner punctuation (a hyphen, an apostrophe) is filled part
+Sub-slots: a slot whose damaged core has inner punctuation (a hyphen, an apostrophe) is filled part
 by part, keeping that punctuation; each part gets 1 to 3 masks. The model input is built from the
 slot view only (build_slots), never from gold text.
 

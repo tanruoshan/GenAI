@@ -1,4 +1,4 @@
-"""Synthetic OCR-like damage for one sentence at one level (section F)."""
+"""Synthetic OCR-like damage for one sentence at one level (notebook 1)."""
 import hashlib
 import random
 import string

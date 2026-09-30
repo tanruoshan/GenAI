@@ -1,4 +1,4 @@
-"""Fine-tune bert-base-cased as a masked language model on the BERT training pool (notebook 2, Part B).
+"""Fine-tune bert-base-cased as a masked language model on the BERT training pool (notebook 2).
 
 Smoke run (local CPU is fine; 30 steps on 4 fixed batches, then save and reload):
     python scripts/train_bert.py --smoke

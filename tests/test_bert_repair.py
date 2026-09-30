@@ -1,4 +1,4 @@
-"""Part C: sub-slot parts, the text BERT sees, candidate building, and one word per slot."""
+"""BERT repair: sub-slot parts, the text BERT sees, candidate building, and one word per slot."""
 import math
 
 import pytest

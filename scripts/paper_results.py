@@ -194,7 +194,8 @@ def figure(tables, valid):
 
 def main():
     tables, nb = titled_tables()
-    (REPORT / "tables").mkdir(exist_ok=True)
+    for sub in ("tables", "figures"):
+        (REPORT / sub).mkdir(parents=True, exist_ok=True)
     (REPORT / "tables" / "results.tex").write_text(results_table(tables), encoding="utf-8")
     (REPORT / "tables" / "format.tex").write_text(format_table(tables, nb), encoding="utf-8")
     figure(tables, valid_only(nb)).savefig(REPORT / "figures" / "results_levels.pdf", bbox_inches="tight")

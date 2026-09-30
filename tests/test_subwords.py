@@ -1,4 +1,4 @@
-"""CHECKPOINT 1 helper: parts of a slot and the ceiling table, with a fake tokenizer (no download)."""
+"""Word-piece ceiling helper: parts of a slot and the ceiling table, with a fake tokenizer (no download)."""
 from blnrepair.subwords import ceiling_rows, ceiling_table, parts_of
 
 

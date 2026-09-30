@@ -1,5 +1,5 @@
 # Settings for BERT repair (notebook 2) on a whole split. Notebook 4 reads the same file to find the stored run.
-# lambda was chosen on dev (notebook 2, section 8); beam and top_n are the defaults of CLAUDE.md. A change
+# lambda was chosen on dev (notebook 2, section 8); beam and top_n are the defaults set before tuning. A change
 # gives a new version name, so old predictions are never read by mistake.
 model: models/bert_ft_v1   # the fine-tuned model (run record in runs/bert_ft_v1_config.yaml)
 model_tag: ftv1

@@ -1,4 +1,4 @@
-# Fine-tuning bert-base-cased as a masked language model on the training pool (notebook 2, Part B).
+# Fine-tuning bert-base-cased as a masked language model on the training pool (notebook 2).
 # The seed is not repeated here: scripts/train_bert.py reads it from configs/config.yaml (one seed).
 version: v1
 model_name: bert-base-cased

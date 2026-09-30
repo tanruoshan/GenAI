@@ -1,4 +1,4 @@
-"""Notebook 2, Part B: helpers for fine-tuning bert-base-cased on the training pool.
+"""Notebook 2: helpers for fine-tuning bert-base-cased on the training pool.
 
 The training loop itself is in scripts/train_bert.py. Loss is computed only at the target word's
 masks; the masks of pending span words carry no label (they stand for slots not filled yet).

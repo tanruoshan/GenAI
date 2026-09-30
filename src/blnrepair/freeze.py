@@ -1,4 +1,4 @@
-"""Section G: freeze the damaged dataset with a version number and a file hash."""
+"""Notebook 1: freeze the damaged dataset with a version number and a file hash."""
 import hashlib
 import json
 import sys
