@@ -37,9 +37,11 @@ findings from summarisation and translation \citep{maynez2020faithfulness,hanna2
 text repair, even with BERTScore computed on the repaired span only.
 
 % ---- P4: generality and use for archives ----
-In practice, a restored name, place or number should not be trusted without a check at any damage level. How repair
-performs on real damaged pages, with heavier noise and no known damaged region, remains untested. Archives should keep repaired words marked rather than replace damaged text silently, as
-Ithaca pairs model predictions with historians' judgement \citep{assael2022restoring}.
+In practice, a restored name, place or number should not be trusted without a check at any damage level. Our
+results favour a letter-first design: propose repairs from the garbled letters, with context breaking ties as in
+BERT + dictionary, and show them as marked suggestions with ranked alternatives, so the historian decides, as Ithaca pairs model predictions with historians' judgement \citep{assael2022restoring}. A
+generative model should not rewrite facts unchecked: its fluent errors hide that anything was damaged. How repair
+performs on real damaged pages, with heavier noise and no known damaged region, remains untested.
 
 % ---- P5: conclusion and future work ----
 In short, when the damaged words are known and their letters visible, the best repair restores about half of the
