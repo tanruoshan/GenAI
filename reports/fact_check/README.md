@@ -12,9 +12,16 @@ institution)? Yes = (part of) a proper name (person, place, street, institution,
 directly before a name), a number, a date or a sum of money. No = an ordinary word that is only capitalised
 (position after a quote or in a headline, generic role nouns such as "the Government"). Unsure = a real doubt.
 
-Result: 42 yes, 6 no, 2 unsure (reported in the Limitations). The six No cases: "Authorities" (Home
-Authorities), "Co." (Cox and Co.), "POWERFULLY-BUILT" and "MAN" (all-caps opening words of an article, which the
-rule does not exclude because it only skips the first word), "Heard" (capitalised after a comma), "Honourable"
-(before a name). Unsure: "Common" (Court of Common Pleas) and "K" (police division in "No. 332 K"). Under the
-written rules, "Co.", "Honourable" and "Common" would count as yes, so up to 46 of 50; the annotator's marks are
-reported unchanged, as the conservative number.
+Result, first pass: 42 yes, 6 no, 2 unsure. Reviewed against the written rules above (same day, same annotator),
+four marks were corrected because they contradicted those rules: "Co." (Cox and Co., part of a firm's name),
+"Honourable" (a title directly before a name), "Common" (Court of Common Pleas, a named court) and "K" (part of the
+constable number "No. 332 K"). **Reported result: 46 of 50 are true facts, 4 are not** (Limitations). Both columns
+are kept in `fact_sample.csv` (`is_fact_first_pass`, `is_fact`). The four No cases: "Authorities" (Home
+Authorities, a generic noun), "POWERFULLY-BUILT" and "MAN" (all-caps opening words of an article, which the rule
+counts because it only skips the first word), "Heard" (capitalised after a comma).
+
+What the number means: it estimates the precision of the fact rule (how many counted "facts" really are facts),
+about 92%, roughly 81 to 97% with 50 tokens (Wilson interval). It does not measure recall (facts the rule misses,
+such as lower-cased or written-out numbers). All methods are scored on the same tokens, so the non-facts do not
+change comparisons between methods; they make the absolute Fact Recovery Rate a slight mix of facts and ordinary
+words.
