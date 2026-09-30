@@ -114,7 +114,7 @@ BERTScore at 50\% and 75\% ($p \le 0.04$); the LLM's only significant advantage 
 ($p = 0.039$), with no significant difference in anchor recovery. Descriptively, BERT + dictionary leads the lookup by only 0.01 to
 0.07 in \frr{}.
 
-\paragraph{Format failures.} The LLM returned the wrong number of words in 106 of 750 answers (14\%), 103 of them at
+\paragraph{Format failures.} The LLM failed the format in 106 of 750 answers (14\%, all but 3 by a wrong word count), 103 of them at
 50\% and 75\% (Table~\ref{tab:format}). Over its valid answers, its span BERTScore at 75\% is 0.40, as for BERT +
 dictionary, but its \frr{} stays lower (0.39 against 0.48); valid answers are a selected subset, so this is
 descriptive only.
@@ -128,6 +128,6 @@ from 10\% on it has the highest span BERTScore of the main methods (0.67 to 0.50
 
 \paragraph{Ablations and contamination.} Without dictionary candidates, BERT restores almost no facts beyond one word
 (\frr{} 0.13 to 0.04) and makes the span worse than the damage (pooled repair gain $-0.18$ to $-0.34$). The article
-as context raises the LLM's \frr{} by 0.10 to 0.19, the highest fact scores of all up to 25\%, but its context is clean gold
+as context raises the LLM's \frr{} by 0.1 to 0.2, the highest fact scores of all up to 25\%, but its context is clean gold
 text, which real pages would not give. The probe found no near-verbatim continuation in 116 test sentences (median similarity
 0.26, maximum 0.51).

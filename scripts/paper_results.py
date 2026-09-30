@@ -14,8 +14,9 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import scienceplots  # noqa: F401  (registers the "science" matplotlib styles)
 
-from blnrepair.plots import INK, MUTED, SERIES
+from blnrepair.plots import INK, MUTED
 
 ROOT = Path(__file__).resolve().parents[1]
 NOTEBOOK = ROOT / "notebooks" / "04_evaluation.ipynb"
@@ -26,8 +27,9 @@ MAIN = ["BERT + dictionary", "few-shot", "dictionary lookup", "BART"]  # with in
 PLAIN = ["no repair", "BERT, no dictionary", "few-shot + article"]  # point estimates only
 HEAD = {"BERT + dictionary": "BERT+dict.", "few-shot": "LLM", "dictionary lookup": "Lookup", "BART": "BART",
         "no repair": "None", "BERT, no dictionary": "BERT", "few-shot + article": "LLM+art."}
-COLORS = {m: SERIES[i] for i, m in enumerate(["BERT + dictionary", "few-shot", "few-shot + article",
-                                               "dictionary lookup", "BERT, no dictionary", "BART"])}
+# Okabe-Ito colours (colour-blind safe), plus one marker per method so identity never rests on colour alone
+COLORS = {"BERT + dictionary": "#0072B2", "few-shot": "#D55E00", "dictionary lookup": "#E69F00", "BART": "#009E73"}
+MARKERS = {"BERT + dictionary": "o", "few-shot": "s", "dictionary lookup": "^", "BART": "D"}
 
 
 class TableParser(HTMLParser):
@@ -158,7 +160,9 @@ def format_table(tables, nb):
 def figure(tables, valid):
     metrics = [("BERTScore span", "BERTScore (span)"), ("Fact Recovery Rate", "Fact Recovery Rate"),
                ("anchor recovery", "Anchor recovery")]
-    plt.rcParams.update({"font.family": "serif", "font.size": 8})
+    plt.style.use(["science", "no-latex"])
+    plt.rcParams.update({"font.family": "serif", "font.serif": ["Times", "Times New Roman", "DejaVu Serif"],
+                         "font.size": 8, "axes.linewidth": 0.6, "pdf.fonttype": 42})
     fig, axes = plt.subplots(1, 3, figsize=(6.3, 1.75))
     x = range(len(LEVELS))
     for i, (ax, (key, title)) in enumerate(zip(axes, metrics)):
@@ -168,12 +172,14 @@ def figure(tables, valid):
         for m in MAIN:
             v, lo, hi = zip(*(parse_cell(table[lv][m]) for lv in LEVELS))
             ax.fill_between(x, lo, hi, color=COLORS[m], alpha=0.15, linewidth=0)
-            ax.plot(x, v, color=COLORS[m], linewidth=1.5, marker="o", markersize=3, label=HEAD[m])
+            ax.plot(x, v, color=COLORS[m], linewidth=1.3, marker=MARKERS[m], markersize=3.2, label=HEAD[m])
         ax.plot(x, [valid[(lv, "few-shot")][i] for lv in LEVELS], color=COLORS["few-shot"], linewidth=1,
                 linestyle=":", label="LLM, valid answers")
         ax.set_xticks(list(x), ["1w", "10%", "25%", "50%", "75%"])
+        ax.minorticks_off()
+        ax.tick_params(top=False, right=False)
         ax.set_title(title, fontsize=8.5, color=INK, loc="left")
-        ax.yaxis.grid(True, color="#e5e4e0", linewidth=0.6)
+        ax.yaxis.grid(True, color="#dddddd", linewidth=0.5)
         ax.set_axisbelow(True)
         for side in ("top", "right"):
             ax.spines[side].set_visible(False)

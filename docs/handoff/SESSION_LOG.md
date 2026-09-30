@@ -60,3 +60,16 @@ Append only: one entry per session, newest at the bottom. Each entry: date, sess
 - Test headline: see `HANDOFF.md`; every number is in the notebook 4 outputs and the last two deviations-log entries in `CLAUDE.md`.
 
 **Handed on** to "GenAI Worker 3" on 2026-09-30 (Simon asked): Shan's literature run, team read, submission (see `HANDOFF.md`). The stale "Current status" block at the top of `CLAUDE.md` (it still said "next step: notebook 4 on test") was rewritten before the handoff.
+
+## 2026-09-30: "GenAI Worker 3" (took over as project lead from "GenAI Worker 2")
+
+**Context:** Simon is ill; the lead works on its own, the group reads over the result.
+
+**Done (branch `simon/final-checks`, PR into `writing`)**
+- Tag `report-before-final-checks` (= `writing` at `9ad0529`) pushed, so the pre-check version stays recoverable.
+- The two claims not checkable from code: Qwen3 active parameters corrected to the cited tech report (3B, so 27x BERT); "15 of 15" softened to what the deviations log records.
+- Read-only Codex review (`gpt-6-sol`, high): 7 findings, 6 verified and fixed length-neutrally, 1 left (minor). One rounding fix. Text still ends at the bottom of page 9.
+- Figures: SciencePlots style, Okabe-Ito colours plus markers (`fig:results`), viridis spans (`fig:spans`, new generating script `scripts/fig_nested_spans.py`). No number changed.
+- `docs/defence_questions.md`: 14 likely defence questions with checked answers.
+
+**Handed on:** team read (Bea, Shan), Shan's literature run, submission of `main.pdf` from `writing` before Thu 1 Oct 00:00.
