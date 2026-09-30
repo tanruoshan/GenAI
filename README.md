@@ -1,7 +1,7 @@
 # How Much Damage Can GenAI Repair? Fact Recovery in Synthetically Damaged Historical Newspaper Text
 
 Bea Dippold, Ruo Shan Tan, Simon Manzenberger. Faculty of Informatics and Data Science, University of Regensburg.
-GenAI course project (6 ECTS). The report (PDF) is submitted separately; its LaTeX source is not part of this repository.
+GenAI course project.
 
 ## What this repository does
 
