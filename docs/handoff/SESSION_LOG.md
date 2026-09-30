@@ -59,4 +59,4 @@ Append only: one entry per session, newest at the bottom. Each entry: date, sess
 **Numbers**
 - Test headline: see `HANDOFF.md`; every number is in the notebook 4 outputs and the last two deviations-log entries in `CLAUDE.md`.
 
-**Handed on**: Shan's literature run, team read, submission (see `HANDOFF.md`).
+**Handed on** to "GenAI Worker 3" on 2026-09-30 (Simon asked): Shan's literature run, team read, submission (see `HANDOFF.md`). The stale "Current status" block at the top of `CLAUDE.md` (it still said "next step: notebook 4 on test") was rewritten before the handoff.

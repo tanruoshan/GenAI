@@ -1,6 +1,6 @@
 # Handoff: current state (Simon's sessions)
 
-Last updated: 2026-09-29 (late night), by session "GenAI Worker 2" (project lead since the handoff from "GenAI Worker 1" the same evening).
+Last updated: 2026-09-30, by session "GenAI Worker 2", handing the lead to "GenAI Worker 3".
 
 This file is the **current state**; it is rewritten at every handoff. The history is in `SESSION_LOG.md` (append only). Design decisions and numbers are in the deviations log at the end of `CLAUDE.md` (newest entries at the bottom). If this file and the code disagree, the code wins; say so.
 

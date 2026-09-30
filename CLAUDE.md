@@ -4,22 +4,13 @@
 
 Source of decisions: `docs/dossier.md` (the single dossier since 2026-09-29; `docs/dossier_v2.md` was merged into it and removed). Every fact the report needs, by report section: `docs/report_sources.md` (same file as `report/overleaf-bln600/notes/report_sources.md`). The Day 1 rules are in "Carried over from Day 1" below (`docs/claude_day1.md` never existed in this repo). If this file and the dossier disagree on scope or design, the dossier wins; stop and ask. Items marked **[DECIDE]** are changes or open points the user must settle before code depends on them.
 
-## Current status (2026-09-29, evening)
+## Current status (2026-09-30)
 - **Deadline:** submission Thu 1 Oct 2026, 00:00 (report 7 to 9 pages, ACL). Defence 14 Oct 2026, 10:30.
-- **Data:** frozen `data/processed/corrupted_v2.jsonl` (20-30% per-word intensity, sha256 in `runs/corrupted_v2.sha256`). Never edit or regenerate it; every notebook and script checks the hash first. v1 is removed from git (commit `fabab86` on `main`).
-- **All six methods frozen, test predictions stored, none scored (`runs/preds/`, 750 rows each = the 750 test rows with slots; coverage checked 2026-09-29):**
-  - BERT + dictionary candidates (main MLM method): `bert_rerank_ftv1-l64-b5-n10-x5-test`, `configs/bert_repair_lex.yaml`.
-  - LLM few-shot, Qwen3-30B-A3B-Instruct-2507 on SAIA: `llm_fewshot_v4-...-exb46768-test`, `configs/llm.yaml`.
-  - LLM few-shot + article: `llm_fewshot_article_v3-...-exb46768-test`.
-  - Dictionary lookup (non-GenAI baseline): `lexicon_v1-test`, `configs/lexicon.yaml`.
-  - BERT without dictionary (ablation line): `bert_rerank_ftv1-l8-b5-n10-test`, `configs/bert_repair.yaml`.
-  - BART fine-tuned denoiser (descriptive only): `bart_ftv1-greedy-test`, `configs/bart_repair.yaml` `frozen: true` (Simon, RunPod A40; 40 of 750 format failures, a count only).
-  - Contamination probe (Qwen, level 0): **116 of 150 test sentences, final** (Shan stopped the SAIA run for API resources; the report says so). Notebook 4 reads whatever probe rows exist.
-- **Next step: notebook 4 on test, once (Simon).** Set `SPLIT = "test"`, run top to bottom, commit the executed notebook, hand tables and figure to the team. Nobody has seen test scores. Nothing else blocks it.
-- **Report (`report/overleaf-bln600/`):** hypotheses, the new Method paragraphs (BERT + dictionary, Qwen3 with 5 examples, lookup, BART), `tab:settings`, `tab:design`, statistics, SQ3 number, probe details, Limitations and appendix outline written on 2026-09-29 (Shan's session). Content ends at about 7.75 of 9 pages. Waiting for test numbers: `tab:results`, Figure 2, Results text, Interpretation verdicts, Abstract. New references are in `references.bib` (Shan via Zotero); never edit `references.bib` without her OK.
-- **Branches:** `writing` is the active branch (code + report). `simon/baselines` is fully merged into `writing` (up to `ce12cac`). Shan's planned cleanup branch was replaced by a cleanup commit directly on `writing` (no code or behaviour change, see the log entry of 2026-09-29 evening).
-- **Kept for the notebooks, not in the report:** the BERT lambda grid and `lex_n` x lambda grid dev runs (read by notebooks 2 and 2b), `bert_rerank_base-check-v2` and `bert_rerank_ftv1-check-v2` (notebook 2). **Archived locally (`runs/_archive/`, git-ignored, last tracked in `8a6a988`):** Llama dev runs, Qwen few-shot v3 and article v2 dev runs, prompts few-shot v2/v3 and article v1/v2.
-- **Git from Claude sessions on Shan's machine:** the working copy has CRLF endings and Shan's Windows git uses `core.autocrlf=true`; a Linux-side git must pass `-c core.autocrlf=true`, or every file shows as modified. No Claude co-author trailer in commits (Shan's rule).
+- **Test scores are final. Never run notebook 4 on the test split again.** It ran exactly once (PR #4, merge `5f1dad5`); every paper number comes from its committed outputs. `scripts/paper_results.py` builds `tab:results`, `tab:format` and `fig:results` from those outputs without recomputing anything.
+- **Report is complete apart from Shan's literature run** (PR #5, `writing` at `15a899e`): Results, Interpretation, Abstract, key outcomes written from the test numbers. Text including Limitations ends exactly at the bottom of page 9: **no slack**, any addition needs an equal cut. Hypothesis wording is fixed (it was set before the test run); do not reword it.
+- **Data and methods:** frozen `data/processed/corrupted_v2.jsonl` (hash in `runs/corrupted_v2.sha256`, never regenerate); all six methods frozen, test predictions in `runs/preds/` (750 rows each), probe 116 of 150.
+- **Current state and next steps:** `docs/handoff/HANDOFF.md`. Decisions and numbers: the deviations log at the end of this file (newest at the bottom).
+- **Git:** `writing` is the active branch; PRs into it, self-merge allowed when `origin/writing` has not moved and the PR is CLEAN. No Claude co-author trailer. Never commit `data/`, `models/`, `.env`, `AGENTS.md`. Never edit `references.bib` without Shan's OK.
 
 ## Status (Day 2 plan, kept for history)
 Data and damage are frozen: `data/processed/corrupted_v1.jsonl`, sha256 `75b28057...ea70` (full hash in `runs/corrupted_v1.sha256`). Never edit or regenerate it. Every notebook and script checks the hash first and stops on mismatch.
