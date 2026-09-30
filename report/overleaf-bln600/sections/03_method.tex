@@ -140,8 +140,8 @@ message, a task instruction, five solved dev examples (one per level, held out f
 view as BERT with numbered slots, and asks for a JSON list of exactly $k$ strings at temperature 0. We first used
 Llama-3.1-8B-Instruct \citep{grattafiori2024llama3}, but its dev format-failure rates (21\% and 27\% for the two prompt variants) were above the 15\% limit
 we had set in advance for switching model. We use only open-weight models on academic infrastructure, so that the
-licensed \bln{} text (CC BY-NC-ND) is never sent to a commercial third-party service. The system message was necessary: without it, an early dev check found all 15 answers in the wrong format, mostly
-Python or tool-call code, in line with the finding that stating the input type and output format helps
+licensed \bln{} text (CC BY-NC-ND) is never sent to a commercial third-party service. The system message was necessary: without it, an early dev check found the model answering with Python code
+in 15 of 15 cases, in line with the finding that stating the input type and output format helps
 LLM post-correction \citep{boros2024postcorrection}. An answer of the wrong length, not valid JSON, or cut off by the
 token limit counts as a \emph{format failure} and is scored as if no repair had been made, with no retry and no
 manual correction. Because output formatting alone can swing LLM post-correction results
