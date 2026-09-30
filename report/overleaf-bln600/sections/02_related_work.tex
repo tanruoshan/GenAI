@@ -40,9 +40,8 @@ multi-token blanks harder to fill \citep{shen2020blank}; our search over candida
 idea of weighing context against letter evidence \citep{evershed2014correcting}. Filling a blank from context is
 generation conditioned on the rest of the sentence \citep{donahue2020enabling}, and BERT can be sampled to produce
 text \citep{wang2019bert}, so both methods count as GenAI here.\footnote{We cite \citet{wang2019bert} only for this
-narrow claim; its Markov-random-field derivation was later shown to be incorrect by one of its authors. Read
-sceptically, BERT is the fine-tuned in-domain baseline the few-shot LLM must beat, which is how our experiment treats
-it either way.}
+narrow claim; its Markov-random-field derivation was later shown to be incorrect. Either way, BERT is the
+in-domain baseline the few-shot LLM must beat.}
 
 \paragraph{SQ3: meaning versus facts.} A similarity score can pass a repair that gets the facts wrong, and SQ3 tests
 whether that happens here. BERTScore \citep{zhang2020bertscore} is the standard similarity metric for generated text,

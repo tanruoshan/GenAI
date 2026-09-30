@@ -64,9 +64,7 @@ with BERT \citep{devlin2019bert}, fine-tuned on in-domain gold text and guided b
 candidates in the spirit of ``context beats confusion'' \citep{evershed2014correcting}, with an open-weight LLM
 prompted with five solved examples. As reference lines we add a dictionary lookup that uses no model at all and,
 descriptively, BART \citep{lewis2020bart} fine-tuned as a denoiser. We score the repaired words with BERTScore \citep{zhang2020bertscore} for meaning and with a Fact Recovery
-Rate for exact facts, and probe the LLM for memorised test text \citep{sainz2023contamination}. Repair works on text
-only and assumes the damaged region is known; detecting it, and repairing from the scanned image with a
-vision-capable model, are left to future work.
+Rate for exact facts, and probe the LLM for memorised test text \citep{sainz2023contamination}.
 
 Our contributions are (i) a fact-centred, graded damage benchmark on BLN600 with nested spans, so the same place
 gets worse from level to level; (ii) a controlled comparison of masked infilling and few-shot generation under

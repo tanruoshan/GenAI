@@ -21,7 +21,8 @@ Given a sentence whose damaged span is known and whose garbled letters are visib
 per damaged position; the number of damaged words is therefore also given. All repair methods take the same input
 and are scored by the same code (Sec.~\ref{sec:slot}). We build this task on \bln{} \citep{booth-etal-2024-bln600},
 600 excerpts of London crime reporting from British newspapers of 1834--1894, each with its source image, OCR output
-and a gold transcription. We split excerpts into sentences with \texttt{pysbd} and pool sentences of 20--60 words
+and a gold transcription. Its gold text, aligned with real OCR, lets us calibrate
+our noise on real errors, and prior post-OCR work uses it \citep{thomas2024leveraging}. We split excerpts into sentences with \texttt{pysbd} and pool sentences of 20--60 words
 with at least two \emph{fact tokens}: a number, any word containing a digit or pound sign, or a capitalised word that
 is not the first word of the sentence (a short stop list excludes titles such as Mr, Mrs, The). This is a surface
 rule, not a named-entity tagger: it catches ``Old'' in ``Old Bailey'', misses a lower-cased fact, and flags dates
@@ -50,7 +51,7 @@ The 20--30\% band was chosen to sit around the median per-word character error r
 % REVIEW (1): "All calibration" conflicts with Table 2: 14.3% of substitutions (capitalization, look-alike, random)
 %   and the 0.10 word drop are not calibrated from data. Suggest: "The confusion table and the per-word rate come
 %   from real OCR errors on aligned words, so the noise resembles what OCR output already contains."
-The confusion table and this band come from real OCR errors on aligned words; the drop rate and fallbacks are our choice.
+The confusion table (85.7\% of substitutions) and this band come from real OCR errors on aligned words; the drop rate and fallbacks are our choice.
 
 Table~\ref{tab:damage} shows the result on the test split: sentence-level CER grows roughly in step with real \bln{} OCR error rates, but
 the share of damaged words that are themselves facts falls from 100\% at the 1-word level to 17\% at 75\%. About one in ten fact slots is dropped outright, leaving no visible letters for that fact at all.
