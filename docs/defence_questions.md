@@ -77,6 +77,18 @@ Numbers are test numbers unless marked dev. Order: most dangerous first.
     generate text (Wang and Cho 2019, cited for that narrow claim only). Either way it is the in-domain baseline
     the LLM had to beat.
 
+## Appendix material to talk about at the defence
+
+The course asks for no extensive appendix but to "talk about what you would put in the appendix when you defend
+your project" (announcement "Project Report", 17 Jul 2026). The outline was removed from the PDF on 2026-09-30;
+it is kept in `report/overleaf-bln600/sections/07_appendix_outline.tex`. Items: the full damage parameters and
+confusion table, with the first, heavier noise setting we dropped (sentence CER 1.9 / 5.1 / 12.1 / 23.7 / 35.1%);
+BERT and BART training curves; the lambda and word-list grids chosen on dev; the full prompts, the first prompt
+without a system message (15 of 15 answers were Python code) and the Llama-3.1-8B dev run that led to the model
+switch; the dropped zero-shot run; results by length band and the full paired-test table (notebook 4); the manual
+check of 18 repairs (dev); the probe details; and two ablations planned but not run (letters hidden,
+confusion-weighted reranking).
+
 ## Figures
 
 `fig:results` (`scripts/paper_results.py`) and `fig:spans` (`scripts/fig_nested_spans.py`) use matplotlib with the
