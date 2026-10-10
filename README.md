@@ -35,6 +35,7 @@ scripts/        model training (BERT, BART), BART inference, paper tables and fi
 runs/           stored predictions (runs/preds/), training logs, run configs and SHA-256 hashes
 reports/        calibration, damage statistics, pool statistics, manual fact-rule check
 tests/          unit tests (pytest)
+demo/           offline HTML demo for the defence, built locally (see demo/README.md)
 report/         not tracked; step 3 below writes the paper's tables and figures to report/overleaf-bln600/
 ```
 

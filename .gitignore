@@ -39,3 +39,6 @@ AGENTS.md
 docs/
 report/
 message_to_shan.md
+
+# demo build output (embeds BLN600 text, CC BY-NC-ND; never commit)
+demo/out/

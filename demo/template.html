@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BLN600 Repair Demo</title>
+<style>
+:root{
+  --bg:#F3F0E8; --surface:#FBFAF6; --ink:#1C2533; --ink2:#3E4A5B; --muted:#6B7280; --rule:#DCD6C8; --soft:#ECE8DF;
+  --good:#1a7f37; --good-bg:#DDF1E3; --bad:#B42318; --bad-bg:#FBE3E0; --focus:#2a78d6;
+  --serif: "Source Serif 4", "Source Serif Pro", Georgia, "Times New Roman", serif;
+  --sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.45}
+body{min-height:100vh;display:flex;flex-direction:column}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+/* top bar */
+header{display:flex;align-items:center;gap:24px;padding:14px 28px;background:var(--ink);color:#F6F4EF;position:sticky;top:0;z-index:5}
+header h1{font-family:var(--serif);font-weight:600;font-size:20px;margin:0;white-space:nowrap}
+@media (max-width:1500px){header h1 .long{display:none}}
+header h1 span{color:#E3A46B}
+nav.scenes{display:flex;gap:2px;flex-wrap:nowrap;flex:1;justify-content:center}
+nav.scenes button{background:transparent;border:1px solid transparent;color:#C9D2DE;padding:6px 12px;border-radius:999px;font-size:15px;white-space:nowrap}
+nav.scenes button .k{display:inline-block;min-width:20px;height:20px;line-height:20px;border-radius:5px;background:#2E3A4D;color:#E3A46B;font-size:13px;text-align:center;margin-right:7px;font-weight:600}
+nav.scenes button[aria-selected=true]{background:#F6F4EF;color:var(--ink)}
+nav.scenes button[aria-selected=true] .k{background:var(--ink);color:#F6F4EF}
+.badges{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.badge{font-size:13px;padding:4px 10px;border-radius:999px;background:#2E3A4D;color:#C9D2DE;white-space:nowrap}
+.badge.ok{background:#21452F;color:#BDE5C8}
+.badge.warn{background:#5A2A1C;color:#FFD2C2}
+
+main{flex:1;padding:24px 28px 40px;max-width:1700px;width:100%;margin:0 auto}
+section.scene{display:none}
+section.scene.active{display:block;animation:fadein .25s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.eyebrow{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#2E5EAA;font-weight:600;margin:0 0 6px}
+h2{font-family:var(--serif);font-size:34px;line-height:1.15;margin:0 0 6px;font-weight:600}
+.lede{color:var(--ink2);margin:0 0 18px;max-width:1100px;font-size:18px}
+
+/* controls */
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;margin:0 0 18px;padding:12px 14px;background:var(--surface);border:1px solid var(--rule);border-radius:12px}
+.group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.group > label.t{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-right:4px}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:9px;overflow:hidden;background:#fff}
+.seg button{border:0;background:transparent;padding:7px 13px;border-right:1px solid var(--rule);font-size:15px}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--ink);color:#F6F4EF}
+.btn{border:1px solid var(--rule);background:#fff;border-radius:9px;padding:7px 12px;font-size:15px}
+.btn.primary{background:var(--ink);color:#F6F4EF;border-color:var(--ink)}
+.btn:hover{border-color:var(--ink2)}
+select,input[type=search],input[type=text]{border:1px solid var(--rule);background:#fff;border-radius:9px;padding:7px 10px;font-size:15px}
+.sid{font-family:var(--mono);font-size:14px;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--rule);background:#fff;border-radius:999px;padding:5px 12px 5px 9px;font-size:14px}
+.chip .sw{width:18px;height:4px;border-radius:2px}
+.chip[aria-pressed=false]{opacity:.45}
+
+/* sentence panel */
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:22px 26px}
+.sentence{font-family:var(--serif);font-size:27px;line-height:1.9;margin:0}
+.tok{border-radius:5px;padding:1px 2px;white-space:nowrap;transition:background .3s,color .3s}
+.tok.dmg{font-family:var(--mono);font-size:23px;background:#E4E9F2;color:#1E3F7A;padding:2px 5px;animation:glitch .45s ease}
+.tok.drop{font-family:var(--mono);font-size:23px;background:#E7E3DA;color:#7A7468;padding:2px 6px}
+.tok.goldspan{background:#FFF1C9}
+.tok.fact{text-decoration:underline dotted 2px;text-underline-offset:5px;text-decoration-color:#9A8F7A}
+.tok.anchor{box-shadow:0 0 0 2.5px #B85C1E inset}
+.tok.out{color:#A39C8D}
+@keyframes glitch{0%{transform:translateY(-3px);opacity:.2;filter:blur(2px)}60%{transform:translateY(1px);opacity:1;filter:none}100%{transform:none}}
+.stats{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
+.stat{background:#fff;border:1px solid var(--rule);border-radius:12px;padding:10px 16px;min-width:170px}
+.stat b{display:block;font-family:var(--serif);font-size:30px;line-height:1.1}
+.stat span{font-size:14px;color:var(--muted)}
+.legend-line{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:14px;color:var(--ink2)}
+.legend-line i{display:inline-block;width:22px;height:16px;border-radius:4px;vertical-align:-3px;margin-right:6px}
+
+/* repair race */
+.race{display:grid;grid-template-columns:230px 1fr 230px;gap:0;border:1px solid var(--rule);border-radius:14px;overflow:hidden;background:var(--surface)}
+.race > div{padding:13px 16px;border-top:1px solid var(--rule);display:flex;align-items:center}
+.race > div.h{border-top:0;background:var(--soft);font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;padding:9px 16px}
+.mname{gap:10px;font-weight:600}
+.mname .bar{width:6px;align-self:stretch;border-radius:3px;min-height:34px}
+.mname small{display:block;font-weight:400;color:var(--muted);font-size:13px}
+.span-line{font-family:var(--serif);font-size:23px;line-height:1.8;flex-wrap:wrap}
+.span-line .ctx{color:#A39C8D}
+.w{border-radius:5px;padding:1px 4px;margin:0 1px}
+.w.ok{background:var(--good-bg);color:#0F4D22}
+.w.no{background:var(--bad-bg);color:#7A1A11}
+.w.no::after{content:" ✗";font-size:.7em;color:var(--bad)}
+.w.ok::after{content:" ✓";font-size:.7em;color:var(--good)}
+.w.anchor{box-shadow:0 0 0 2.5px #B85C1E inset}
+.w.empty{font-family:var(--mono);font-size:.8em}
+.fail{font-size:14px;font-weight:600;color:var(--bad);background:var(--bad-bg);border-radius:6px;padding:2px 8px;margin-right:10px}
+.score{gap:12px;justify-content:flex-end;font-variant-numeric:tabular-nums}
+.pill{font-size:14px;border-radius:999px;padding:3px 10px;font-weight:600;white-space:nowrap}
+.pill.good{background:var(--good-bg);color:#0F4D22}
+.pill.bad{background:var(--bad-bg);color:#7A1A11}
+.num{font-size:15px;color:var(--ink2)}
+.race > div.gold{background:#FFF8E1}
+
+/* charts */
+.chartwrap{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:22px;align-items:start}
+.chart{position:relative;background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:12px 8px 6px}
+.chart svg{display:block;width:100%;height:auto}
+.tip{position:absolute;pointer-events:none;background:#fff;border:1px solid var(--rule);border-radius:10px;padding:10px 12px;font-size:14px;box-shadow:0 6px 20px rgba(28,37,51,.12);min-width:230px;display:none;z-index:3}
+.tip .lv{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.tip .row{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.tip .row .k{display:flex;align-items:center;gap:6px;color:var(--ink2)}
+.tip .row .k i{display:inline-block;width:16px;height:3px;border-radius:2px}
+.tip .row b{font-variant-numeric:tabular-nums}
+.tip .row small{color:var(--muted);font-variant-numeric:tabular-nums}
+.hyps{display:flex;flex-direction:column;gap:10px}
+.hyp{text-align:left;background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:12px 14px}
+.hyp[aria-pressed=true]{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink) inset}
+.hyp .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.hyp b{font-family:var(--serif);font-size:20px}
+.hyp p{margin:6px 0 0;font-size:14.5px;color:var(--ink2)}
+.verdict{font-size:12.5px;font-weight:700;border-radius:999px;padding:3px 9px;white-space:nowrap}
+.verdict.part{background:#FFF1C9;color:#6E5300}
+.verdict.no{background:var(--bad-bg);color:#7A1A11}
+.verdict.yes{background:var(--good-bg);color:#0F4D22}
+.note{font-size:14px;color:var(--muted);margin-top:10px}
+table.mini{border-collapse:collapse;font-size:15px;font-variant-numeric:tabular-nums;width:100%}
+table.mini th,table.mini td{padding:6px 10px;border-bottom:1px solid var(--rule);text-align:right}
+table.mini th:first-child,table.mini td:first-child{text-align:left}
+table.mini th{font-size:13px;color:var(--muted);font-weight:600}
+
+/* metric trap */
+.trap{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:22px;align-items:start}
+.big{font-family:var(--serif);font-size:64px;line-height:1;font-weight:600}
+.detail{display:flex;flex-direction:column;gap:10px}
+.detail .row{font-family:var(--serif);font-size:20px;line-height:1.5}
+.detail .lab{font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.gal{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:12px 14px;text-align:left}
+.gal .g{font-family:var(--serif);font-size:19px}
+.gal .r{font-family:var(--serif);font-size:19px;color:#7A1A11}
+
+/* lookup */
+.lookup{display:grid;grid-template-columns:minmax(0,560px) 1fr;gap:26px;align-items:start}
+.lookup input{font-family:var(--mono);font-size:34px;padding:12px 16px;width:100%;border-radius:12px}
+.cands{display:flex;flex-direction:column;gap:6px;margin-top:14px}
+.cand{display:grid;grid-template-columns:1fr 90px 110px;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:9px 14px;font-variant-numeric:tabular-nums}
+.cand:first-child{border-color:var(--ink);box-shadow:0 0 0 1.5px var(--ink) inset}
+.cand .wd{font-family:var(--serif);font-size:26px}
+.cand .d{font-size:14px;color:var(--ink2)}
+.cand .f{font-size:14px;color:var(--muted);text-align:right}
+.presets{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.presets button{font-family:var(--mono)}
+.explain{font-size:17px;color:var(--ink2)}
+.explain code{font-family:var(--mono);background:#fff;border:1px solid var(--rule);border-radius:6px;padding:1px 6px}
+footer{padding:10px 28px 18px;color:var(--muted);font-size:13px;max-width:1700px;margin:0 auto;width:100%}
+kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--rule);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:#fff;color:var(--ink2)}
+.sr{position:absolute;left:-9999px}
+@media (max-height:860px){main{padding:12px 24px 24px}.eyebrow{display:none}h2{font-size:26px;margin-bottom:4px}.lede{font-size:15px;margin-bottom:10px}
+  .controls{padding:7px 12px;margin-bottom:10px}.race > div{padding:5px 14px}.span-line{font-size:19px;line-height:1.55}.tok.dmg,.tok.drop{font-size:19px}}
+@media (max-width:1100px){.chartwrap,.trap,.lookup{grid-template-columns:1fr}.race{grid-template-columns:150px 1fr}.race > div.sc{display:none}header{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="long">How Much Damage Can GenAI Repair? </span><span>Live demo</span></h1>
+  <nav class="scenes" role="tablist" aria-label="Scenes"></nav>
+  <div class="badges" id="badges"></div>
+</header>
+<main>
+  <section class="scene" id="s-damage" aria-labelledby="t-damage"></section>
+  <section class="scene" id="s-repair"></section>
+  <section class="scene" id="s-results"></section>
+  <section class="scene" id="s-trap"></section>
+  <section class="scene" id="s-lookup"></section>
+</main>
+<footer id="foot"></footer>
+<script>
+const DATA=/*__PAYLOAD__*/null;
+</script>
+<script>
+"use strict";
+// ---------------------------------------------------------------------------------------------- setup
+const COLORS={bertdict:"#2a78d6",llm:"#eb6834",bart:"#1baf7a",lookup:"#eda100",bert:"#e87ba4",llmart:"#008300",none:"#8b8b85"};
+const DASH={bertdict:"",llm:"",bart:"",lookup:"",bert:"7 5",llmart:"7 5",none:"3 5"};
+const LEVEL_NAME={"0":"clean","1w":"1 word","10":"10%","25":"25%","50":"50%","75":"75%"};
+const LEVELS=DATA.levels, M=DATA.methods, MK=M.map(m=>m.key);
+const MNAME=Object.fromEntries(M.map(m=>[m.key,m.name])); MNAME.none="No repair";
+const MAIN=["bertdict","llm","lookup","bart"];
+const $=(s,r=document)=>r.querySelector(s);
+const el=(tag,attrs={},...kids)=>{const e=document.createElement(tag);for(const [k,v] of Object.entries(attrs)){
+  if(k==="class")e.className=v;else if(k==="text")e.textContent=v;else if(k.startsWith("on"))e.addEventListener(k.slice(2),v);
+  else if(v!==false&&v!=null)e.setAttribute(k,v===true?"":v);} for(const c of kids.flat()){if(c==null)continue;e.append(c.nodeType?c:document.createTextNode(c));} return e;};
+const svgEl=(tag,attrs={})=>{const e=document.createElementNS("http://www.w3.org/2000/svg",tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);return e;};
+const fmt=(v,d=2)=>v==null||Number.isNaN(v)?"–":(v<0?"−":"")+Math.abs(v).toFixed(d);
+const pct=v=>v==null?"–":Math.round(v*100)+"%";
+const S=DATA.sentences, byId=Object.fromEntries(S.map((s,i)=>[s.id,i]));
+
+const state={scene:0,idx:Math.max(0,byId[DATA.featured[0]]??0),level:"25",filter:"all",
+  metric:"anchor",shown:new Set(["bertdict","llm","lookup","bart","none"]),validOnly:false,hyp:null,
+  trapLevel:"25",trapMethod:"bart",trapSel:null,trapAll:false,lookupWord:"Hacley",full:false,playing:null};
+
+// --------------------------------------------------------------------------------- sentence filters
+const FILTERS={
+  all:{name:`All ${S.length} test sentences`,f:()=>true},
+  manual:{name:"Seeded manual check (6)",f:s=>DATA.featured.includes(s.id)},
+  bertwin:{name:"BERT + dict. ✓, LLM ✗ (anchor, at this level)",f:(s,lv)=>s.repairs[lv].bertdict.anchor&&!s.repairs[lv].llm.anchor},
+  llmwin:{name:"LLM ✓, BERT + dict. ✗",f:(s,lv)=>s.repairs[lv].llm.anchor&&!s.repairs[lv].bertdict.anchor},
+  fail:{name:"LLM format failure",f:(s,lv)=>!s.repairs[lv].llm.fmt},
+  bartwrong:{name:"BART fluent but wrong anchor",f:(s,lv)=>!s.repairs[lv].bart.anchor&&s.repairs[lv].bart.fmt&&s.repairs[lv].bart.w.some(w=>w&&/^[A-Z]/.test(w))},
+  nobody:{name:"No method restores the anchor",f:(s,lv)=>MK.every(k=>!s.repairs[lv][k].anchor)},
+};
+const lvForFilter=()=>state.level==="0"?"1w":state.level;
+function pool(){const lv=lvForFilter();return S.map((s,i)=>i).filter(i=>FILTERS[state.filter].f(S[i],lv));}
+function step(d){const p=pool();if(!p.length)return;let pos=p.indexOf(state.idx);pos=pos<0?0:(pos+d+p.length)%p.length;state.idx=p[pos];render();}
+function randomPick(){const p=pool();if(p.length)state.idx=p[Math.floor(Math.random()*p.length)];render();}
+
+// ------------------------------------------------------------------------------------------ chrome
+const SCENES=[["damage","The damage"],["repair","The repair race"],["results","Results"],["trap","The metric trap"],["lookup","Try the lookup"]];
+function buildNav(){
+  const nav=$("nav.scenes");
+  SCENES.forEach(([id,name],i)=>nav.append(el("button",{role:"tab",id:"t-"+id,"aria-controls":"s-"+id,onclick:()=>{state.scene=i;render();}},
+    el("span",{class:"k",text:String(i+1)}),name)));
+  const b=$("#badges"), meta=DATA.meta;
+  b.append(el("span",{class:"badge "+(meta.verified?"ok":"warn"),text:meta.verified?"Data: frozen v2, hash verified":"UNVERIFIED data: test build"}));
+  b.append(el("span",{class:"badge "+(meta.mismatches.length?"warn":"ok"),
+    text:meta.mismatches.length?`${meta.mismatches.length} of ${meta.checked} means differ from notebook 4`:`${meta.checked} means match notebook 4`}));
+  $("#foot").append("Test split, 150 sentences × 5 levels. Intervals, tests and SQ3 rates are read from the executed notebooks/04_evaluation.ipynb; per-sentence repairs from runs/preds/. ",
+    el("kbd",{text:"1"}),"–",el("kbd",{text:"5"})," scenes · ",el("kbd",{text:"←"}),el("kbd",{text:"→"})," level · ",
+    el("kbd",{text:"↑"}),el("kbd",{text:"↓"})," sentence · ",el("kbd",{text:"Space"})," play levels · ",el("kbd",{text:"R"})," random.");
+}
+
+function sentenceControls(withClean){
+  const s=S[state.idx], p=pool(), pos=p.indexOf(state.idx);
+  const lvls=(withClean?["0"]:[]).concat(LEVELS);
+  const sel=el("select",{"aria-label":"Which sentences to step through",onchange:e=>{state.filter=e.target.value;const q=pool();if(q.length&&!q.includes(state.idx))state.idx=q[0];render();}},
+    ...Object.entries(FILTERS).map(([k,f])=>el("option",{value:k,selected:k===state.filter},f.name)));
+  const seg=el("div",{class:"seg",role:"group","aria-label":"Damage level"},...lvls.map(l=>el("button",{"aria-pressed":String(state.level===l),onclick:()=>{stopPlay();state.level=l;render();}},LEVEL_NAME[l])));
+  if(!withClean&&state.level==="0"){state.level="1w";}
+  return el("div",{class:"controls"},
+    el("div",{class:"group"},el("label",{class:"t",text:"Sentence"}),
+      el("button",{class:"btn","aria-label":"Previous sentence",onclick:()=>step(-1)},"◀"),
+      el("button",{class:"btn","aria-label":"Next sentence",onclick:()=>step(1)},"▶"),
+      el("button",{class:"btn",onclick:randomPick},"Random"),
+      el("span",{class:"sid",text:`${s.id} · ${s.tokens.length} words · ${pos<0?"not in filter":(pos+1)+" / "+p.length}`})),
+    el("div",{class:"group"},sel),
+    el("div",{class:"group"},el("label",{class:"t",text:"Damage"}),seg,
+      el("button",{class:"btn primary",onclick:togglePlay,"aria-label":"Play through the levels"},state.playing?"■ Stop":"▶ Play")));
+}
+function togglePlay(){ if(state.playing){stopPlay();render();return;}
+  const seq=(state.scene===0?["0"]:[]).concat(LEVELS); let i=Math.max(0,seq.indexOf(state.level));
+  if(i===seq.length-1)i=-1;
+  state.playing=setInterval(()=>{i++; if(i>=seq.length){stopPlay();render();return;} state.level=seq[i]; render();},1500);
+  i++; state.level=seq[Math.min(i,seq.length-1)]; render();}
+function stopPlay(){if(state.playing){clearInterval(state.playing);state.playing=null;}}
+
+// ---------------------------------------------------------------------------------- scene 1: damage
+function renderDamage(root){
+  const s=S[state.idx], lv=state.level;
+  root.append(el("p",{class:"eyebrow",text:"Scene 1 · controlled damage"}),
+    el("h2",{text:"One fact, damaged at five nested levels"}),
+    el("p",{class:"lede",text:"The anchor fact is always damaged and never dropped. Each larger span contains the smaller ones, and a damaged word looks the same at every level: higher levels only add damaged words around it."}),
+    sentenceControls(true));
+  const L=lv==="0"?null:s.levels[lv];
+  const slots=L?Object.fromEntries(L.slots.map(([i,out,d])=>[i,{out,d}])):{};
+  const facts=new Set(s.facts);
+  const sent=el("p",{class:"sentence"});
+  s.tokens.forEach((t,i)=>{
+    const sl=slots[i];
+    let cls="tok", txt=t;
+    if(sl){cls+=sl.d?" drop":" dmg"; txt=sl.d?"⟨?⟩":sl.out;}
+    if(facts.has(i)&&!sl)cls+=" fact";
+    if(i===s.anchor)cls+=" anchor";
+    sent.append(el("span",{class:cls,title:sl?`gold: ${t}`:(i===s.anchor?"anchor fact":facts.has(i)?"fact token":""),text:txt})," ");
+  });
+  const k=L?L.slots.length:0, nf=L?L.facts.length:0, nd=L?L.slots.filter(x=>x[2]).length:0;
+  root.append(el("div",{class:"card"},sent,
+    el("div",{class:"legend-line"},
+      el("span",{},el("i",{style:"background:#E4E9F2;box-shadow:inset 0 0 0 1px #9FB0CF"}),"damaged word, as the model sees it"),
+      el("span",{},el("i",{style:"background:#E7E3DA"}),"⟨?⟩ dropped word"),
+      el("span",{},el("i",{style:"box-shadow:inset 0 0 0 2.5px #B85C1E"}),"anchor fact"),
+      el("span",{},el("i",{style:"border-bottom:2px dotted #9A8F7A;border-radius:0;height:12px"}),"fact token (hover a damaged word for its gold form)")),
+    el("div",{class:"stats"},
+      el("div",{class:"stat"},el("b",{text:`${k} / ${s.tokens.length}`}),el("span",{text:"words damaged"})),
+      el("div",{class:"stat"},el("b",{text:String(nf)}),el("span",{text:"facts in the span"})),
+      el("div",{class:"stat"},el("b",{text:String(nd)}),el("span",{text:"words dropped (no letters left)"})),
+      el("div",{class:"stat"},el("b",{text:L?pct(L.cer):"0%"}),el("span",{text:"character error rate of the span"})))));
+}
+
+// ----------------------------------------------------------------------------- scene 2: repair race
+function spanTokens(s,lv,words,ok,showCtx){
+  const L=s.levels[lv], [a,b]=L.span, wrap=el("div",{class:"span-line"});
+  const slotIdx=Object.fromEntries(L.slots.map((x,j)=>[x[0],j]));
+  const from=showCtx?0:Math.max(0,a-3), to=showCtx?s.tokens.length:Math.min(s.tokens.length,b+3);
+  if(from>0)wrap.append(el("span",{class:"ctx",text:"… "}));
+  for(let i=from;i<to;i++){
+    const j=slotIdx[i];
+    if(j==null){wrap.append(el("span",{class:"ctx",text:s.tokens[i]})," ");continue;}
+    if(words===undefined){wrap.append(el("span",{class:"w"+(i===s.anchor?" anchor":""),style:"background:#FFF1C9",text:s.tokens[i]})," ");continue;}
+    const w=words?words[j]:null, good=ok?ok[j]:0;
+    const shown=w==null?(L.slots[j][2]?"⟨?⟩":L.slots[j][1]):(w===""?"∅":w);
+    wrap.append(el("span",{class:"w "+(good?"ok":"no")+(i===s.anchor?" anchor":"")+(w===""||w==null&&L.slots[j][2]?" empty":""),
+      title:`gold: ${s.tokens[i]}`,text:shown})," ");
+  }
+  if(to<s.tokens.length)wrap.append(el("span",{class:"ctx",text:"…"}));
+  return wrap;
+}
+function renderRepair(root){
+  const s=S[state.idx]; if(state.level==="0")state.level="1w"; const lv=state.level;
+  root.append(el("p",{class:"eyebrow",text:"Scene 2 · same input, six repairs"}),
+    el("h2",{text:"The repair race"}),
+    el("p",{class:"lede",text:"Every method receives the identical slot view and returns one word per slot. Green = the gold word restored exactly; red = wrong; the ring marks the anchor fact. Hover any word for the gold form."}),
+    sentenceControls(false));
+  const race=el("div",{class:"race"});
+  race.append(el("div",{class:"h",text:"Method"}),el("div",{class:"h",text:"Repaired span"}),
+    el("div",{class:"h sc",style:"justify-content:flex-end",text:DATA.meta.bertscore?"Anchor · words right · BERTScore":"Anchor · words right"}));
+  race.append(el("div",{class:"mname gold"},el("span",{class:"bar",style:"background:#C9A227"}),el("div",{},"Gold",el("small",{text:"the original text"}))),
+    el("div",{class:"gold"},spanTokens(s,lv,undefined,null,state.full)),
+    el("div",{class:"gold sc"}));
+  const L=s.levels[lv];
+  race.append(el("div",{class:"mname"},el("span",{class:"bar",style:"background:"+COLORS.none}),el("div",{},"Damaged input",el("small",{text:"what every method sees"}))),
+    el("div",{},spanTokens(s,lv,null,null,state.full)),
+    el("div",{class:"score sc"},DATA.meta.bertscore?el("span",{class:"num",text:"BERTScore "+fmt(L.bs_none)}):null));
+  for(const m of M){
+    const r=s.repairs[lv][m.key];
+    const right=r.ok.filter(Boolean).length;
+    race.append(
+      el("div",{class:"mname"},el("span",{class:"bar",style:"background:"+COLORS[m.key]}),el("div",{},m.name,el("small",{text:m.role}))),
+      el("div",{},r.fmt?null:el("span",{class:"fail",text:"format failure → scored as no repair"}),spanTokens(s,lv,r.fmt?r.w:null,r.ok,state.full)),
+      el("div",{class:"score sc"},
+        el("span",{class:"pill "+(r.anchor?"good":"bad"),text:r.anchor?"anchor ✓":"anchor ✗"}),
+        el("span",{class:"num",text:`${right}/${r.ok.length} words`}),
+        DATA.meta.bertscore?el("span",{class:"num",text:"BS "+fmt(r.bs)}):null));
+  }
+  root.append(race,el("div",{class:"controls",style:"margin-top:14px"},
+    el("label",{},el("input",{type:"checkbox",checked:state.full,onchange:e=>{state.full=e.target.checked;render();}})," show the whole sentence"),
+    el("span",{class:"note",style:"margin:0",text:`At this level across all ${S.length} sentences, anchor restored: `+
+      M.map(m=>`${m.name} ${pct(mean(S.map(x=>x.repairs[lv][m.key].anchor)))}`).join(" · ")})));
+}
+const mean=a=>a.reduce((x,y)=>x+y,0)/a.length;
+
+// ------------------------------------------------------------------------------- scene 3: results
+const METRICS={anchor:{name:"Anchor recovery",lo:0,hi:0.8,valid:"anchor",test:"mcnemar_holm",pct:true},
+  frr:{name:"Fact Recovery Rate",lo:0,hi:0.8,valid:"frr",pct:true},
+  bs:{name:"Span BERTScore",lo:-0.4,hi:1,test:"wilcoxon_holm"},
+  exact:{name:"Exact words",lo:0,hi:0.8,pct:true},
+  cer:{name:"Span CER after repair (lower is better)",lo:0,hi:0.7}};
+const HYPS=[
+  {id:"H1",verdict:"part",vtext:"Partly supported",text:"Quality falls as damage grows, but fact recovery does not fall faster than BERTScore: the letter-based methods hold their facts.",metric:"frr",focus:["bertdict","lookup","llm","bart"]},
+  {id:"H2",verdict:"no",vtext:"Not supported",text:"The few-shot LLM never restores more facts than BERT + dictionary, and significantly fewer at 50% and 75%.",metric:"anchor",focus:["bertdict","llm"],pair:["bertdict","llm"]},
+  {id:"H2b",verdict:"no",vtext:"Not supported",text:"The LLM does not beat the plain dictionary lookup on facts at any level and loses at 50% and 75%.",metric:"anchor",focus:["llm","lookup"],pair:["llm","lookup"]},
+  {id:"H3",verdict:"yes",vtext:"Supported beyond one word",text:"A wrong-fact repair scores at least as high in BERTScore as a right-fact one in 11–45% of pairs. Open scene 4.",metric:"bs",focus:["bart","bertdict"]},
+];
+function renderResults(root){
+  const met=METRICS[state.metric];
+  root.append(el("p",{class:"eyebrow",text:"Scene 3 · the test run, 150 sentences per level"}),
+    el("h2",{text:"A ceiling, not a breakpoint"}),
+    el("p",{class:"lede",text:"Every value and 95% bootstrap interval below is read from the one executed test run of notebook 4. Toggle methods, switch the metric, or click a hypothesis."}));
+  const ctr=el("div",{class:"controls"},
+    el("div",{class:"group"},el("label",{class:"t",text:"Metric"}),el("div",{class:"seg"},...Object.entries(METRICS).map(([k,v])=>
+      el("button",{"aria-pressed":String(state.metric===k),onclick:()=>{state.metric=k;state.hyp=null;render();}},v.name.split(" (")[0])))),
+    el("div",{class:"group"},...[...MK,"none"].map(k=>el("button",{class:"chip","aria-pressed":String(state.shown.has(k)),
+      onclick:()=>{state.shown.has(k)?state.shown.delete(k):state.shown.add(k);state.hyp=null;render();}},
+      el("span",{class:"sw",style:`background:${COLORS[k]}`}),MNAME[k]))),
+    met.valid?el("label",{},el("input",{type:"checkbox",checked:state.validOnly,onchange:e=>{state.validOnly=e.target.checked;render();}})," LLM over valid answers only"):null);
+  root.append(ctr);
+  const chartBox=el("div",{class:"chart"}), tip=el("div",{class:"tip"});
+  chartBox.append(tip);
+  const side=el("div",{class:"hyps"},...HYPS.map(h=>el("button",{class:"hyp","aria-pressed":String(state.hyp===h.id),onclick:()=>{
+      if(h.id==="H3"&&state.hyp==="H3"){state.scene=3;render();return;}
+      state.hyp=state.hyp===h.id?null:h.id; if(state.hyp){state.metric=h.metric;state.shown=new Set([...h.focus,"none"]);} render();}},
+    el("div",{class:"top"},el("b",{text:h.id}),el("span",{class:"verdict "+h.verdict,text:h.vtext})),el("p",{text:h.text}))));
+  root.append(el("div",{class:"chartwrap"},chartBox,side));
+  drawLineChart(chartBox,tip,met);
+  const fails=DATA.valid.llm;
+  root.append(el("p",{class:"note",text:`LLM format failures per level (of ${S.length}): `+LEVELS.map(l=>`${LEVEL_NAME[l]} ${fails[l].fail}`).join(" · ")+
+    ` · contamination probe: ${DATA.probe.near} of ${DATA.probe.n} test sentences continued near-verbatim (median similarity ${fmt(DATA.probe.median)}).`}));
+}
+function drawLineChart(box,tip,met){
+  const W=1000,H=500,pl=64,pr=150,pt=56,pb=48, iw=W-pl-pr, ih=H-pt-pb;
+  const x=i=>pl+i*iw/(LEVELS.length-1), y=v=>pt+ih-(v-met.lo)/(met.hi-met.lo)*ih;
+  const svg=svgEl("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":`${met.name} by damage level`});
+  const ticks=[];for(let v=met.lo;v<=met.hi+1e-9;v+=(met.hi-met.lo)/(met.hi-met.lo>1?6:4))ticks.push(+v.toFixed(2));
+  for(const t of ticks){svg.append(svgEl("line",{x1:pl,x2:pl+iw,y1:y(t),y2:y(t),stroke:t===0?"#B9B2A3":"#E5E0D5","stroke-width":1}));
+    const tx=svgEl("text",{x:pl-10,y:y(t)+5,"text-anchor":"end","font-size":15,fill:"#6B7280"});tx.textContent=met.pct?Math.round(t*100)+"%":fmt(t,1);svg.append(tx);}
+  LEVELS.forEach((l,i)=>{const tx=svgEl("text",{x:x(i),y:H-16,"text-anchor":"middle","font-size":16,fill:"#3E4A5B"});tx.textContent=LEVEL_NAME[l];svg.append(tx);});
+  const series=[...MK,"none"].filter(k=>state.shown.has(k)&&DATA.ci[state.metric]&&DATA.ci[state.metric][k]);
+  const pts={};
+  for(const k of series){
+    const d=LEVELS.map(l=>DATA.ci[state.metric][k][l]);
+    if(d.some(v=>!v))continue; pts[k]=d;
+    if(k!=="none"&&(d[0][1]!==d[0][0]||d[0][2]!==d[0][0])){
+      const up=d.map((v,i)=>`${x(i)},${y(v[2])}`), dn=d.map((v,i)=>`${x(i)},${y(v[1])}`).reverse();
+      svg.append(svgEl("polygon",{points:up.concat(dn).join(" "),fill:COLORS[k],opacity:0.12}));}
+  }
+  const label=[];
+  for(const k of Object.keys(pts)){
+    const d=pts[k], hl=!state.hyp||HYPS.find(h=>h.id===state.hyp).focus.includes(k);
+    svg.append(svgEl("polyline",{points:d.map((v,i)=>`${x(i)},${y(v[0])}`).join(" "),fill:"none",stroke:COLORS[k],"stroke-width":hl?3.5:2,"stroke-dasharray":DASH[k],"stroke-linejoin":"round",opacity:hl?1:.35}));
+    d.forEach((v,i)=>svg.append(svgEl("circle",{cx:x(i),cy:y(v[0]),r:5.5,fill:COLORS[k],stroke:"#FBFAF6","stroke-width":2,opacity:hl?1:.35})));
+    label.push({k,y:y(d[d.length-1][0])});
+  }
+  if(state.validOnly&&met.valid&&state.shown.has("llm")){
+    const v=LEVELS.map(l=>DATA.valid.llm[l][met.valid]);
+    svg.append(svgEl("polyline",{points:v.map((a,i)=>`${x(i)},${y(a)}`).join(" "),fill:"none",stroke:COLORS.llm,"stroke-width":2.5,"stroke-dasharray":"2 6","stroke-linecap":"round"}));
+    label.push({k:"llmvalid",y:y(v[v.length-1])});
+  }
+  // direct labels, de-collided
+  label.sort((a,b)=>a.y-b.y); for(let i=1;i<label.length;i++)if(label[i].y-label[i-1].y<20)label[i].y=label[i-1].y+20;
+  for(const l of label){const tx=svgEl("text",{x:pl+iw+14,y:l.y+5,"font-size":15,fill:"#1C2533","font-weight":l.k==="bertdict"||l.k==="llm"?600:400});
+    tx.textContent=l.k==="llmvalid"?"LLM, valid only":MNAME[l.k];svg.append(tx);}
+  // significance markers for the hypothesis pair
+  const h=state.hyp&&HYPS.find(q=>q.id===state.hyp);
+  if(h&&h.pair&&met.test){
+    LEVELS.forEach((l,i)=>{const t=DATA.tests.find(q=>q.level===l&&q.pair[0]===h.pair[0]&&q.pair[1]===h.pair[1]);if(!t)return;
+      const p=t[met.test], tx=svgEl("text",{x:x(i),y:pt-12,"text-anchor":"middle","font-size":14,"font-weight":700,fill:p<0.05?"#B42318":"#9AA3AE"});
+      tx.textContent=p<0.001?"p<.001":p<0.05?"p="+p.toFixed(3).replace("0.","."):"n.s.";svg.append(tx);});
+    const tx=svgEl("text",{x:pl,y:16,"font-size":13,fill:"#6B7280"});tx.textContent=`Holm-adjusted ${met.test==="mcnemar_holm"?"McNemar":"Wilcoxon"} test, ${MNAME[h.pair[0]]} vs ${MNAME[h.pair[1]]}`;svg.append(tx);
+  }
+  // crosshair + tooltip
+  const hair=svgEl("line",{y1:pt,y2:pt+ih,stroke:"#1C2533","stroke-width":1,opacity:0});svg.append(hair);
+  const hit=svgEl("rect",{x:pl-20,y:pt,width:iw+40,height:ih,fill:"transparent"});svg.append(hit);
+  const show=(ev)=>{const r=svg.getBoundingClientRect(), mx=(ev.clientX-r.left)*W/r.width;
+    const i=Math.max(0,Math.min(LEVELS.length-1,Math.round((mx-pl)/(iw/(LEVELS.length-1)))));
+    hair.setAttribute("x1",x(i));hair.setAttribute("x2",x(i));hair.setAttribute("opacity",.35);
+    tip.replaceChildren(el("div",{class:"lv",text:`${met.name} · ${LEVEL_NAME[LEVELS[i]]}`}),
+      ...Object.keys(pts).sort((a,b)=>pts[b][i][0]-pts[a][i][0]).map(k=>el("div",{class:"row"},
+        el("span",{class:"k"},el("i",{style:`background:${COLORS[k]}`}),MNAME[k]),
+        el("span",{},el("b",{text:met.pct?pct(pts[k][i][0]):fmt(pts[k][i][0])})," ",
+          pts[k][i][1]!==pts[k][i][0]?el("small",{text:met.pct?`[${pct(pts[k][i][1])}, ${pct(pts[k][i][2])}]`:`[${fmt(pts[k][i][1])}, ${fmt(pts[k][i][2])}]`}):null))));
+    tip.style.display="block"; const bx=box.getBoundingClientRect();
+    let left=(x(i)/W)*bx.width+18; if(left+260>bx.width)left=(x(i)/W)*bx.width-270; tip.style.left=left+"px"; tip.style.top=Math.max(8,Math.min(bx.height-tip.offsetHeight-8,ev.clientY-bx.top+24))+"px";};
+  hit.addEventListener("pointermove",show);hit.addEventListener("pointerleave",()=>{tip.style.display="none";hair.setAttribute("opacity",0);});
+  box.prepend(svg);
+}
+
+// --------------------------------------------------------------------------- scene 4: metric trap
+function renderTrap(root){
+  const lv=state.trapLevel, mk=state.trapMethod;
+  root.append(el("p",{class:"eyebrow",text:"Scene 4 · SQ3, does similarity see the fact?"}),
+    el("h2",{text:"The metric trap: fluent, plausible and wrong"}),
+    el("p",{class:"lede",text:"Each dot is one repair. Top row: the anchor fact was restored; bottom row: it was not. If BERTScore saw facts, every bottom dot would sit left of every top dot. The SQ3 rate is the chance a wrong-fact repair scores at least as high as a right-fact one (0 = sees the fact, 0.5 = blind)."}));
+  root.append(el("div",{class:"controls"},
+    el("div",{class:"group"},el("label",{class:"t",text:"Level"}),el("div",{class:"seg"},...LEVELS.slice(1).map(l=>
+      el("button",{"aria-pressed":String(lv===l),onclick:()=>{state.trapLevel=l;state.trapSel=null;render();}},LEVEL_NAME[l])))),
+    el("div",{class:"group"},el("label",{class:"t",text:"Method"}),el("div",{class:"seg"},...MK.map(k=>
+      el("button",{"aria-pressed":String(mk===k),onclick:()=>{state.trapMethod=k;state.trapSel=null;render();}},MNAME[k]))))));
+  const rate=DATA.sq3[mk]?DATA.sq3[mk][lv]:null;
+  const rs=S.map((s,i)=>({i,s,r:s.repairs[lv][mk]}));
+  const wrong=rs.filter(o=>!o.r.anchor), right=rs.filter(o=>o.r.anchor);
+  const side=el("div",{class:"card detail"},
+    el("div",{class:"lab",text:`SQ3 rate · ${MNAME[mk]} · ${LEVEL_NAME[lv]}`}),
+    el("div",{class:"big",text:fmt(rate)}),
+    el("div",{class:"note",style:"margin:0",text:`${right.length} repairs restore the anchor, ${wrong.length} do not. From notebook 4${DATA.sq3_live[mk]?` (recomputed here: ${fmt(DATA.sq3_live[mk][lv])})`:""}.`}));
+  const detailBox=el("div",{class:"detail"}); side.append(el("hr",{style:"border:0;border-top:1px solid #DCD6C8;width:100%"}),detailBox);
+  const showDetail=o=>{state.trapSel=o.i;const s=o.s,L=s.levels[lv];detailBox.replaceChildren(
+    el("div",{class:"lab",text:`${s.id} · anchor ${o.r.anchor?"restored":"wrong"}${DATA.meta.bertscore?" · BERTScore "+fmt(o.r.bs):""}`}),
+    el("div",{class:"lab",text:"Gold"}),spanTokens(s,lv,undefined,null,false),
+    el("div",{class:"lab",text:MNAME[mk]}),spanTokens(s,lv,o.r.fmt?o.r.w:null,o.r.ok,false),
+    el("button",{class:"btn",onclick:()=>{state.idx=o.i;state.level=lv;state.scene=1;render();}},"Open in the repair race →"));};
+  if(DATA.meta.bertscore){
+    const W=1000,H=330,pl=220,pr=24,lo=-0.6,hi=1,x=v=>pl+(v-lo)/(hi-lo)*(W-pl-pr);
+    const svg=svgEl("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"Span BERTScore of each repair, by whether the anchor fact was restored"});
+    for(let t=-0.5;t<=1.0001;t+=0.25){svg.append(svgEl("line",{x1:x(t),x2:x(t),y1:20,y2:H-40,stroke:t===0?"#B9B2A3":"#E5E0D5"}));
+      const tx=svgEl("text",{x:x(t),y:H-14,"text-anchor":"middle","font-size":15,fill:"#6B7280"});tx.textContent=fmt(t,2);svg.append(tx);}
+    const rows=[[right,"anchor restored",95,"#2a78d6"],[wrong,"anchor wrong",215,"#B42318"]];
+    const medRight=right.length?right.map(o=>o.r.bs).sort((a,b)=>a-b)[Math.floor(right.length/2)]:1;
+    for(const [set,name,cy,col] of rows){
+      const tx=svgEl("text",{x:pl-14,y:cy+5,"text-anchor":"end","font-size":16,fill:"#1C2533","font-weight":600});tx.textContent=`${name} (${set.length})`;svg.append(tx);
+      for(const o of set){const jitter=((o.i*2654435761)%1000)/1000-0.5;
+        const isTrap=!o.r.anchor&&o.r.bs>=medRight;
+        const c=svgEl("circle",{cx:x(o.r.bs),cy:cy+jitter*70,r:isTrap?7.5:6,fill:o.r.anchor?col:(isTrap?col:"#fff"),stroke:col,"stroke-width":2,opacity:.85,tabindex:0,role:"button","aria-label":`${o.s.id} BERTScore ${fmt(o.r.bs)}`});
+        c.addEventListener("click",()=>showDetail(o));c.addEventListener("keydown",e=>{if(e.key==="Enter")showDetail(o);});
+        if(state.trapSel===o.i){c.setAttribute("stroke","#1C2533");c.setAttribute("stroke-width",4);}
+        svg.append(c);}
+    }
+    const t2=svgEl("text",{x:pl,y:H-40+28+12,"font-size":14,fill:"#6B7280"});t2.textContent="";svg.append(t2);
+    root.append(el("div",{class:"trap"},el("div",{class:"chart"},svg,el("p",{class:"note",style:"padding:0 12px",
+      text:"Filled red dots: a wrong anchor that still scores at or above the median of the right repairs. Click any dot to read the repair."})),side));
+  } else {
+    const cards=wrong.filter(o=>o.r.fmt), shownCards=state.trapAll?cards:cards.slice(0,12);
+    const gal=el("div",{class:"gallery"},...shownCards.map(o=>{
+      const L=o.s.levels[lv], j=L.slots.findIndex(x=>x[0]===o.s.anchor), w=o.r.w[j];
+      return el("button",{class:"gal",onclick:()=>showDetail(o)},el("div",{class:"lab",text:o.s.id}),
+        el("div",{class:"g",text:"gold: "+o.s.tokens[o.s.anchor]}),el("div",{class:"r",text:"repair: "+(w||"∅")}));}));
+    root.append(el("div",{class:"trap"},el("div",{},
+      el("p",{class:"note",style:"margin-top:0",text:`Per-repair BERTScores are not in this build (run build_demo.py --bertscore to add the dot plot). Below: wrong anchors of this method, one card per sentence (${shownCards.length} of ${cards.length}; format failures left out).`}),gal,
+      cards.length>12?el("button",{class:"btn",style:"margin-top:10px",onclick:()=>{state.trapAll=!state.trapAll;render();}},state.trapAll?"Show fewer":`Show all ${cards.length}`):null),side));
+  }
+  const t=el("table",{class:"mini"},el("tr",{},el("th",{text:"SQ3 rate (notebook 4)"}),...LEVELS.slice(1).map(l=>el("th",{text:LEVEL_NAME[l]}))),
+    ...MK.map(k=>el("tr",{},el("td",{},el("span",{style:`display:inline-block;width:14px;height:3px;background:${COLORS[k]};vertical-align:middle;margin-right:8px`}),MNAME[k]),
+      ...LEVELS.slice(1).map(l=>el("td",{text:fmt(DATA.sq3[k]?DATA.sq3[k][l]:null)})))));
+  root.append(el("div",{class:"card",style:"margin-top:18px"},t));
+  if(state.trapSel!=null){const o=rs.find(q=>q.i===state.trapSel);if(o)showDetail(o);}
+}
+
+// ------------------------------------------------------------------------------- scene 5: lookup
+let LEX=null;
+function lev(a,b,cap){ // Levenshtein with an early exit above cap
+  const n=a.length,m=b.length; if(Math.abs(n-m)>cap)return cap+1;
+  let prev=new Array(m+1); for(let j=0;j<=m;j++)prev[j]=j;
+  for(let i=1;i<=n;i++){const cur=[i];let best=i;for(let j=1;j<=m;j++){
+      cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1)); if(cur[j]<best)best=cur[j];}
+    if(best>cap)return cap+1; prev=cur;}
+  return prev[m];}
+function nearest(q,n=8){ const out=[]; let cap=Math.max(3,Math.ceil(q.length*0.6));
+  for(const [w,c] of LEX){const d=lev(q,w,cap); if(d<=cap){out.push([w,d,c]); if(out.length>400){out.sort(byRank);out.length=n;cap=out[out.length-1][1];}}}
+  out.sort(byRank); return out.slice(0,n);}
+function byRank(a,b){return a[1]-b[1]||b[2]-a[2]||(a[0]<b[0]?-1:a[0]>b[0]?1:0);}
+function renderLookup(root){
+  root.append(el("p",{class:"eyebrow",text:"Scene 5 · the non-GenAI baseline"}),
+    el("h2",{text:"Try the dictionary lookup"}),
+    el("p",{class:"lede",text:"This is the entire lookup method: the closest spelling in a word list from the 443 excerpts outside the sample, ties broken by frequency, then alphabet. No context, no model, and it restores about half the anchor facts at every level."}));
+  if(!DATA.lexicon){root.append(el("div",{class:"card",text:"The word list was not built (data/raw/BLN600 missing when the demo was built)."}));return;}
+  LEX=LEX||DATA.lexicon;
+  const s=S[state.idx], L=s.levels[state.level==="0"?"1w":state.level];
+  const presets=[...new Set(L.slots.filter(x=>!x[2]).map(x=>x[1].replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,"")).filter(Boolean))].slice(0,8);
+  const input=el("input",{type:"text",value:state.lookupWord,placeholder:"type a damaged word, e.g. Hacley","aria-label":"Damaged word",spellcheck:"false",autocomplete:"off"});
+  const list=el("div",{class:"cands"});
+  const run=()=>{state.lookupWord=input.value.trim(); list.replaceChildren();
+    if(!state.lookupWord)return; const res=nearest(state.lookupWord);
+    res.forEach(([w,d,c])=>list.append(el("div",{class:"cand"},el("span",{class:"wd",text:w}),el("span",{class:"d",text:`${d} edit${d===1?"":"s"}`}),el("span",{class:"f",text:`${c.toLocaleString()}×`}))));};
+  input.addEventListener("input",run);
+  const pre=el("div",{class:"presets"},...["Hacley","Wrighb","Curbis","Jeseph"].concat(presets).map(p=>
+    el("button",{class:"btn",onclick:()=>{input.value=p;run();input.focus();}},p)));
+  root.append(el("div",{class:"lookup"},el("div",{},input,pre,list),
+    el("div",{class:"card explain"},
+      el("p",{style:"margin-top:0"},el("b",{text:`${LEX.length.toLocaleString()} words`})," in the list. The presets after the first four are the damaged words of the current sentence at this level (",el("span",{class:"sid",text:s.id}),")."),
+      el("p",{},"BERT + dictionary adds the ",el("code",{text:"5"})," closest list words to BERT's own candidates and lets letter similarity (weight ",el("code",{text:"λ = 64"}),") decide; BERT's context breaks near ties and fills dropped words."),
+      el("p",{},"Where the list fails: only 77% of damaged fact words are in it (dev), and a dropped word has no letters to look up. That is where GenAI could add something, and mostly did not."))));
+  run();
+}
+
+// ----------------------------------------------------------------------------------------- render
+const RENDER=[renderDamage,renderRepair,renderResults,renderTrap,renderLookup];
+function render(){
+  document.querySelectorAll("nav.scenes button").forEach((b,i)=>b.setAttribute("aria-selected",String(i===state.scene)));
+  document.querySelectorAll("section.scene").forEach((sec,i)=>{sec.classList.toggle("active",i===state.scene);if(i!==state.scene)sec.replaceChildren();});
+  const root=document.querySelectorAll("section.scene")[state.scene]; root.replaceChildren(); RENDER[state.scene](root);
+}
+document.addEventListener("keydown",e=>{
+  if(e.target.matches("input,select,textarea")){if(e.key==="Escape")e.target.blur();return;}
+  if(e.ctrlKey||e.metaKey||e.altKey)return;
+  if(/^[1-5]$/.test(e.key)){e.preventDefault();state.scene=+e.key-1;render();}
+  else if(e.key==="ArrowRight"||e.key==="ArrowLeft"){const seq=(state.scene===0?["0"]:[]).concat(LEVELS);let i=seq.indexOf(state.level);
+    i=Math.max(0,Math.min(seq.length-1,i+(e.key==="ArrowRight"?1:-1)));stopPlay();state.level=seq[i];render();e.preventDefault();}
+  else if(e.key==="ArrowDown"){step(1);e.preventDefault();} else if(e.key==="ArrowUp"){step(-1);e.preventDefault();}
+  else if(e.key===" "&&state.scene<2){togglePlay();e.preventDefault();}
+  else if(e.key.toLowerCase()==="r"&&state.scene<2)randomPick();
+});
+buildNav(); render();
+</script>
+</body>
+</html>
