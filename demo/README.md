@@ -8,7 +8,7 @@ minute summary and the place to dig deeper during the discussion: every step can
 |---|---|---|
 | 1 | Damage | one fact and the words around it are damaged, from one word to 75%; other sentences, play the levels |
 | 2 | Repairs | the same damaged sentence for every method, right and wrong words; then (next) their span BERTScore; ablations |
-| 3 | Results | Fact Recovery Rate, anchor recovery, span BERTScore, exact words, CER with 95% intervals; H1 to H3 with their tests |
+| 3 | Results | Fact Recovery Rate, anchor recovery, span BERTScore, exact words, CER with 95% intervals; H1 to H3, with the paired tests of H2 and H2b |
 | 4 | BERTScore | span BERTScore of repairs with the right and the wrong anchor, per method and level; the SQ3 rate |
 | 5 | Lookup | the dictionary baseline, live: type a damaged word and see the closest list words |
 | 6 | Summary | answers to the hypotheses, the practical point and the limits |
@@ -42,11 +42,13 @@ again: `git checkout demo-v1-shan -- demo/`, `git rm -r demo/fonts demo/talk_fig
 ## Build
 
 The page is built on your own machine, because it embeds BLN600 text. It needs the setup and data steps of the
-main README (the frozen damaged data in `data/processed/` and BLN600 in `data/raw/` for the word list).
+main README (the frozen damaged data in `data/processed/` and BLN600 in `data/raw/` for the word list). Run the commands from the repository
+root inside its virtual environment, after `pip install -r requirements.txt` and `pip install -e .`; on a Mac
+without an active environment, use `python3`.
 
 ```bash
 python demo/build_demo.py --bertscore  # span BERTScore per repair and all figures; first run 5 to 10 min on CPU
-python demo/build_demo.py              # without BERTScore: no figures (steps 3 and 4 stay empty)
+python demo/build_demo.py              # reuses the cached BERTScores; without a cache, steps 3 and 4 have no figures
 ```
 
 The page is written to `demo/out/bln600_demo.html`. Open it in any browser; it needs no server and no internet.

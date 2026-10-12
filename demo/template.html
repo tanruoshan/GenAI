@@ -23,7 +23,7 @@ button:disabled{cursor:default;opacity:.35}
 :focus-visible{outline:2px solid #0072B2;outline-offset:2px}
 
 header{padding:12px 32px 10px;border-bottom:1px solid var(--rule)}
-header h1{font-size:20px;font-weight:700;margin:0}
+header h1{font-size:19px;font-weight:700;margin:0}
 header h1 small{font-weight:400;font-size:16px;color:var(--muted);margin-left:10px}
 main{max-width:1320px;margin:0 auto;padding:16px 32px 96px}
 
@@ -127,7 +127,7 @@ nav.bar .pos{color:var(--muted);font-size:15px;margin:0 6px}
 </style>
 </head>
 <body>
-<header><h1>How Much Damage Can GenAI Repair?<small>Dippold, Tan, Manzenberger · University of Regensburg</small></h1></header>
+<header><h1>How Much Damage Can GenAI Repair? Fact Recovery in Synthetically Damaged Historical Newspaper Text<small>Dippold, Tan, Manzenberger</small></h1></header>
 <main id="main"></main>
 <nav class="bar" id="bar" aria-label="Steps"></nav>
 <script>
@@ -184,10 +184,10 @@ let REVIEW=true;
 const REVIEW_NOTES={
   "1":"Wording OK? 'Anchor fact' = the one fact we track in each sentence; say this aloud.",
   "2a":"Hand-picked example, chosen because it shows the effect. Say aloud that it is one sentence; the averages follow in step 3. OK to show it?",
-  "2b":"BART gets 6 of 9 words right, BERT + dict. only 3 of 9, so BART's higher BERTScore is partly deserved. Our point is only that the wrong name hardly costs anything. Agree with this framing?",
+  "2b":"BART and BERT + dict. both restore 7 of 9 words; only BART's name is wrong (Hele for Hassell), and BART still scores higher. OK to show it this way?",
   "3":"'About half': BERT + dict. anchor 53 to 58%, Fact Recovery Rate 48 to 58%. The LLM's drop is partly format failures (scored as no repair). OK?",
   "4":"Opens on BART at 25% (BART is descriptive in the paper). Open on BERT + dict. instead (rate 0.33 there)?",
-  "6":"Our interpretation (paper, conclusion: 'the letters carry most of this'): the lookup alone restores 51% of anchors, BERT + dict. 53 to 58%. OK as the closing message?"};
+  "6":"Closing: the direct answer first, then our interpretation, hedged (paper, conclusion: 'the letters carry most of this'). The 'in practice' point is a recommendation we did not test with users. OK?"};
 const reviewNote=key=>REVIEW&&REVIEW_NOTES[key]?el("div",{class:"todo"},el("b",{text:"To confirm: "}),REVIEW_NOTES[key]):null;
 
 // --------------------------------------------------------------------------------- sentence choice
@@ -199,7 +199,8 @@ const FILTERS={
   bartwrong:{name:"BART: wrong anchor",f:(s,lv)=>!s.repairs[lv].bart.anchor&&s.repairs[lv].bart.fmt},
   nobody:{name:"No method restores the anchor",f:(s,lv)=>MK.every(k=>!s.repairs[lv][k].anchor)},
 };
-function pool(){return S.map((s,i)=>i).filter(i=>FILTERS[state.filter].f(S[i],state.level));}
+const filterLevel=()=>state.step===0?(state.dmg>0?DMG_SEQ[state.dmg]:DATA.talk.level):state.level; // the level on screen
+function pool(){const lv=filterLevel();return S.map((s,i)=>i).filter(i=>FILTERS[state.filter].f(S[i],lv));}
 function stepSentence(d){const p=pool();if(!p.length)return;let pos=p.indexOf(state.idx);pos=pos<0?0:(pos+d+p.length)%p.length;state.idx=p[pos];render();}
 function randomSentence(){const p=pool();if(p.length)state.idx=p[Math.floor(Math.random()*p.length)];render();}
 function sentencePicker(){
@@ -210,7 +211,7 @@ function sentencePicker(){
     el("button",{class:"btn",onclick:randomSentence},"random"),
     el("select",{"aria-label":"Which sentences to step through",onchange:e=>{state.filter=e.target.value;const q=pool();if(q.length&&!q.includes(state.idx))state.idx=q[0];render();}},
       ...Object.entries(FILTERS).map(([k,f])=>el("option",{value:k,selected:k===state.filter},f.name))),
-    el("span",{class:"sid",text:p.length?`${s.id}${pos<0?"":` (${pos+1}/${p.length})`}`:`${s.id} (no sentence matches at ${LEVEL_NAME[state.level]})`}),
+    el("span",{class:"sid",text:p.length?`${s.id}${pos<0?"":` (${pos+1}/${p.length})`}`:`${s.id} (no sentence matches at ${LEVEL_NAME[filterLevel()]})`}),
     state.idx!==byId[DATA.talk.id]?el("button",{class:"btn",onclick:()=>{state.idx=byId[DATA.talk.id];state.filter="all";render();}},"back to the example"):null);
 }
 function levelButtons(lvls,cur,onpick){
@@ -257,7 +258,7 @@ function stepDamage(root){
       title:sl?`gold: ${t}`:null,text:sl?(sl.d?"⟨?⟩":sl.out):t})," ");});
   const k=L?L.slots.length:0, nd=L?L.slots.filter(x=>x[2]).length:0;
   add(root,...head(1,"We damage one fact and the words around it, from one word to 75% of the sentence",
-      "Real damaged pages have no known original text. Damaging clean text ourselves lets us set how much is broken and know the right answer. Which letters get confused, and how strongly a word is damaged, are calibrated on real OCR errors in BLN600; how many words are dropped is our choice."),
+      "Real damaged pages have no known original text. Damaging clean text ourselves lets us set how much is broken and know the right answer. Which letters get confused (86% of substitutions) and how strongly a word is damaged come from real OCR errors in BLN600; the drop rate and the fallback substitutions are our choice."),
     el("div",{class:"controls"},sentencePicker(),
       el("div",{class:"group"},el("span",{class:"t",text:"damage"}),levelButtons(DMG_SEQ,lv,l=>{stopPlay();state.dmg=DMG_SEQ.indexOf(l);render();}),
         el("button",{class:"btn",onclick:play},state.playing?"stop":"play"))),
@@ -278,25 +279,27 @@ function stepRepairs(root){
   const claim=bs
     ?(showcase?`BERTScore rates BART higher (${fmt(R.bart.bs)}) than BERT + dict. (${fmt(R.bertdict.bs)}), although BART got the fact wrong`
       :"BERTScore scores the whole span, not whether the fact is right")
-    :`All methods get the same damaged sentence. Of the four main methods, ${right.length===0?"none gets":right.length===MAIN.length?"all get":right.length===1?"only "+right[0]+" gets":"only "+right.join(" and ")+" get"} the boxed fact right`;
+    :`All methods get the same damaged sentence. Of the four main methods, ${right.length===0?"none gets":right.length===MAIN.length?"all get":
+      right.length===1?"only "+right[0]+" gets":(right.length===2?"only ":"")+right.slice(0,-1).join(", ")+" and "+right[right.length-1]+" get"} the boxed fact right`;
   const keys=MAIN.concat(state.abl?ABL:[]);
   const th=el("tr",{},el("th",{text:"Method"}),el("th",{text:`Repaired span, ${LEVEL_NAME[lv]} damage`}),el("th",{class:"r",text:"Anchor fact"}),el("th",{class:"r",text:"Words right"}),bs?el("th",{class:"r",text:"BERTScore"}):null);
   const rows=[el("tr",{class:"gold"},el("td",{class:"m"},el("span",{style:"display:inline-block;width:34px"}),"Gold"),el("td",{},spanTokens(s,lv,undefined,null)),el("td",{}),el("td",{}),bs?el("td",{}):null),
     el("tr",{},el("td",{class:"m"},swatch("none"),"Damaged input"),el("td",{},spanTokens(s,lv,null,null)),el("td",{}),el("td",{}),bs?el("td",{class:"r",text:fmt(L.bs_none)}):null)];
   keys.forEach((k,n)=>{const r=R[k];rows.push(el("tr",{class:(n===0?"mid":"")+(ABL.includes(k)?" abl":"")},
-    el("td",{class:"m"},swatch(k),MNAME[k],ABL.includes(k)?el("small",{text:MROLE[k]}):null),
+    el("td",{class:"m"},swatch(k),MNAME[k],ABL.includes(k)?el("small",{text:k==="llmart"?"upper bound: also sees the whole gold article":MROLE[k]}):null),
     el("td",{},r.fmt?null:el("span",{class:"fail",text:"format failure:"}),spanTokens(s,lv,r.fmt?r.w:null,r.ok)),
     el("td",{class:"r"},el("span",{class:r.anchor?"yes":"nope",text:r.anchor?"right":"wrong"})),
     el("td",{class:"r",text:`${nRight(r)} of ${r.ok.length}`}),
     bs?el("td",{class:"r"+(showcase&&(k==="bart"||k==="bertdict")?" hi":""),text:fmt(r.bs)}):null));});
   add(root,...head(2,claim,bs?"BERTScore is the usual score for generated text. It compares meaning, so a plausible wrong name costs little."
-      :"Every method gets exactly the same input, so any difference comes from the method alone. Where the damage is, is given; finding it is a separate task we leave out."),
+      :"Every main method sees the same damaged sentence and is scored the same way, so we compare complete repair set-ups on equal input. Where the damage is, is given; finding it is a separate task we leave out."),
     el("div",{class:"controls"},sentencePicker(),
       el("div",{class:"group"},el("span",{class:"t",text:"damage"}),levelButtons(LEVELS,lv,l=>{state.level=l;render();})),
       el("label",{class:"chk"},el("input",{type:"checkbox",checked:state.reveal,onchange:e=>{state.reveal=e.target.checked;render();}}),"BERTScore"),
       el("label",{class:"chk"},el("input",{type:"checkbox",checked:state.abl,onchange:e=>{state.abl=e.target.checked;render();}}),"ablations")),
     el("table",{class:"bt race"},th,...rows),
-    el("p",{class:"sub",text:bs&&showcase?`BART restores ${nRight(R.bart)} of ${R.bart.ok.length} words but not the fact; BERT + dict. ${nRight(R.bertdict)} of ${R.bertdict.ok.length}, including the fact. A span-level score counts the fact as one word among many.`
+    el("p",{class:"sub",text:bs&&showcase?(nRight(R.bart)===nRight(R.bertdict)?`Both restore ${nRight(R.bart)} of ${R.bart.ok.length} words; only BART's fact is wrong, and BART still scores higher. `:
+        `BART restores ${nRight(R.bart)} of ${R.bart.ok.length} words but not the fact; BERT + dict. ${nRight(R.bertdict)} of ${R.bertdict.ok.length}, including the fact. `)+"A span-level score counts the fact as one word among many."
       :`Green: restored exactly; red: wrong; box: the anchor fact. One sentence only; over all ${S.length} sentences at ${LEVEL_NAME[lv]}, the anchor is restored by `+
         MAIN.map(k=>`${MNAME[k]} ${pct(mean(S.map(x=>x.repairs[lv][k].anchor)))}`).join(", ")+"."}),
     el("p",{class:"cap",text:"BERT + dict.: BERT fine-tuned on 19th-century newspaper text, choosing among its own guesses and the closest words of a word list. LLM: Qwen3-30B with five solved examples. Lookup: closest word in the list, no model. BART: a denoiser trained on our own damage, so its scores are optimistic."}),
@@ -304,10 +307,10 @@ function stepRepairs(root){
 }
 
 const HYPS=[
-  {id:"H1",vtext:"partly supported (descriptively)",text:"Quality falls as damage grows, but Fact Recovery Rate does not fall faster than BERTScore (BERT + dict., 1 word to 75%: Fact Recovery Rate 58% to 48%, span BERTScore 0.77 to 0.40).",metric:"frr",uses:["frr","bs","exact"]},
-  {id:"H2",vtext:"not supported for the tested pair",text:"The few-shot LLM never restores more facts than BERT + dict., and significantly fewer anchors at 50% and 75%.",metric:"anchor",uses:["anchor","bs","frr"]},
-  {id:"H2b",vtext:"not supported for the tested pair",text:"The LLM does not beat the dictionary lookup on facts at any level and loses to it at 50% and 75%. Its only significant advantage: span BERTScore at 10%.",metric:"anchor",uses:["anchor","bs","frr"]},
-  {id:"H3",vtext:"supported beyond one word",text:"A wrong-fact repair scores at least as high in span BERTScore as a right-fact repair in 11% to 45% of pairs. Click again for step 4.",metric:"bs",uses:["bs","anchor"]},
+  {id:"H1",vtext:"partly supported (descriptively)",text:"Quality falls as damage grows, but Fact Recovery Rate does not fall faster than BERTScore (BERT + dict., 1 word to 75%: Fact Recovery Rate 58% to 48%, span BERTScore 0.77 to 0.40).",metric:"frr",uses:["frr","bs"],supports:["exact"]},
+  {id:"H2",vtext:"not supported for the tested pair",text:"The few-shot LLM never restores more facts than BERT + dict., and significantly fewer anchors at 50% and 75%.",metric:"anchor",uses:["anchor","bs"],supports:["frr"]},
+  {id:"H2b",vtext:"not supported for the tested pair",text:"The LLM does not beat the dictionary lookup on facts at any level and loses to it at 50% and 75%. Its only significant advantage: span BERTScore at 10%.",metric:"anchor",uses:["anchor","bs"],supports:["frr"]},
+  {id:"H3",vtext:"supported beyond one word",text:"A wrong-fact repair scores at least as high in span BERTScore as a right-fact repair in 11% to 45% of pairs. Click again for step 4.",metric:"bs",uses:["bs"],supports:["anchor"]},
 ];
 const METRIC_NAMES={frr:"Fact Recovery Rate",anchor:"Anchor recovery",bs:"Span BERTScore",exact:"Exact words",cer:"Span CER"};
 function stepResults(root){
@@ -315,10 +318,15 @@ function stepResults(root){
   const sig=DATA.tests.filter(q=>q.pair[0]==="bertdict"&&q.pair[1]==="llm"&&q.mcnemar_holm<0.05).map(q=>LEVEL_NAME[q.level]);
   // p-values exist for the two tested pairs (H2, H2b) on anchor recovery (McNemar) and span BERTScore (Wilcoxon)
   const figKey=(state.hyp==="H2"||state.hyp==="H2b")&&(state.metric==="anchor"||state.metric==="bs")?`${state.metric}_${state.hyp}`:state.metric;
+  // main: the hypothesis is assessed on this measure; supporting: the measure only backs its verdict
   const usedBy=HYPS.filter(h=>h.uses.includes(state.metric)).map(h=>h.id);
+  const supportBy=HYPS.filter(h=>h.supports.includes(state.metric)).map(h=>h.id);
+  const related=usedBy.concat(supportBy);
+  const usedText=[usedBy.length?`main measure for ${usedBy.join(", ")}`:"",supportBy.length?`supports ${supportBy.join(", ")}`:""].filter(Boolean).join("; ")||"secondary measure, no hypothesis";
+  const dotted=["anchor","frr","bs"].includes(state.metric);
   const fails=DATA.valid.llm;
   // a hypothesis is selected (clicked), related (uses the shown measure) or faded
-  const side=el("div",{class:"side"},...HYPS.map(h=>el("button",{class:"hyp"+(usedBy.includes(h.id)?"":" off"),"aria-pressed":String(state.hyp===h.id),onclick:()=>{
+  const side=el("div",{class:"side"},...HYPS.map(h=>el("button",{class:"hyp"+(related.includes(h.id)?"":" off"),"aria-pressed":String(state.hyp===h.id),onclick:()=>{
       if(state.hyp===h.id){if(h.id==="H3"){go(3);return;}state.hyp=null;render();return;}
       state.hyp=h.id; state.metric=h.metric; render();}},
     el("b",{text:h.id}),el("em",{text:h.vtext}),el("p",{text:h.text}))));
@@ -326,17 +334,20 @@ function stepResults(root){
       "We count exact facts (names, places, numbers) because a fluent wrong name is worse than visible noise: the reader no longer sees that anything was damaged."),
     el("div",{class:"controls"},el("div",{class:"group"},el("span",{class:"t",text:"measure"}),el("div",{class:"seg"},...Object.entries(METRIC_NAMES).map(([k,n])=>
       el("button",{"aria-pressed":String(state.metric===k),onclick:()=>{state.metric=k;
-        if(state.hyp&&!HYPS.find(h=>h.id===state.hyp).uses.includes(k))state.hyp=null;render();}},n)))),
-      el("span",{class:"t",text:usedBy.length?`used by ${usedBy.join(", ")}`:"secondary measure, no hypothesis"})),
+        const h=state.hyp&&HYPS.find(x=>x.id===state.hyp); if(h&&!h.uses.includes(k)&&!h.supports.includes(k))state.hyp=null;render();}},n)))),
+      el("span",{class:"t",text:usedText})),
     el("div",{class:"two"},figure(HAS_FIGS?DATA.figs.metric[figKey]:null),side),
     el("p",{class:"sub",text:`We find no single level at which repair breaks down. Anchor restored, 1 word to 75%: BERT + dict. ${pct(a("bertdict")[0])} to ${pct(a("bertdict")[4])}, `+
-      `lookup ${range(a("lookup").map(v=>v*100))}%, LLM ${pct(a("llm")[0])} to ${pct(a("llm")[4])}, significantly below BERT + dict. at ${sig.join(" and ")}. `+
-      `The LLM's drop goes with answers in the wrong format: ${fails["50"].fail+fails["75"].fail} of 300 at 50% and 75% (dotted line: the LLM over its valid answers only).`}),
-    el("p",{class:"cap",text:`150 test sentences per level, 95% bootstrap intervals over sentences, from the single test run (notebook 4; paper, Table 6 and Fig. 2). `+
-      `Click a hypothesis to see its measure; H2 and H2b also show their paired test above each level. `+
-      `Fact Recovery Rate: share of the fact words in the damaged span restored exactly. Anchor recovery: whether the one tracked fact is restored; it is the same word at every level, `+
-      `so the tests use it as a paired right-or-wrong outcome (McNemar), and span BERTScore as a paired score (Wilcoxon); n.s. = not significant after the Holm correction over 10 tests. `+
-      `BART is descriptive only: it was trained on our own damage, so its scores are optimistic. Contamination probe: ${DATA.probe.near} of ${DATA.probe.n} test sentences continued near-verbatim by the LLM.`}),
+      `lookup ${range(a("lookup").map(v=>v*100))}%, LLM ${pct(a("llm")[0])} to ${pct(a("llm")[4])} (significantly below BERT + dict. at ${sig.join(" and ")}), `+
+      `much of it from answers in the wrong format: ${fails["50"].fail+fails["75"].fail} of 300 at 50% and 75%.`+(dotted?" Dotted: the LLM over its valid answers only.":"")}),
+    el("details",{class:"cap"},el("summary",{text:"Definitions, tests and sources"}),
+      el("p",{text:"Fact Recovery Rate: share of the fact words in the damaged span restored exactly. Anchor recovery: whether the one tracked fact is restored (the same word at every level). "+
+        "Exact words: share of the damaged words restored exactly. Span BERTScore: similarity in meaning of the repaired span to the original (roberta-large, rescaled, so it can go below 0). "+
+        "Span CER: character edits per original character in the span, pooled per level (lower is better)."}),
+      el("p",{text:"The tests compare two methods on the same sentences: McNemar on anchor right or wrong, Wilcoxon on span BERTScore, with the Holm correction over 10 tests per test; "+
+        "n.s. = not significant. 150 test sentences per level, 95% bootstrap intervals over sentences, all from the single test run (notebook 4); "+
+        "Fact Recovery Rate, anchor recovery and BERTScore are the paper's Table 6 and Fig. 2."}),
+      el("p",{text:`BART is descriptive only: it was trained on our own damage, so its scores are optimistic. Contamination probe: ${DATA.probe.near} of ${DATA.probe.n} test sentences continued near-verbatim by the LLM.`})),
     reviewNote("3"));
 }
 
@@ -345,14 +356,15 @@ function stepBertscore(root){
   const all=MAIN.flatMap(k=>LEVELS.slice(1).map(l=>DATA.sq3[k][l]));
   const failsHere=S.filter(s=>!s.repairs[lv][mk].fmt).length;
   const wrongHigh=S.map(s=>({s,r:s.repairs[lv][mk]})).filter(o=>!o.r.anchor&&o.r.fmt&&o.r.bs!=null).sort((x,y)=>y.r.bs-x.r.bs).slice(0,6);
-  const anchorWord=o=>{const L=o.s.levels[lv], j=L.slots.findIndex(x=>x[0]===o.s.anchor);return o.r.w[j]||"∅";};
+  const core=w=>w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,"")||w;
+  const anchorWord=o=>{const L=o.s.levels[lv], j=L.slots.findIndex(x=>x[0]===o.s.anchor);return o.r.w[j]?core(o.r.w[j]):"∅";};
   const side=el("div",{class:"side"},
     el("div",{class:"pad"},el("div",{class:"lab",text:`Chance that a wrong-fact repair scores at least as high as a right-fact one (${MNAME[mk]}, ${LEVEL_NAME[lv]})`}),
       el("div",{class:"big",text:fmt(rate)}),el("div",{class:"lab",text:"0 = BERTScore always ranks the right fact higher, 0.5 = it cannot tell"})),
-    el("div",{class:"pad lab",text:"Wrong anchor facts whose repair still got the highest span BERTScore"}),
+    el("div",{class:"pad lab",text:"Highest span BERTScores among repairs with a wrong anchor"}),
     el("table",{class:"bt",style:"width:100%;border-bottom:0"},el("tr",{},el("th",{text:"Gold"}),el("th",{text:"Repair"}),el("th",{class:"r",text:"Span BERTScore"})),
-      ...wrongHigh.map(o=>el("tr",{},el("td",{text:o.s.tokens[o.s.anchor]}),el("td",{class:"nope",text:anchorWord(o)}),el("td",{class:"r",text:fmt(o.r.bs)})))));
-  add(root,...head(4,"BERTScore often cannot tell a repair with the wrong fact from one with the right fact",
+      ...wrongHigh.map(o=>el("tr",{},el("td",{text:core(o.s.tokens[o.s.anchor])}),el("td",{class:"nope",text:anchorWord(o)}),el("td",{class:"r",text:fmt(o.r.bs)})))));
+  add(root,...head(4,`BERTScore ranks a repair with the wrong fact at least as high as one with the right fact in ${pct(Math.min(...all))} to ${pct(Math.max(...all))} of pairs`,
       "BERTScore is the usual score for generated text. Before trusting it, we check whether it notices a wrong fact."),
     el("div",{class:"controls"},
       el("div",{class:"group"},el("span",{class:"t",text:"method"}),el("div",{class:"seg"},...MAIN.map(k=>el("button",{"aria-pressed":String(mk===k),onclick:()=>{state.tMethod=k;render();}},MNAME[k])))),
@@ -360,7 +372,7 @@ function stepBertscore(root){
     el("div",{class:"two"},figure(HAS_FIGS?DATA.figs.strip[`${mk}|${lv}`]:null),side),
     el("p",{class:"sub",text:`Each dot is one repair; circled: the example from step 2. If BERTScore noticed wrong facts, every lower dot would lie left of every upper dot. `+
       (rate>=0.3?"Here the two rows overlap widely. ":rate>=0.15?"Here they partly overlap. ":"Here they are mostly apart. ")+
-      (failsHere>10?`${failsHere} of the lower dots are answers in the wrong format, scored as no repair; they form the group on the left. `:"")+
+      (failsHere>10?`${failsHere} of the lower dots are answers in the wrong format, scored as no repair; they form the group on the left and make the rate look lower than over valid answers alone. `:"")+
       `Over the four methods beyond one word, the chance above is ${range(all,2)}.`}),
     el("p",{class:"cap",text:"Repairs come from different sentences, so this ranks repairs; it is not a controlled swap of one name in the same sentence."+
       (mk==="bart"?" BART is descriptive only: it was trained on our own damage.":"")}),
@@ -376,7 +388,7 @@ function lev(a,b,cap){ // Levenshtein with an early exit above cap
     if(best>cap)return cap+1; prev=cur;}
   return prev[m];}
 function byRank(a,b){return a[1]-b[1]||b[2]-a[2]||(a[0]<b[0]?-1:a[0]>b[0]?1:0);}
-function nearest(q,n=8){ const out=[]; let cap=Math.max(3,Math.ceil(q.length*0.6));
+function nearest(q,n=8){ const out=[]; let cap=Infinity; // the whole list, as the real lookup
   for(const [w,c] of LEX){const d=lev(q,w,cap); if(d<=cap){out.push([w,d,c]); if(out.length>400){out.sort(byRank);out.length=n;cap=out[out.length-1][1];}}}
   out.sort(byRank); return out.slice(0,n);}
 function stepLookup(root){
@@ -392,7 +404,7 @@ function stepLookup(root){
     const res=q?nearest(q):[];
     list.replaceChildren(el("tr",{},el("th",{text:"List word"}),el("th",{class:"r",text:"Letters changed"}),el("th",{class:"r",text:"Count in list"})),
       ...res.map(([w,d,c])=>el("tr",{},el("td",{class:"wd",text:w}),el("td",{class:"r",text:String(d)}),el("td",{class:"r",text:c.toLocaleString("en-US")}))),
-      q&&!res.length?el("tr",{},el("td",{colspan:3,class:"sid",text:"no list word close enough"})):null);};
+      ...(q&&!res.length?[el("tr",{},el("td",{colspan:3,class:"sid",text:"no list word"}))]:[]));};
   input.addEventListener("input",run);
   add(root,el("div",{class:"lookup"},
     el("div",{},input,el("div",{class:"presets"},...["Hacley","Wrighb"].concat(presets).map(p=>el("button",{class:"btn",onclick:()=>{input.value=p;run();input.focus();}},p))),list),
@@ -400,19 +412,23 @@ function stepLookup(root){
       el("p",{},"This is the whole method: the closest spelling in a list of ",el("b",{text:`${LEX.length.toLocaleString("en-US")} words`}),
         " from other BLN600 articles; ties go to the more frequent word. It restores the anchor in the same share of sentences at every level, because the anchor's damage is the same at every level and the lookup ignores the context."),
       el("p",{},"BERT + dict. adds the ",el("code",{text:"5"})," closest list words to BERT's own guesses and weighs letter similarity heavily (",el("code",{text:"λ = 64"}),
-        "): the letters decide most words, and the context breaks near ties and fills dropped words. That is why it is only a little better than the lookup."),
+        "): the letters decide most words, and the context breaks near ties and fills dropped words. This fits with it being only a little better than the lookup."),
       el("p",{},"The lookup fails when the right word is missing from the list: on dev, only 77% of the damaged fact words are in it. Hacley (gold Hanley) shows this: Hanley is not in the list. Wrighb (gold Wright) shows the other side: BERT alone proposed Smith and White, the lookup finds Wright. The other presets are the damaged words of the current sentence."))));
   run();
 }
 
 function stepSummary(root){
   const meta=DATA.meta;
-  add(root,...head(6,"Most of the restored facts come from the garbled letters, not from the context",null),
+  const a=k=>LEVELS.map(l=>DATA.ci.anchor[k][l][0]);
+  add(root,...head(6,"With known damage and visible letters, the best main method restores about half of the facts at every level",null),
+    el("p",{class:"why",text:`Anchor restored, 1 word to 75%: BERT + dict. ${pct(a("bertdict")[0])} to ${pct(a("bertdict")[4])}; the few-shot LLM ${pct(a("llm")[0])} to ${pct(a("llm")[4])}, `+
+      `much of it from answers in the wrong format; a dictionary lookup alone ${range(a("lookup").map(v=>v*100))}%.`}),
     el("ul",{class:"take"},
       el("li",{},el("b",{text:"H1, partly: "}),"quality falls with damage, but facts do not fall faster than BERTScore."),
-      el("li",{},el("b",{text:"H2 and H2b, not supported: "}),"the few-shot LLM restores no more facts than BERT + dict. or a plain lookup."),
+      el("li",{},el("b",{text:"H2 and H2b, not supported: "}),"this LLM (Qwen3-30B, one prompt) restores no more facts than BERT + dict. or a plain lookup."),
       el("li",{},el("b",{text:"H3, supported beyond one word: "}),"BERTScore overstates repair; report a fact-level score next to it."),
-      el("li",{},el("b",{text:"In practice: "}),"show repairs as marked suggestions with alternatives; the historian decides, the model does not overwrite the text.")),
+      el("li",{},el("b",{text:"Our reading: "}),"in this setting the garbled letters carry most of the fact recovery; context adds little."),
+      el("li",{},el("b",{text:"In practice (a recommendation, not tested with users): "}),"show repairs as marked suggestions with alternatives; the historian decides.")),
     el("p",{class:"lim",text:"Limits: synthetic damage in a known span, one LLM, one prompt, one damage draw and one training seed; real damaged pages remain untested. "+
       `Data: ${meta.verified?"frozen damaged test split, hash verified":"UNVERIFIED test build"}; ${meta.mismatches.length?`${meta.mismatches.length} of ${meta.checked} recomputed means DIFFER from`:`all ${meta.checked} recomputed means match`} the paper's test run.`}),
     reviewNote("6"));

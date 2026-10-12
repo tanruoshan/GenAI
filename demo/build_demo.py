@@ -39,9 +39,9 @@ OUT = HERE / "out"
 NOTEBOOK = ROOT / "notebooks" / "04_evaluation.ipynb"
 LEVELS = ["1w", "10", "25", "50", "75"]
 SPLIT = "test"
-# the talk mode walks through one sentence: at 25% only BERT + dictionary restores its anchor, and BART's fluent
-# wrong name gets the higher span BERTScore (0.55 against 0.15)
-TALK = {"id": "3206257161-020", "level": "25", "trap_method": "bart"}
+# the page's example sentence: at 25%, BERT + dictionary and BART both restore 7 of 9 words, but only BERT +
+# dictionary restores the name (Hassell); BART writes Hele and still gets the higher span BERTScore (0.77 vs 0.67)
+TALK = {"id": "3200809738-001", "level": "25", "trap_method": "bart"}
 
 # notebook-4 name -> (short key, display name, role). Order = the fixed colour order of the demo.
 METHODS = [
@@ -246,7 +246,8 @@ def check_against_notebook(sentences, ci):
 
 
 def valid_only(sentences):
-    """LLM (and other free-text methods) over their valid answers only: means of anchor and FRR."""
+    """LLM (and other free-text methods) over their valid answers only: means of anchor, FRR and, when the
+    per-repair BERTScore is built, span BERTScore (as in the paper's Table 7)."""
     out = {}
     for key in ("llm", "llmart", "bart"):
         for lv in LEVELS:
@@ -254,6 +255,8 @@ def valid_only(sentences):
             out.setdefault(key, {})[lv] = {"n": len(ok), "anchor": round(float(np.mean([r["anchor"] for r in ok])), 3),
                                            "frr": round(float(np.mean([r["frr"] for r in ok])), 3),
                                            "fail": len(sentences) - len(ok)}
+            if all(r["bs"] is not None for r in ok):
+                out[key][lv]["bs"] = round(float(np.mean([r["bs"] for r in ok])), 3)
     return out
 
 

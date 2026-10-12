@@ -56,7 +56,8 @@ def _p(p):
 
 def metric_figure(ci, valid, tests, metric, hyp=None):
     """One metric by level for the four main methods with 95% intervals and the no-repair floor. For anchor
-    recovery and Fact Recovery Rate the LLM over its valid answers is dotted, as in the paper's Figure 2.
+    recovery, Fact Recovery Rate and span BERTScore the LLM over its valid answers is dotted, as in the paper's
+    Figure 2.
     With hyp ("H2" or "H2b"), the Holm-adjusted paired-test p-value of that pair is written above each level
     and the other methods are faded."""
     _style()
@@ -71,7 +72,7 @@ def metric_figure(ci, valid, tests, metric, hyp=None):
         v, lo, hi = (np.array([ci[metric][key][lv][i] for lv in LEVELS]) for i in range(3))
         ax.fill_between(x, lo, hi, color=color, alpha=0.15 * alpha, linewidth=0)
         ax.plot(x, v, color=color, linewidth=2.2, marker=mark, markersize=7, label=name, alpha=alpha)
-    if metric in ("anchor", "frr"):
+    if metric in ("anchor", "frr") or (metric == "bs" and "bs" in valid["llm"]["1w"]):
         ax.plot(x, [valid["llm"][lv][metric] for lv in LEVELS], color="#D55E00", linewidth=1.6, linestyle=":",
                 label="LLM, valid answers", alpha=1 if not focus or "llm" in focus else 0.25)
     if metric == "bs":
