@@ -93,6 +93,7 @@ td.hi{font-weight:700}
 .hyp{display:block;width:100%;text-align:left;background:#fff;border:0;border-top:.75px solid var(--hair);padding:8px 10px 9px 12px;border-left:3px solid transparent}
 .hyp:first-child{border-top:0}
 .hyp[aria-pressed=true]{border-left-color:var(--ink);background:var(--hl)}
+.hyp.off{opacity:.4}
 .hyp b{font-size:18px}
 .hyp em{margin-left:6px;font-size:16px}
 .hyp p{margin:3px 0 0;font-size:15.5px;color:var(--ink2)}
@@ -303,32 +304,36 @@ function stepRepairs(root){
 }
 
 const HYPS=[
-  {id:"H1",vtext:"partly supported (descriptively)",text:"Quality falls as damage grows, but Fact Recovery Rate does not fall faster than BERTScore (BERT + dict.: FRR 0.58 to 0.48, span BERTScore 0.77 to 0.40).",metric:"frr"},
-  {id:"H2",vtext:"not supported for the tested pair",text:"The few-shot LLM never restores more facts than BERT + dictionary, and significantly fewer anchors at 50% and 75%.",metric:"anchor",hyp:"H2"},
-  {id:"H2b",vtext:"not supported for the tested pair",text:"The LLM does not beat the dictionary lookup on facts at any level and loses to it at 50% and 75%.",metric:"anchor",hyp:"H2b"},
-  {id:"H3",vtext:"supported beyond one word",text:"A wrong-fact repair scores at least as high in span BERTScore as a right-fact repair in 11% to 45% of pairs. Click again for step 4.",metric:"bs"},
+  {id:"H1",vtext:"partly supported (descriptively)",text:"Quality falls as damage grows, but Fact Recovery Rate does not fall faster than BERTScore (BERT + dict.: FRR 0.58 to 0.48, span BERTScore 0.77 to 0.40).",metric:"frr",uses:["frr","bs"]},
+  {id:"H2",vtext:"not supported for the tested pair",text:"The few-shot LLM never restores more facts than BERT + dictionary, and significantly fewer anchors at 50% and 75%.",metric:"anchor",uses:["anchor","bs"]},
+  {id:"H2b",vtext:"not supported for the tested pair",text:"The LLM does not beat the dictionary lookup on facts at any level and loses to it at 50% and 75%.",metric:"anchor",uses:["anchor","bs"]},
+  {id:"H3",vtext:"supported beyond one word",text:"A wrong-fact repair scores at least as high in span BERTScore as a right-fact repair in 11% to 45% of pairs. Click again for step 4.",metric:"bs",uses:["bs","anchor"]},
 ];
 const METRIC_NAMES={frr:"Fact Recovery Rate",anchor:"Anchor recovery",bs:"Span BERTScore",exact:"Exact words",cer:"Span CER"};
 function stepResults(root){
   const a=k=>LEVELS.map(l=>DATA.ci.anchor[k][l][0]);
   const sig=DATA.tests.filter(q=>q.pair[0]==="bertdict"&&q.pair[1]==="llm"&&q.mcnemar_holm<0.05).map(q=>LEVEL_NAME[q.level]);
-  const figKey=state.hyp&&(state.metric==="anchor"||state.metric==="bs")?`${state.metric}_${state.hyp}`:state.metric;
+  // p-values exist for the two tested pairs (H2, H2b) on anchor recovery (McNemar) and span BERTScore (Wilcoxon)
+  const figKey=(state.hyp==="H2"||state.hyp==="H2b")&&(state.metric==="anchor"||state.metric==="bs")?`${state.metric}_${state.hyp}`:state.metric;
+  const usedBy=HYPS.filter(h=>h.uses.includes(state.metric)).map(h=>h.id);
   const fails=DATA.valid.llm;
-  const active=state.hyp||(state.metric==="frr"?"H1":state.metric==="bs"?"H3":null);
-  const side=el("div",{class:"side"},...HYPS.map(h=>el("button",{class:"hyp","aria-pressed":String(active===h.id),onclick:()=>{
-      if(h.id==="H3"&&active==="H3"){go(3);return;}
-      state.metric=h.metric;state.hyp=h.hyp||null;render();}},
+  // a hypothesis is selected (clicked), related (uses the shown measure) or faded
+  const side=el("div",{class:"side"},...HYPS.map(h=>el("button",{class:"hyp"+(usedBy.includes(h.id)?"":" off"),"aria-pressed":String(state.hyp===h.id),onclick:()=>{
+      if(state.hyp===h.id){if(h.id==="H3"){go(3);return;}state.hyp=null;render();return;}
+      state.hyp=h.id; state.metric=h.metric; render();}},
     el("b",{text:h.id}),el("em",{text:h.vtext}),el("p",{text:h.text}))));
   add(root,...head(3,"Even the best method restores only about half of the facts, at every damage level",
       "We count exact facts (names, places, numbers) because a fluent wrong name is worse than visible noise: the reader no longer sees that anything was damaged."),
     el("div",{class:"controls"},el("div",{class:"group"},el("span",{class:"t",text:"measure"}),el("div",{class:"seg"},...Object.entries(METRIC_NAMES).map(([k,n])=>
-      el("button",{"aria-pressed":String(state.metric===k),onclick:()=>{state.metric=k;if(k!=="anchor"&&k!=="bs")state.hyp=null;render();}},n))))),
+      el("button",{"aria-pressed":String(state.metric===k),onclick:()=>{state.metric=k;
+        if(state.hyp&&!HYPS.find(h=>h.id===state.hyp).uses.includes(k))state.hyp=null;render();}},n)))),
+      el("span",{class:"t",text:usedBy.length?`used by ${usedBy.join(", ")}`:"secondary measure, no hypothesis"})),
     el("div",{class:"two"},figure(HAS_FIGS?DATA.figs.metric[figKey]:null),side),
     el("p",{class:"sub",text:`Repair does not suddenly collapse at any level. Anchor restored, 1 word to 75%: BERT + dict. ${pct(a("bertdict")[0])} to ${pct(a("bertdict")[4])}, `+
       `lookup ${range(a("lookup").map(v=>v*100))}%, LLM ${pct(a("llm")[0])} to ${pct(a("llm")[4])}, significantly below BERT + dict. at ${sig.join(" and ")}. `+
       `The LLM's drop goes with answers in the wrong format: ${fails["50"].fail+fails["75"].fail} of 300 at 50% and 75% (dotted line: the LLM over its valid answers only).`}),
     el("p",{class:"cap",text:`150 test sentences per level, 95% bootstrap intervals over sentences, from the single test run (notebook 4; paper, Table 6 and Fig. 2). `+
-      `Click a hypothesis to see its test. Contamination probe: ${DATA.probe.near} of ${DATA.probe.n} test sentences continued near-verbatim by the LLM.`}),
+      `Click a hypothesis to see its measure; H2 and H2b also show their paired test above each level. Contamination probe: ${DATA.probe.near} of ${DATA.probe.n} test sentences continued near-verbatim by the LLM.`}),
     reviewNote("3"));
 }
 
