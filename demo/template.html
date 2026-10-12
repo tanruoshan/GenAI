@@ -146,6 +146,7 @@ body.talking header{border-bottom:0}
 .talk ul.take{font-size:26px;line-height:1.35;margin:0;padding-left:1.1em}
 .talk ul.take li{margin:0 0 12px}
 .talk .lim{font-size:19px;color:var(--muted);margin-top:22px;border-top:.75px solid var(--hair);padding-top:10px}
+.todo{margin:14px 0 30px;max-width:1180px;background:#ffbf80;border:1px solid #ff8000;padding:6px 10px;font-size:16px;line-height:1.3;z-index:6}
 .progress{position:fixed;right:24px;bottom:14px;font-size:16px;color:var(--muted)}
 footer{padding:10px 32px 16px;color:var(--muted);font-size:15px;max-width:1440px;margin:0 auto;width:100%;border-top:.75px solid var(--hair)}
 kbd{font-family:var(--mono);font-size:13px;border:1px solid #999;padding:0 4px;background:#fff}
@@ -552,6 +553,16 @@ function renderLookup(root){
 // Five steps for the talk, one claim each, shown on the talk sentence (DATA.talk). Every number in a claim is
 // read from the data, never typed in. The explorer (parts 1 to 5) stays one key away for the discussion.
 const TALK_MAIN=["bertdict","llm","lookup","bart"];
+// Open points for the team, drawn like LaTeX todonotes. Set REVIEW to false (or press N) once they are settled.
+let REVIEW=true;
+const REVIEW_NOTES={
+  "1":"Wording OK? 'Anchor fact' = the one fact we track in each sentence; say this aloud.",
+  "2a":"Hand-picked example, chosen because it shows the effect. Say aloud that it is one sentence; the averages follow in step 3. OK to show it?",
+  "2b":"BART gets 6 of 9 words right, BERT + dict. only 3 of 9, so BART's higher BERTScore is partly deserved. Our point is only that the wrong name hardly costs anything. Agree with this framing?",
+  "3":"'About half': BERT + dict. anchor 53 to 58%, Fact Recovery Rate 48 to 58%. The LLM's drop is partly format failures (scored as no repair). OK?",
+  "4":"Shows BART at 25% only (BART is descriptive in the paper). Show BERT + dict. instead (rate 0.33 there)? Would need a new figure.",
+  "5":"Our interpretation (paper, conclusion: 'the letters carry most of this'): the lookup alone restores 51% of anchors, BERT + dict. 53 to 58%. OK as the closing message?"};
+function reviewNote(key){return REVIEW&&REVIEW_NOTES[key]?el("div",{class:"todo"},el("b",{text:"To confirm: "}),REVIEW_NOTES[key]):null;}
 function talkSentence(){return S[byId[DATA.talk.id]];}
 function talkFrames(){
   const f=[];
@@ -578,8 +589,8 @@ function talkFrame(root,fr,total,pos){
     const R=s.repairs[tl], L=s.levels[tl];
     const right=TALK_MAIN.filter(k=>R[k].anchor).map(k=>MNAME[k]);
     const claim=fr.bs
-      ?`BERTScore follows the common words: ${fmt(R.bart.bs)} for the wrong name, ${fmt(R.bertdict.bs)} for the right one`
-      :`Same input for all: ${right.length?"only "+right.join(" and "):"no method"} restores the name`;
+      ?`BERTScore rates BART higher (${fmt(R.bart.bs)}) than BERT + dict. (${fmt(R.bertdict.bs)}), although BART got the name wrong`
+      :`All methods get the same damaged sentence. Here, ${right.length?"only "+right.join(" and "):"no method"} gets the name right`;
     const head=el("tr",{},el("th",{text:"Method"}),el("th",{text:`Repaired span, ${LEVEL_NAME[tl]} damage`}),el("th",{class:"r",text:"Anchor"}),fr.bs?el("th",{class:"r",text:"Words right"}):null,fr.bs?el("th",{class:"r",text:"BERTScore"}):null);
     const rows=[el("tr",{class:"gold"},el("td",{class:"m"},el("span",{style:"display:inline-block;width:34px"}),"Gold"),el("td",{},spanTokens(s,tl,undefined,null,false,1)),el("td",{}),fr.bs?el("td",{}):null,fr.bs?el("td",{}):null),
       el("tr",{},el("td",{class:"m"},swatch("none"),"Damaged input"),el("td",{},spanTokens(s,tl,null,null,false,1)),el("td",{}),fr.bs?el("td",{}):null,fr.bs?el("td",{class:"r",text:fmt(L.bs_none)}):null)];
@@ -594,29 +605,30 @@ function talkFrame(root,fr,total,pos){
   } else if(fr.step===3){
     const a=k=>LEVELS.map(l=>DATA.ci.anchor[k][l][0]);
     const t=DATA.tests.filter(q=>q.pair[0]==="bertdict"&&q.pair[1]==="llm"&&q.mcnemar_holm<0.05).map(q=>LEVEL_NAME[q.level]);
-    box.append(kick(3),el("h2",{class:"claim",text:"No breakpoint, but a ceiling: the best method restores about half the facts at every level"}),
+    box.append(kick(3),el("h2",{class:"claim",text:"Even the best method restores only about half of the facts, at every damage level"}),
       el("div",{class:"fig"}),
-      el("p",{class:"sub",text:`Anchor restored, 1 word to 75%: BERT + dict. ${pct(a("bertdict")[0])} to ${pct(a("bertdict")[4])}, lookup ${range(a("lookup").map(v=>v*100))}%, `+
+      el("p",{class:"sub",text:`Repair does not suddenly collapse at any level. Anchor restored, 1 word to 75%: BERT + dict. ${pct(a("bertdict")[0])} to ${pct(a("bertdict")[4])}, lookup ${range(a("lookup").map(v=>v*100))}%, `+
         `LLM ${pct(a("llm")[0])} to ${pct(a("llm")[4])}, significantly below BERT + dict. at ${t.join(" and ")}. The LLM's drop goes with format failures: `+
         `${DATA.valid.llm["50"].fail+DATA.valid.llm["75"].fail} of its 300 answers at 50% and 75%. 150 sentences per level, 95% bootstrap intervals.`}));
     box.querySelector(".fig").innerHTML=DATA.figs.levels;
   } else if(fr.step===4){
     const tm=DATA.talk.trap_method, main=TALK_MAIN.flatMap(k=>LEVELS.slice(1).map(l=>DATA.sq3[k][l]));
-    box.append(kick(4),el("h2",{class:"claim",text:"BERTScore does not see the fact: many wrong-fact repairs score as high as right ones"}),
+    box.append(kick(4),el("h2",{class:"claim",text:"BERTScore often cannot tell a repair with the wrong fact from one with the right fact"}),
       el("div",{class:"fig"}),
-      el("p",{class:"sub",text:`Every BART repair at ${LEVEL_NAME[tl]}; circled: the example. The chance that a wrong-fact repair scores at least as high as a right-fact one is `+
+      el("p",{class:"sub",text:`Each dot is one BART repair at ${LEVEL_NAME[tl]} damage (circled: the example). If BERTScore noticed wrong facts, the lower dots would lie far to the left; they overlap. The chance that a wrong-fact repair scores at least as high as a right-fact one is `+
         `${fmt(DATA.sq3[tm][tl])} here and ${range(main,2)} for the four methods beyond one word (0 = BERTScore sees the fact, 0.5 = it cannot tell).`}));
     box.querySelector(".fig").innerHTML=DATA.figs.strip;
   } else {
-    box.append(kick(5),el("h2",{class:"claim",text:"The letters carry the repair: GenAI should suggest, not rewrite"}),
+    box.append(kick(5),el("h2",{class:"claim",text:"Most of the repair comes from the garbled letters, not from the context"}),
       el("ul",{class:"take"},
         el("li",{},el("b",{text:"H1, partly: "}),"quality falls with damage, but facts do not fall faster than BERTScore."),
         el("li",{},el("b",{text:"H2 and H2b, not supported: "}),"the few-shot LLM restores no more facts than BERT + dictionary or a plain lookup."),
         el("li",{},el("b",{text:"H3, supported beyond one word: "}),"BERTScore overstates repair; report a fact-level score next to it."),
-        el("li",{},el("b",{text:"In practice: "}),"propose repairs from the garbled letters, show ranked alternatives, and let the historian decide.")),
+        el("li",{},el("b",{text:"In practice: "}),"show repairs as marked suggestions with alternatives; the historian decides, the model does not overwrite the text.")),
       el("p",{class:"lim",text:"Limits: synthetic damage in a known span, one LLM, one prompt, one damage draw and one training seed; real damaged pages remain untested."}));
   }
-  root.append(box,el("div",{class:"progress",text:`${pos+1}/${total} · T: explorer`}));
+  box.append(reviewNote(fr.step===2?(fr.bs?"2b":"2a"):String(fr.step)));
+  root.append(box,el("div",{class:"progress",text:`${pos+1}/${total} · T: explorer${REVIEW?" · N: hide notes":""}`}));
 }
 function renderTalk(root){const f=talkFrames();state.frame=Math.max(0,Math.min(f.length-1,state.frame));talkFrame(root,f[state.frame],f.length,state.frame);}
 
@@ -641,6 +653,7 @@ document.addEventListener("keydown",e=>{
     if(["ArrowRight","ArrowDown","PageDown"," ","Enter"].includes(e.key)){state.frame++;render();e.preventDefault();}
     else if(["ArrowLeft","ArrowUp","PageUp","Backspace"].includes(e.key)){state.frame--;render();e.preventDefault();}
     else if(e.key==="Home"){state.frame=0;render();e.preventDefault();}
+    else if(e.key.toLowerCase()==="n"){REVIEW=!REVIEW;render();e.preventDefault();}
     else if(/^[1-5]$/.test(e.key)){state.mode="explore";state.scene=+e.key-1;render();e.preventDefault();}
     return;}
   if(/^[1-5]$/.test(e.key)){e.preventDefault();state.scene=+e.key-1;render();}
