@@ -304,9 +304,9 @@ function stepRepairs(root){
 }
 
 const HYPS=[
-  {id:"H1",vtext:"partly supported (descriptively)",text:"Quality falls as damage grows, but Fact Recovery Rate does not fall faster than BERTScore (BERT + dict.: FRR 0.58 to 0.48, span BERTScore 0.77 to 0.40).",metric:"frr",uses:["frr","bs"]},
-  {id:"H2",vtext:"not supported for the tested pair",text:"The few-shot LLM never restores more facts than BERT + dictionary, and significantly fewer anchors at 50% and 75%.",metric:"anchor",uses:["anchor","bs"]},
-  {id:"H2b",vtext:"not supported for the tested pair",text:"The LLM does not beat the dictionary lookup on facts at any level and loses to it at 50% and 75%.",metric:"anchor",uses:["anchor","bs"]},
+  {id:"H1",vtext:"partly supported (descriptively)",text:"Quality falls as damage grows, but Fact Recovery Rate does not fall faster than BERTScore (BERT + dict.: FRR 0.58 to 0.48, span BERTScore 0.77 to 0.40).",metric:"frr",uses:["frr","bs","exact"]},
+  {id:"H2",vtext:"not supported for the tested pair",text:"The few-shot LLM never restores more facts than BERT + dictionary, and significantly fewer anchors at 50% and 75%.",metric:"anchor",uses:["anchor","bs","frr"]},
+  {id:"H2b",vtext:"not supported for the tested pair",text:"The LLM does not beat the dictionary lookup on facts at any level and loses to it at 50% and 75%.",metric:"anchor",uses:["anchor","bs","frr"]},
   {id:"H3",vtext:"supported beyond one word",text:"A wrong-fact repair scores at least as high in span BERTScore as a right-fact repair in 11% to 45% of pairs. Click again for step 4.",metric:"bs",uses:["bs","anchor"]},
 ];
 const METRIC_NAMES={frr:"Fact Recovery Rate",anchor:"Anchor recovery",bs:"Span BERTScore",exact:"Exact words",cer:"Span CER"};
@@ -327,7 +327,7 @@ function stepResults(root){
     el("div",{class:"controls"},el("div",{class:"group"},el("span",{class:"t",text:"measure"}),el("div",{class:"seg"},...Object.entries(METRIC_NAMES).map(([k,n])=>
       el("button",{"aria-pressed":String(state.metric===k),onclick:()=>{state.metric=k;
         if(state.hyp&&!HYPS.find(h=>h.id===state.hyp).uses.includes(k))state.hyp=null;render();}},n)))),
-      el("span",{class:"t",text:usedBy.length?`used by ${usedBy.join(", ")}`:"secondary measure, no hypothesis"})),
+      el("span",{class:"t",text:usedBy.length?`used by ${usedBy.join(", ")}`:"secondary measure (ablation only), no hypothesis"})),
     el("div",{class:"two"},figure(HAS_FIGS?DATA.figs.metric[figKey]:null),side),
     el("p",{class:"sub",text:`Repair does not suddenly collapse at any level. Anchor restored, 1 word to 75%: BERT + dict. ${pct(a("bertdict")[0])} to ${pct(a("bertdict")[4])}, `+
       `lookup ${range(a("lookup").map(v=>v*100))}%, LLM ${pct(a("llm")[0])} to ${pct(a("llm")[4])}, significantly below BERT + dict. at ${sig.join(" and ")}. `+
