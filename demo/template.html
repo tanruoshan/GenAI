@@ -5,169 +5,144 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BLN600 Repair Demo</title>
 <style>
+/* The look follows the submitted paper on purpose: ACL page (white, Times, black rules), booktabs tables,
+   the matplotlib "science" style and Okabe-Ito colours of its Figure 2, viridis levels of its Figure 1. */
 :root{
-  --bg:#F3F0E8; --surface:#FBFAF6; --ink:#1C2533; --ink2:#3E4A5B; --muted:#6B7280; --rule:#DCD6C8; --soft:#ECE8DF;
-  --good:#1a7f37; --good-bg:#DDF1E3; --bad:#B42318; --bad-bg:#FBE3E0; --focus:#2a78d6;
-  --serif: "Source Serif 4", "Source Serif Pro", Georgia, "Times New Roman", serif;
-  --sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
+  --ink:#0b0b0b; --ink2:#333; --muted:#52514e; --rule:#0b0b0b; --hair:#c8c8c8; --grid:#dddddd;
+  --ok:#00704f; --no:#b5450b; --hl:#f2f2f2;
+  --serif:"Times New Roman", Times, "Nimbus Roman", "TeX Gyre Termes", "STIX Two Text", serif;
+  --mono:Menlo, Consolas, "DejaVu Sans Mono", "Courier New", monospace;
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.45}
+html,body{margin:0;background:#fff;color:var(--ink);font-family:var(--serif);font-size:19px;line-height:1.4}
 body{min-height:100vh;display:flex;flex-direction:column}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
-:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+:focus-visible{outline:2px solid #0072B2;outline-offset:2px}
 
-/* top bar */
-header{display:flex;align-items:center;gap:24px;padding:14px 28px;background:var(--ink);color:#F6F4EF;position:sticky;top:0;z-index:5}
-header h1{font-family:var(--serif);font-weight:600;font-size:20px;margin:0;white-space:nowrap}
-@media (max-width:1500px){header h1 .long{display:none}}
-header h1 span{color:#E3A46B}
-nav.scenes{display:flex;gap:2px;flex-wrap:nowrap;flex:1;justify-content:center}
-nav.scenes button{background:transparent;border:1px solid transparent;color:#C9D2DE;padding:6px 12px;border-radius:999px;font-size:15px;white-space:nowrap}
-nav.scenes button .k{display:inline-block;min-width:20px;height:20px;line-height:20px;border-radius:5px;background:#2E3A4D;color:#E3A46B;font-size:13px;text-align:center;margin-right:7px;font-weight:600}
-nav.scenes button[aria-selected=true]{background:#F6F4EF;color:var(--ink)}
-nav.scenes button[aria-selected=true] .k{background:var(--ink);color:#F6F4EF}
-.badges{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-.badge{font-size:13px;padding:4px 10px;border-radius:999px;background:#2E3A4D;color:#C9D2DE;white-space:nowrap}
-.badge.ok{background:#21452F;color:#BDE5C8}
-.badge.warn{background:#5A2A1C;color:#FFD2C2}
+/* header: paper title and a plain list of the five parts */
+header{display:flex;align-items:baseline;gap:28px;padding:14px 32px 0;border-bottom:1px solid var(--rule);background:#fff;position:sticky;top:0;z-index:5;flex-wrap:wrap}
+header h1{font-size:20px;font-weight:700;margin:0 0 10px;white-space:nowrap}
+header h1 small{font-weight:400;font-size:16px;color:var(--muted);margin-left:10px}
+nav.scenes{display:flex;gap:22px;margin-left:auto}
+nav.scenes button{background:none;border:0;border-bottom:3px solid transparent;padding:0 0 8px;font-size:18px;color:var(--muted)}
+nav.scenes button .k{margin-right:6px}
+nav.scenes button[aria-selected=true]{color:var(--ink);font-weight:700;border-bottom-color:var(--ink)}
 
-main{flex:1;padding:24px 28px 40px;max-width:1700px;width:100%;margin:0 auto}
+main{flex:1;padding:20px 32px 28px;max-width:1440px;width:100%;margin:0 auto}
 section.scene{display:none}
-section.scene.active{display:block;animation:fadein .25s ease}
-@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-.eyebrow{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#2E5EAA;font-weight:600;margin:0 0 6px}
-h2{font-family:var(--serif);font-size:34px;line-height:1.15;margin:0 0 6px;font-weight:600}
-.lede{color:var(--ink2);margin:0 0 18px;max-width:1100px;font-size:18px}
+section.scene.active{display:block}
+h2{font-size:26px;font-weight:700;margin:0 0 12px}
+h2 .no{display:inline-block;min-width:1.4em}
+.cap{font-size:16.5px;line-height:1.4;color:var(--ink2);margin:10px 0 0;max-width:1180px;text-align:justify;hyphens:auto}
+.cap b{font-weight:400;color:var(--ink)}
 
-/* controls */
-.controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;margin:0 0 18px;padding:12px 14px;background:var(--surface);border:1px solid var(--rule);border-radius:12px}
+/* controls: plain rectangles, no rounding */
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px 26px;margin:0 0 14px}
 .group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.group > label.t{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-right:4px}
-.seg{display:inline-flex;border:1px solid var(--rule);border-radius:9px;overflow:hidden;background:#fff}
-.seg button{border:0;background:transparent;padding:7px 13px;border-right:1px solid var(--rule);font-size:15px}
+.group > label.t{font-variant:small-caps;letter-spacing:.04em;color:var(--muted);margin-right:4px;font-size:17px}
+.seg{display:inline-flex;border:1px solid var(--ink)}
+.seg button{border:0;border-right:1px solid var(--ink);background:#fff;padding:3px 11px;font-size:17px;display:inline-flex;align-items:center;gap:6px}
 .seg button:last-child{border-right:0}
-.seg button[aria-pressed=true]{background:var(--ink);color:#F6F4EF}
-.btn{border:1px solid var(--rule);background:#fff;border-radius:9px;padding:7px 12px;font-size:15px}
-.btn.primary{background:var(--ink);color:#F6F4EF;border-color:var(--ink)}
-.btn:hover{border-color:var(--ink2)}
-select,input[type=search],input[type=text]{border:1px solid var(--rule);background:#fff;border-radius:9px;padding:7px 10px;font-size:15px}
+.seg button[aria-pressed=true]{background:var(--ink);color:#fff}
+.seg .lv{display:inline-block;width:11px;height:11px;border:1px solid rgba(0,0,0,.25)}
+.btn{border:1px solid var(--ink);background:#fff;padding:3px 11px;font-size:17px}
+.btn:hover,.seg button:hover{background:var(--hl)}
+.seg button[aria-pressed=true]:hover{background:var(--ink)}
+select,input[type=text]{border:1px solid var(--ink);background:#fff;padding:3px 8px;font-size:17px;border-radius:0}
 .sid{font-family:var(--mono);font-size:14px;color:var(--muted)}
-.chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--rule);background:#fff;border-radius:999px;padding:5px 12px 5px 9px;font-size:14px}
-.chip .sw{width:18px;height:4px;border-radius:2px}
-.chip[aria-pressed=false]{opacity:.45}
 
-/* sentence panel */
-.card{background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:22px 26px}
-.sentence{font-family:var(--serif);font-size:27px;line-height:1.9;margin:0}
-.tok{border-radius:5px;padding:1px 2px;white-space:nowrap;transition:background .3s,color .3s}
-.tok.dmg{font-family:var(--mono);font-size:23px;background:#E4E9F2;color:#1E3F7A;padding:2px 5px;animation:glitch .45s ease}
-.tok.drop{font-family:var(--mono);font-size:23px;background:#E7E3DA;color:#7A7468;padding:2px 6px}
-.tok.goldspan{background:#FFF1C9}
-.tok.fact{text-decoration:underline dotted 2px;text-underline-offset:5px;text-decoration-color:#9A8F7A}
-.tok.anchor{box-shadow:0 0 0 2.5px #B85C1E inset}
-.tok.out{color:#A39C8D}
-@keyframes glitch{0%{transform:translateY(-3px);opacity:.2;filter:blur(2px)}60%{transform:translateY(1px);opacity:1;filter:none}100%{transform:none}}
-.stats{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
-.stat{background:#fff;border:1px solid var(--rule);border-radius:12px;padding:10px 16px;min-width:170px}
-.stat b{display:block;font-family:var(--serif);font-size:30px;line-height:1.1}
-.stat span{font-size:14px;color:var(--muted)}
-.legend-line{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:14px;color:var(--ink2)}
-.legend-line i{display:inline-block;width:22px;height:16px;border-radius:4px;vertical-align:-3px;margin-right:6px}
+/* scene 1: the sentence */
+.sentence{font-size:27px;line-height:2;margin:4px 0 0;padding:14px 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.tok{padding:1px 2px;white-space:nowrap}
+.tok.dmg,.tok.drop{font-family:var(--mono);font-size:22px;padding:2px 5px}
+.tok.drop{color:var(--muted)}
+.tok.fact{text-decoration:underline dotted 2px;text-underline-offset:6px;text-decoration-color:#777}
+.tok.anchor,.w.anchor{outline:1.5px solid var(--ink);outline-offset:1px}
+.key{display:flex;gap:26px;flex-wrap:wrap;margin-top:10px;font-size:16.5px;color:var(--ink2)}
+.key i{display:inline-block;width:20px;height:14px;vertical-align:-2px;margin-right:6px}
 
-/* repair race */
-.race{display:grid;grid-template-columns:230px 1fr 230px;gap:0;border:1px solid var(--rule);border-radius:14px;overflow:hidden;background:var(--surface)}
-.race > div{padding:13px 16px;border-top:1px solid var(--rule);display:flex;align-items:center}
-.race > div.h{border-top:0;background:var(--soft);font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;padding:9px 16px}
-.mname{gap:10px;font-weight:600}
-.mname .bar{width:6px;align-self:stretch;border-radius:3px;min-height:34px}
-.mname small{display:block;font-weight:400;color:var(--muted);font-size:13px}
-.span-line{font-family:var(--serif);font-size:23px;line-height:1.8;flex-wrap:wrap}
-.span-line .ctx{color:#A39C8D}
-.w{border-radius:5px;padding:1px 4px;margin:0 1px}
-.w.ok{background:var(--good-bg);color:#0F4D22}
-.w.no{background:var(--bad-bg);color:#7A1A11}
-.w.no::after{content:" ✗";font-size:.7em;color:var(--bad)}
-.w.ok::after{content:" ✓";font-size:.7em;color:var(--good)}
-.w.anchor{box-shadow:0 0 0 2.5px #B85C1E inset}
+/* booktabs tables */
+table.bt{border-collapse:collapse;font-variant-numeric:tabular-nums;border-top:1.5px solid var(--rule);border-bottom:1.5px solid var(--rule)}
+table.bt th{font-weight:400;text-align:left;padding:5px 14px 4px;border-bottom:.75px solid var(--rule);white-space:nowrap}
+table.bt td{padding:5px 14px;vertical-align:middle}
+table.bt td.r,table.bt th.r{text-align:right}
+table.bt tr.mid td{border-top:.75px solid var(--rule)}
+table.stats{margin-top:14px}
+table.stats td{font-size:19px}
+
+/* scene 2: repairs */
+table.race{width:100%}
+table.race td.m{white-space:nowrap;width:1%}
+table.race td.m small{display:block;color:var(--muted);font-size:15px;margin-left:34px}
+table.race tr.gold td{background:var(--hl)}
+.sw{display:inline-block;vertical-align:middle;margin-right:8px}
+.span-line{font-size:22px;line-height:1.75}
+.span-line .ctx{color:#8a8a8a}
+.w{padding:0 2px}
+.w.ok{color:var(--ok)}
+.w.no{color:var(--no)}
+.w.ok::after{content:"\2713";font-size:.6em;vertical-align:super;margin-left:1px}
+.w.no::after{content:"\2717";font-size:.6em;vertical-align:super;margin-left:1px}
+.w.dmgv{font-family:var(--mono);font-size:.85em;background:var(--hl);color:var(--ink2)}
 .w.empty{font-family:var(--mono);font-size:.8em}
-.fail{font-size:14px;font-weight:600;color:var(--bad);background:var(--bad-bg);border-radius:6px;padding:2px 8px;margin-right:10px}
-.score{gap:12px;justify-content:flex-end;font-variant-numeric:tabular-nums}
-.pill{font-size:14px;border-radius:999px;padding:3px 10px;font-weight:600;white-space:nowrap}
-.pill.good{background:var(--good-bg);color:#0F4D22}
-.pill.bad{background:var(--bad-bg);color:#7A1A11}
-.num{font-size:15px;color:var(--ink2)}
-.race > div.gold{background:#FFF8E1}
+.fail{font-style:italic;color:var(--no);font-size:17px;margin-right:8px}
+.yes{color:var(--ok)} .nope{color:var(--no)}
 
 /* charts */
-.chartwrap{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:22px;align-items:start}
-.chart{position:relative;background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:12px 8px 6px}
+.chartwrap{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:30px;align-items:start}
+.chart{position:relative}
 .chart svg{display:block;width:100%;height:auto}
-.tip{position:absolute;pointer-events:none;background:#fff;border:1px solid var(--rule);border-radius:10px;padding:10px 12px;font-size:14px;box-shadow:0 6px 20px rgba(28,37,51,.12);min-width:230px;display:none;z-index:3}
-.tip .lv{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 18px;justify-content:center;margin-top:2px}
+.legend button{background:none;border:0;padding:2px 4px;font-size:17px;display:inline-flex;align-items:center}
+.legend button[aria-pressed=false]{color:#aaa;text-decoration:line-through}
+.legend button[aria-pressed=false] svg{opacity:.3}
+.tip{position:absolute;pointer-events:none;background:#fff;border:1px solid var(--ink);padding:8px 10px;font-size:16px;min-width:240px;display:none;z-index:3}
+.tip .lv{font-weight:700;margin-bottom:4px}
 .tip .row{display:flex;align-items:center;gap:8px;justify-content:space-between}
-.tip .row .k{display:flex;align-items:center;gap:6px;color:var(--ink2)}
-.tip .row .k i{display:inline-block;width:16px;height:3px;border-radius:2px}
-.tip .row b{font-variant-numeric:tabular-nums}
 .tip .row small{color:var(--muted);font-variant-numeric:tabular-nums}
-.hyps{display:flex;flex-direction:column;gap:10px}
-.hyp{text-align:left;background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:12px 14px}
-.hyp[aria-pressed=true]{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink) inset}
-.hyp .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.hyp b{font-family:var(--serif);font-size:20px}
-.hyp p{margin:6px 0 0;font-size:14.5px;color:var(--ink2)}
-.verdict{font-size:12.5px;font-weight:700;border-radius:999px;padding:3px 9px;white-space:nowrap}
-.verdict.part{background:#FFF1C9;color:#6E5300}
-.verdict.no{background:var(--bad-bg);color:#7A1A11}
-.verdict.yes{background:var(--good-bg);color:#0F4D22}
-.note{font-size:14px;color:var(--muted);margin-top:10px}
-table.mini{border-collapse:collapse;font-size:15px;font-variant-numeric:tabular-nums;width:100%}
-table.mini th,table.mini td{padding:6px 10px;border-bottom:1px solid var(--rule);text-align:right}
-table.mini th:first-child,table.mini td:first-child{text-align:left}
-table.mini th{font-size:13px;color:var(--muted);font-weight:600}
+.hyps{border-top:1.5px solid var(--rule);border-bottom:1.5px solid var(--rule)}
+.hyp{display:block;width:100%;text-align:left;background:#fff;border:0;border-top:.75px solid var(--hair);padding:9px 10px 10px 12px;border-left:3px solid transparent}
+.hyp:first-child{border-top:0}
+.hyp[aria-pressed=true]{border-left-color:var(--ink);background:var(--hl)}
+.hyp b{font-size:19px}
+.hyp em{margin-left:8px}
+.hyp p{margin:4px 0 0;font-size:16.5px;color:var(--ink2)}
+.note{font-size:16.5px;color:var(--ink2);margin-top:10px}
 
-/* metric trap */
-.trap{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:22px;align-items:start}
-.big{font-family:var(--serif);font-size:64px;line-height:1;font-weight:600}
-.detail{display:flex;flex-direction:column;gap:10px}
-.detail .row{font-family:var(--serif);font-size:20px;line-height:1.5}
-.detail .lab{font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
-.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
-.gal{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:12px 14px;text-align:left}
-.gal .g{font-family:var(--serif);font-size:19px}
-.gal .r{font-family:var(--serif);font-size:19px;color:#7A1A11}
+/* scene 4 */
+.trap{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:30px;align-items:start}
+.side{border-top:1.5px solid var(--rule);border-bottom:1.5px solid var(--rule);padding:10px 0}
+.side .lab{color:var(--muted);font-size:16px}
+.big{font-size:44px;line-height:1.1}
+.detail{display:flex;flex-direction:column;gap:6px;margin-top:10px;padding-top:10px;border-top:.75px solid var(--hair)}
+.detail .span-line{font-size:19px}
 
-/* lookup */
-.lookup{display:grid;grid-template-columns:minmax(0,560px) 1fr;gap:26px;align-items:start}
-.lookup input{font-family:var(--mono);font-size:34px;padding:12px 16px;width:100%;border-radius:12px}
-.cands{display:flex;flex-direction:column;gap:6px;margin-top:14px}
-.cand{display:grid;grid-template-columns:1fr 90px 110px;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:9px 14px;font-variant-numeric:tabular-nums}
-.cand:first-child{border-color:var(--ink);box-shadow:0 0 0 1.5px var(--ink) inset}
-.cand .wd{font-family:var(--serif);font-size:26px}
-.cand .d{font-size:14px;color:var(--ink2)}
-.cand .f{font-size:14px;color:var(--muted);text-align:right}
-.presets{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.presets button{font-family:var(--mono)}
-.explain{font-size:17px;color:var(--ink2)}
-.explain code{font-family:var(--mono);background:#fff;border:1px solid var(--rule);border-radius:6px;padding:1px 6px}
-footer{padding:10px 28px 18px;color:var(--muted);font-size:13px;max-width:1700px;margin:0 auto;width:100%}
-kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--rule);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:#fff;color:var(--ink2)}
-.sr{position:absolute;left:-9999px}
-@media (max-height:860px){main{padding:12px 24px 24px}.eyebrow{display:none}h2{font-size:26px;margin-bottom:4px}.lede{font-size:15px;margin-bottom:10px}
-  .controls{padding:7px 12px;margin-bottom:10px}.race > div{padding:5px 14px}.span-line{font-size:19px;line-height:1.55}.tok.dmg,.tok.drop{font-size:19px}}
-@media (max-width:1100px){.chartwrap,.trap,.lookup{grid-template-columns:1fr}.race{grid-template-columns:150px 1fr}.race > div.sc{display:none}header{flex-wrap:wrap}}
+/* scene 5 */
+.lookup{display:grid;grid-template-columns:minmax(0,520px) 1fr;gap:34px;align-items:start}
+.lookup input{font-family:var(--mono);font-size:30px;padding:8px 12px;width:100%}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 12px}
+.presets button{font-family:var(--mono);font-size:15px}
+table.cands{width:100%}
+table.cands td.wd{font-size:24px}
+table.cands tr:first-child td{font-weight:700}
+.explain p{margin:0 0 10px}
+.explain code{font-family:var(--mono);font-size:.85em}
+
+footer{padding:10px 32px 16px;color:var(--muted);font-size:15px;max-width:1440px;margin:0 auto;width:100%;border-top:.75px solid var(--hair)}
+kbd{font-family:var(--mono);font-size:13px;border:1px solid #999;padding:0 4px;background:#fff}
+@media (max-height:860px){main{padding:12px 28px 18px}h2{font-size:23px;margin-bottom:8px}.cap{font-size:15.5px}
+  .controls{margin-bottom:8px}table.race td{padding:3px 12px}.span-line{font-size:19px;line-height:1.55}.sentence{font-size:24px}.tok.dmg,.tok.drop{font-size:19px}}
+@media (max-width:1100px){.chartwrap,.trap,.lookup{grid-template-columns:1fr}nav.scenes{margin-left:0}}
 </style>
 </head>
 <body>
 <header>
-  <h1><span class="long">How Much Damage Can GenAI Repair? </span><span>Live demo</span></h1>
-  <nav class="scenes" role="tablist" aria-label="Scenes"></nav>
-  <div class="badges" id="badges"></div>
+  <h1>How Much Damage Can GenAI Repair?<small>Dippold, Tan, Manzenberger</small></h1>
+  <nav class="scenes" role="tablist" aria-label="Parts"></nav>
 </header>
 <main>
-  <section class="scene" id="s-damage" aria-labelledby="t-damage"></section>
+  <section class="scene" id="s-damage"></section>
   <section class="scene" id="s-repair"></section>
   <section class="scene" id="s-results"></section>
   <section class="scene" id="s-trap"></section>
@@ -180,20 +155,41 @@ const DATA=/*__PAYLOAD__*/null;
 <script>
 "use strict";
 // ---------------------------------------------------------------------------------------------- setup
-const COLORS={bertdict:"#2a78d6",llm:"#eb6834",bart:"#1baf7a",lookup:"#eda100",bert:"#e87ba4",llmart:"#008300",none:"#8b8b85"};
-const DASH={bertdict:"",llm:"",bart:"",lookup:"",bert:"7 5",llmart:"7 5",none:"3 5"};
+// Okabe-Ito and markers as in the paper's Figure 2 (scripts/paper_results.py); the two ablations take the
+// remaining Okabe-Ito colours and hollow markers.
+const COLORS={bertdict:"#0072B2",llm:"#D55E00",lookup:"#E69F00",bart:"#009E73",bert:"#56B4E9",llmart:"#CC79A7",none:"#52514e"};
+const MARK={bertdict:"o",llm:"s",lookup:"^",bart:"D",bert:"o-",llmart:"s-",none:""};
+const DASH={bertdict:"",llm:"",lookup:"",bart:"",bert:"6 4",llmart:"6 4",none:"5 4"};
+// viridis as in the paper's Figure 1 (level colour, and a light tint for the damaged words)
+const LEVEL_COL={"1w":["#bddf26","#ebf5be"],"10":["#44bf70","#c7ecd4"],"25":["#21918c","#bcdedd"],"50":["#355f8d","#c2cfdd"],"75":["#482475","#c8bdd6"]};
 const LEVEL_NAME={"0":"clean","1w":"1 word","10":"10%","25":"25%","50":"50%","75":"75%"};
 const LEVELS=DATA.levels, M=DATA.methods, MK=M.map(m=>m.key);
 const MNAME=Object.fromEntries(M.map(m=>[m.key,m.name])); MNAME.none="No repair";
-const MAIN=["bertdict","llm","lookup","bart"];
 const $=(s,r=document)=>r.querySelector(s);
 const el=(tag,attrs={},...kids)=>{const e=document.createElement(tag);for(const [k,v] of Object.entries(attrs)){
   if(k==="class")e.className=v;else if(k==="text")e.textContent=v;else if(k.startsWith("on"))e.addEventListener(k.slice(2),v);
   else if(v!==false&&v!=null)e.setAttribute(k,v===true?"":v);} for(const c of kids.flat()){if(c==null)continue;e.append(c.nodeType?c:document.createTextNode(c));} return e;};
 const svgEl=(tag,attrs={})=>{const e=document.createElementNS("http://www.w3.org/2000/svg",tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);return e;};
+const svgText=(attrs,text)=>{const t=svgEl("text",{"font-family":"Times New Roman, Times, serif",...attrs});t.textContent=text;return t;};
 const fmt=(v,d=2)=>v==null||Number.isNaN(v)?"–":(v<0?"−":"")+Math.abs(v).toFixed(d);
 const pct=v=>v==null?"–":Math.round(v*100)+"%";
+const mean=a=>a.reduce((x,y)=>x+y,0)/a.length;
 const S=DATA.sentences, byId=Object.fromEntries(S.map((s,i)=>[s.id,i]));
+
+// a marker shape at (cx, cy): o circle, s square, ^ triangle, D diamond; a trailing "-" draws it hollow
+function marker(kind,cx,cy,r,col){
+  const hollow=kind.endsWith("-"), k=kind.replace("-",""), a={fill:hollow?"#fff":col,stroke:col,"stroke-width":hollow?1.6:1};
+  if(k==="s")return svgEl("rect",{x:cx-r*.9,y:cy-r*.9,width:r*1.8,height:r*1.8,...a});
+  if(k==="^")return svgEl("polygon",{points:`${cx},${cy-r*1.15} ${cx-r*1.05},${cy+r*.75} ${cx+r*1.05},${cy+r*.75}`,...a});
+  if(k==="D")return svgEl("polygon",{points:`${cx},${cy-r*1.2} ${cx+r},${cy} ${cx},${cy+r*1.2} ${cx-r},${cy}`,...a});
+  if(k==="o")return svgEl("circle",{cx,cy,r,...a});
+  return null;
+}
+function swatch(k){ // legend swatch: a short line with the method's marker
+  const s=svgEl("svg",{width:26,height:14,viewBox:"0 0 26 14",class:"sw"});
+  s.append(svgEl("line",{x1:1,x2:25,y1:7,y2:7,stroke:COLORS[k],"stroke-width":k==="none"?1.5:2,"stroke-dasharray":DASH[k]}));
+  const m=marker(MARK[k],13,7,4,COLORS[k]); if(m)s.append(m); return s;
+}
 
 const state={scene:0,idx:Math.max(0,byId[DATA.featured[0]]??0),level:"25",filter:"all",
   metric:"anchor",shown:new Set(["bertdict","llm","lookup","bart","none"]),validOnly:false,hyp:null,
@@ -203,10 +199,10 @@ const state={scene:0,idx:Math.max(0,byId[DATA.featured[0]]??0),level:"25",filter
 const FILTERS={
   all:{name:`All ${S.length} test sentences`,f:()=>true},
   manual:{name:"Seeded manual check (6)",f:s=>DATA.featured.includes(s.id)},
-  bertwin:{name:"BERT + dict. ✓, LLM ✗ (anchor, at this level)",f:(s,lv)=>s.repairs[lv].bertdict.anchor&&!s.repairs[lv].llm.anchor},
-  llmwin:{name:"LLM ✓, BERT + dict. ✗",f:(s,lv)=>s.repairs[lv].llm.anchor&&!s.repairs[lv].bertdict.anchor},
+  bertwin:{name:"Anchor: BERT + dict. right, LLM wrong",f:(s,lv)=>s.repairs[lv].bertdict.anchor&&!s.repairs[lv].llm.anchor},
+  llmwin:{name:"Anchor: LLM right, BERT + dict. wrong",f:(s,lv)=>s.repairs[lv].llm.anchor&&!s.repairs[lv].bertdict.anchor},
   fail:{name:"LLM format failure",f:(s,lv)=>!s.repairs[lv].llm.fmt},
-  bartwrong:{name:"BART fluent but wrong anchor",f:(s,lv)=>!s.repairs[lv].bart.anchor&&s.repairs[lv].bart.fmt&&s.repairs[lv].bart.w.some(w=>w&&/^[A-Z]/.test(w))},
+  bartwrong:{name:"BART: wrong anchor, capitalised word",f:(s,lv)=>!s.repairs[lv].bart.anchor&&s.repairs[lv].bart.fmt&&s.repairs[lv].bart.w.some(w=>w&&/^[A-Z]/.test(w))},
   nobody:{name:"No method restores the anchor",f:(s,lv)=>MK.every(k=>!s.repairs[lv][k].anchor)},
 };
 const lvForFilter=()=>state.level==="0"?"1w":state.level;
@@ -215,36 +211,39 @@ function step(d){const p=pool();if(!p.length)return;let pos=p.indexOf(state.idx)
 function randomPick(){const p=pool();if(p.length)state.idx=p[Math.floor(Math.random()*p.length)];render();}
 
 // ------------------------------------------------------------------------------------------ chrome
-const SCENES=[["damage","The damage"],["repair","The repair race"],["results","Results"],["trap","The metric trap"],["lookup","Try the lookup"]];
+const SCENES=[["damage","Damage"],["repair","Repairs"],["results","Results"],["trap","BERTScore vs. facts"],["lookup","Lookup"]];
 function buildNav(){
   const nav=$("nav.scenes");
   SCENES.forEach(([id,name],i)=>nav.append(el("button",{role:"tab",id:"t-"+id,"aria-controls":"s-"+id,onclick:()=>{state.scene=i;render();}},
     el("span",{class:"k",text:String(i+1)}),name)));
-  const b=$("#badges"), meta=DATA.meta;
-  b.append(el("span",{class:"badge "+(meta.verified?"ok":"warn"),text:meta.verified?"Data: frozen v2, hash verified":"UNVERIFIED data: test build"}));
-  b.append(el("span",{class:"badge "+(meta.mismatches.length?"warn":"ok"),
-    text:meta.mismatches.length?`${meta.mismatches.length} of ${meta.checked} means differ from notebook 4`:`${meta.checked} means match notebook 4`}));
-  $("#foot").append("Test split, 150 sentences × 5 levels. Intervals, tests and SQ3 rates are read from the executed notebooks/04_evaluation.ipynb; per-sentence repairs from runs/preds/. ",
-    el("kbd",{text:"1"}),"–",el("kbd",{text:"5"})," scenes · ",el("kbd",{text:"←"}),el("kbd",{text:"→"})," level · ",
-    el("kbd",{text:"↑"}),el("kbd",{text:"↓"})," sentence · ",el("kbd",{text:"Space"})," play levels · ",el("kbd",{text:"R"})," random.");
+  const meta=DATA.meta;
+  $("#foot").append(`BLN600 test split, ${S.length} sentences × 5 levels. ${meta.verified?"Damaged data: frozen corrupted_v2, hash verified.":"UNVERIFIED data file: test build, not the study's data."} `+
+    `Intervals, tests and SQ3 rates are read from the single executed test run (notebooks/04_evaluation.ipynb); per-sentence repairs from runs/preds/, `+
+    (meta.mismatches.length?`${meta.mismatches.length} of ${meta.checked} recomputed means DIFFER from notebook 4. `:`all ${meta.checked} recomputed means match notebook 4. `),
+    el("kbd",{text:"1"}),"–",el("kbd",{text:"5"})," parts, ",el("kbd",{text:"←"}),el("kbd",{text:"→"})," level, ",
+    el("kbd",{text:"↑"}),el("kbd",{text:"↓"})," sentence, ",el("kbd",{text:"Space"})," play levels, ",el("kbd",{text:"R"})," random.");
 }
+function heading(no,text){return el("h2",{},el("span",{class:"no",text:no}),text);}
+function caption(label,...kids){return el("p",{class:"cap"},el("b",{text:label+": "}),...kids);}
 
+function levelButtons(lvls,cur,onpick){
+  return el("div",{class:"seg",role:"group","aria-label":"Damage level"},...lvls.map(l=>el("button",{"aria-pressed":String(cur===l),onclick:()=>onpick(l)},
+    LEVEL_COL[l]?el("span",{class:"lv",style:`background:${LEVEL_COL[l][0]}`}):null,LEVEL_NAME[l])));
+}
 function sentenceControls(withClean){
   const s=S[state.idx], p=pool(), pos=p.indexOf(state.idx);
   const lvls=(withClean?["0"]:[]).concat(LEVELS);
+  if(!withClean&&state.level==="0"){state.level="1w";}
   const sel=el("select",{"aria-label":"Which sentences to step through",onchange:e=>{state.filter=e.target.value;const q=pool();if(q.length&&!q.includes(state.idx))state.idx=q[0];render();}},
     ...Object.entries(FILTERS).map(([k,f])=>el("option",{value:k,selected:k===state.filter},f.name)));
-  const seg=el("div",{class:"seg",role:"group","aria-label":"Damage level"},...lvls.map(l=>el("button",{"aria-pressed":String(state.level===l),onclick:()=>{stopPlay();state.level=l;render();}},LEVEL_NAME[l])));
-  if(!withClean&&state.level==="0"){state.level="1w";}
   return el("div",{class:"controls"},
-    el("div",{class:"group"},el("label",{class:"t",text:"Sentence"}),
-      el("button",{class:"btn","aria-label":"Previous sentence",onclick:()=>step(-1)},"◀"),
-      el("button",{class:"btn","aria-label":"Next sentence",onclick:()=>step(1)},"▶"),
-      el("button",{class:"btn",onclick:randomPick},"Random"),
-      el("span",{class:"sid",text:`${s.id} · ${s.tokens.length} words · ${pos<0?"not in filter":(pos+1)+" / "+p.length}`})),
-    el("div",{class:"group"},sel),
-    el("div",{class:"group"},el("label",{class:"t",text:"Damage"}),seg,
-      el("button",{class:"btn primary",onclick:togglePlay,"aria-label":"Play through the levels"},state.playing?"■ Stop":"▶ Play")));
+    el("div",{class:"group"},el("label",{class:"t",text:"sentence"}),
+      el("button",{class:"btn","aria-label":"Previous sentence",onclick:()=>step(-1)},"‹"),
+      el("button",{class:"btn","aria-label":"Next sentence",onclick:()=>step(1)},"›"),
+      el("button",{class:"btn",onclick:randomPick},"random"),sel,
+      el("span",{class:"sid",text:`${s.id}, ${s.tokens.length} words, ${pos<0?"not in filter":(pos+1)+"/"+p.length}`})),
+    el("div",{class:"group"},el("label",{class:"t",text:"damage"}),levelButtons(lvls,state.level,l=>{stopPlay();state.level=l;render();}),
+      el("button",{class:"btn",onclick:togglePlay,"aria-label":"Play through the levels"},state.playing?"stop":"play")));
 }
 function togglePlay(){ if(state.playing){stopPlay();render();return;}
   const seq=(state.scene===0?["0"]:[]).concat(LEVELS); let i=Math.max(0,seq.indexOf(state.level));
@@ -256,11 +255,8 @@ function stopPlay(){if(state.playing){clearInterval(state.playing);state.playing
 // ---------------------------------------------------------------------------------- scene 1: damage
 function renderDamage(root){
   const s=S[state.idx], lv=state.level;
-  root.append(el("p",{class:"eyebrow",text:"Scene 1 · controlled damage"}),
-    el("h2",{text:"One fact, damaged at five nested levels"}),
-    el("p",{class:"lede",text:"The anchor fact is always damaged and never dropped. Each larger span contains the smaller ones, and a damaged word looks the same at every level: higher levels only add damaged words around it."}),
-    sentenceControls(true));
-  const L=lv==="0"?null:s.levels[lv];
+  root.append(heading("1","Controlled damage at five nested levels"),sentenceControls(true));
+  const L=lv==="0"?null:s.levels[lv], tint=L?LEVEL_COL[lv][1]:null;
   const slots=L?Object.fromEntries(L.slots.map(([i,out,d])=>[i,{out,d}])):{};
   const facts=new Set(s.facts);
   const sent=el("p",{class:"sentence"});
@@ -270,23 +266,24 @@ function renderDamage(root){
     if(sl){cls+=sl.d?" drop":" dmg"; txt=sl.d?"⟨?⟩":sl.out;}
     if(facts.has(i)&&!sl)cls+=" fact";
     if(i===s.anchor)cls+=" anchor";
-    sent.append(el("span",{class:cls,title:sl?`gold: ${t}`:(i===s.anchor?"anchor fact":facts.has(i)?"fact token":""),text:txt})," ");
+    sent.append(el("span",{class:cls,style:sl?`background:${tint}`:null,title:sl?`gold: ${t}`:(i===s.anchor?"anchor fact":facts.has(i)?"fact token":""),text:txt})," ");
   });
   const k=L?L.slots.length:0, nf=L?L.facts.length:0, nd=L?L.slots.filter(x=>x[2]).length:0;
-  root.append(el("div",{class:"card"},sent,
-    el("div",{class:"legend-line"},
-      el("span",{},el("i",{style:"background:#E4E9F2;box-shadow:inset 0 0 0 1px #9FB0CF"}),"damaged word, as the model sees it"),
-      el("span",{},el("i",{style:"background:#E7E3DA"}),"⟨?⟩ dropped word"),
-      el("span",{},el("i",{style:"box-shadow:inset 0 0 0 2.5px #B85C1E"}),"anchor fact"),
-      el("span",{},el("i",{style:"border-bottom:2px dotted #9A8F7A;border-radius:0;height:12px"}),"fact token (hover a damaged word for its gold form)")),
-    el("div",{class:"stats"},
-      el("div",{class:"stat"},el("b",{text:`${k} / ${s.tokens.length}`}),el("span",{text:"words damaged"})),
-      el("div",{class:"stat"},el("b",{text:String(nf)}),el("span",{text:"facts in the span"})),
-      el("div",{class:"stat"},el("b",{text:String(nd)}),el("span",{text:"words dropped (no letters left)"})),
-      el("div",{class:"stat"},el("b",{text:L?pct(L.cer):"0%"}),el("span",{text:"character error rate of the span"})))));
+  root.append(sent,
+    el("div",{class:"key"},
+      el("span",{},el("i",{style:`background:${tint||LEVEL_COL["25"][1]}`}),"damaged word, as every method sees it"),
+      el("span",{},"⟨?⟩ dropped word (no letters left)"),
+      el("span",{},el("i",{style:"outline:1.5px solid #0b0b0b;outline-offset:-2px"}),"anchor fact"),
+      el("span",{},el("i",{style:"border-bottom:2px dotted #777;height:11px"}),"other fact token")),
+    el("table",{class:"bt stats"},
+      el("tr",{},el("th",{text:"Level"}),el("th",{class:"r",text:"Damaged words"}),el("th",{class:"r",text:"Facts in span"}),el("th",{class:"r",text:"Dropped"}),el("th",{class:"r",text:"Span CER"})),
+      el("tr",{},el("td",{text:LEVEL_NAME[lv]}),el("td",{class:"r",text:`${k} of ${s.tokens.length}`}),el("td",{class:"r",text:String(nf)}),el("td",{class:"r",text:String(nd)}),el("td",{class:"r",text:L?pct(L.cer):"0%"}))),
+    caption("Figure 1",`One test sentence (${s.id}); hover a damaged word for its gold form. The anchor fact is always damaged and never dropped. `+
+      "Every span centres on the same anchor and contains every smaller span, and each word's damage is seeded per word, so a word looks the same at every level: "+
+      "a higher level only adds damaged words around the anchor (paper, Sec. 3.2 and Fig. 1)."));
 }
 
-// ----------------------------------------------------------------------------- scene 2: repair race
+// ----------------------------------------------------------------------------- scene 2: repairs
 function spanTokens(s,lv,words,ok,showCtx){
   const L=s.levels[lv], [a,b]=L.span, wrap=el("div",{class:"span-line"});
   const slotIdx=Object.fromEntries(L.slots.map((x,j)=>[x[0],j]));
@@ -295,48 +292,42 @@ function spanTokens(s,lv,words,ok,showCtx){
   for(let i=from;i<to;i++){
     const j=slotIdx[i];
     if(j==null){wrap.append(el("span",{class:"ctx",text:s.tokens[i]})," ");continue;}
-    if(words===undefined){wrap.append(el("span",{class:"w"+(i===s.anchor?" anchor":""),style:"background:#FFF1C9",text:s.tokens[i]})," ");continue;}
+    if(words===undefined){wrap.append(el("span",{class:"w"+(i===s.anchor?" anchor":""),text:s.tokens[i]})," ");continue;}
     const w=words?words[j]:null, good=ok?ok[j]:0;
     const shown=w==null?(L.slots[j][2]?"⟨?⟩":L.slots[j][1]):(w===""?"∅":w);
-    wrap.append(el("span",{class:"w "+(good?"ok":"no")+(i===s.anchor?" anchor":"")+(w===""||w==null&&L.slots[j][2]?" empty":""),
+    const cls=words===null?"dmgv":(good?"ok":"no"); // words === null: the damaged input itself, no marks
+    wrap.append(el("span",{class:"w "+cls+(i===s.anchor?" anchor":"")+(w===""||w==null&&L.slots[j][2]?" empty":""),
       title:`gold: ${s.tokens[i]}`,text:shown})," ");
   }
   if(to<s.tokens.length)wrap.append(el("span",{class:"ctx",text:"…"}));
   return wrap;
 }
 function renderRepair(root){
-  const s=S[state.idx]; if(state.level==="0")state.level="1w"; const lv=state.level;
-  root.append(el("p",{class:"eyebrow",text:"Scene 2 · same input, six repairs"}),
-    el("h2",{text:"The repair race"}),
-    el("p",{class:"lede",text:"Every method receives the identical slot view and returns one word per slot. Green = the gold word restored exactly; red = wrong; the ring marks the anchor fact. Hover any word for the gold form."}),
-    sentenceControls(false));
-  const race=el("div",{class:"race"});
-  race.append(el("div",{class:"h",text:"Method"}),el("div",{class:"h",text:"Repaired span"}),
-    el("div",{class:"h sc",style:"justify-content:flex-end",text:DATA.meta.bertscore?"Anchor · words right · BERTScore":"Anchor · words right"}));
-  race.append(el("div",{class:"mname gold"},el("span",{class:"bar",style:"background:#C9A227"}),el("div",{},"Gold",el("small",{text:"the original text"}))),
-    el("div",{class:"gold"},spanTokens(s,lv,undefined,null,state.full)),
-    el("div",{class:"gold sc"}));
-  const L=s.levels[lv];
-  race.append(el("div",{class:"mname"},el("span",{class:"bar",style:"background:"+COLORS.none}),el("div",{},"Damaged input",el("small",{text:"what every method sees"}))),
-    el("div",{},spanTokens(s,lv,null,null,state.full)),
-    el("div",{class:"score sc"},DATA.meta.bertscore?el("span",{class:"num",text:"BERTScore "+fmt(L.bs_none)}):null));
-  for(const m of M){
-    const r=s.repairs[lv][m.key];
-    const right=r.ok.filter(Boolean).length;
-    race.append(
-      el("div",{class:"mname"},el("span",{class:"bar",style:"background:"+COLORS[m.key]}),el("div",{},m.name,el("small",{text:m.role}))),
-      el("div",{},r.fmt?null:el("span",{class:"fail",text:"format failure → scored as no repair"}),spanTokens(s,lv,r.fmt?r.w:null,r.ok,state.full)),
-      el("div",{class:"score sc"},
-        el("span",{class:"pill "+(r.anchor?"good":"bad"),text:r.anchor?"anchor ✓":"anchor ✗"}),
-        el("span",{class:"num",text:`${right}/${r.ok.length} words`}),
-        DATA.meta.bertscore?el("span",{class:"num",text:"BS "+fmt(r.bs)}):null));
-  }
-  root.append(race,el("div",{class:"controls",style:"margin-top:14px"},
-    el("label",{},el("input",{type:"checkbox",checked:state.full,onchange:e=>{state.full=e.target.checked;render();}})," show the whole sentence"),
-    el("span",{class:"note",style:"margin:0",text:`At this level across all ${S.length} sentences, anchor restored: `+
-      M.map(m=>`${m.name} ${pct(mean(S.map(x=>x.repairs[lv][m.key].anchor)))}`).join(" · ")})));
+  const s=S[state.idx]; if(state.level==="0")state.level="1w"; const lv=state.level, L=s.levels[lv], bs=DATA.meta.bertscore;
+  root.append(heading("2","Repairs of the same damaged input"),sentenceControls(false));
+  const head=el("tr",{},el("th",{text:"Method"}),el("th",{text:"Repaired span"}),el("th",{class:"r",text:"Anchor"}),el("th",{class:"r",text:"Words right"}),bs?el("th",{class:"r",text:"BERTScore"}):null);
+  const rows=[
+    el("tr",{class:"gold"},el("td",{class:"m"},el("span",{style:"display:inline-block;width:34px"}),"Gold"),el("td",{},spanTokens(s,lv,undefined,null,state.full)),el("td",{}),el("td",{}),bs?el("td",{}):null),
+    el("tr",{},el("td",{class:"m"},swatch("none"),"Damaged input"),el("td",{},spanTokens(s,lv,null,null,state.full)),el("td",{}),el("td",{}),
+      bs?el("td",{class:"r",text:fmt(L.bs_none)}):null)];
+  M.forEach((m,n)=>{
+    const r=s.repairs[lv][m.key], right=r.ok.filter(Boolean).length;
+    rows.push(el("tr",{class:n===0?"mid":""},
+      el("td",{class:"m"},swatch(m.key),m.name,el("small",{text:m.role})),
+      el("td",{},r.fmt?null:el("span",{class:"fail",text:"format failure, scored as no repair:"}),spanTokens(s,lv,r.fmt?r.w:null,r.ok,state.full)),
+      el("td",{class:"r"},el("span",{class:r.anchor?"yes":"nope",text:r.anchor?"right":"wrong"})),
+      el("td",{class:"r",text:`${right} of ${r.ok.length}`}),
+      bs?el("td",{class:"r",text:fmt(r.bs)}):null));
+  });
+  root.append(el("table",{class:"bt race"},head,...rows),
+    el("div",{class:"controls",style:"margin:10px 0 0"},
+      el("label",{},el("input",{type:"checkbox",checked:state.full,onchange:e=>{state.full=e.target.checked;render();}})," show the whole sentence"),
+      el("span",{class:"note",style:"margin:0",text:`Anchor restored at ${LEVEL_NAME[lv]}, all ${S.length} sentences: `+
+        M.map(m=>`${m.name} ${pct(mean(S.map(x=>x.repairs[lv][m.key].anchor)))}`).join(", ")})),
+    caption("Figure 2","All methods get the same intact context and the same damaged words (the slot view, paper Sec. 3.3); LLM + article also sees the rest of the article as gold text, so it is an upper bound. "+
+      "Green: the gold word restored exactly (edge punctuation ignored); red: wrong; box: the anchor fact. A format failure is scored as no repair."+
+      (bs?" BERTScore: span F1, roberta-large, rescaled, as in notebook 4.":"")));
 }
-const mean=a=>a.reduce((x,y)=>x+y,0)/a.length;
 
 // ------------------------------------------------------------------------------- scene 3: results
 const METRICS={anchor:{name:"Anchor recovery",lo:0,hi:0.8,valid:"anchor",test:"mcnemar_holm",pct:true},
@@ -345,44 +336,47 @@ const METRICS={anchor:{name:"Anchor recovery",lo:0,hi:0.8,valid:"anchor",test:"m
   exact:{name:"Exact words",lo:0,hi:0.8,pct:true},
   cer:{name:"Span CER after repair (lower is better)",lo:0,hi:0.7}};
 const HYPS=[
-  {id:"H1",verdict:"part",vtext:"Partly supported",text:"Quality falls as damage grows, but fact recovery does not fall faster than BERTScore: the letter-based methods hold their facts.",metric:"frr",focus:["bertdict","lookup","llm","bart"]},
-  {id:"H2",verdict:"no",vtext:"Not supported",text:"The few-shot LLM never restores more facts than BERT + dictionary, and significantly fewer at 50% and 75%.",metric:"anchor",focus:["bertdict","llm"],pair:["bertdict","llm"]},
-  {id:"H2b",verdict:"no",vtext:"Not supported",text:"The LLM does not beat the plain dictionary lookup on facts at any level and loses at 50% and 75%.",metric:"anchor",focus:["llm","lookup"],pair:["llm","lookup"]},
-  {id:"H3",verdict:"yes",vtext:"Supported beyond one word",text:"A wrong-fact repair scores at least as high in BERTScore as a right-fact one in 11–45% of pairs. Open scene 4.",metric:"bs",focus:["bart","bertdict"]},
+  {id:"H1",vtext:"partly supported (descriptively)",text:"Quality falls as damage grows, but Fact Recovery Rate does not fall faster than BERTScore (BERT + dict.: FRR 0.58 to 0.48, span BERTScore 0.77 to 0.40).",metric:"frr",focus:["bertdict","lookup","llm","bart"]},
+  {id:"H2",vtext:"not supported for the tested pair",text:"The few-shot LLM never restores more facts than BERT + dictionary, and significantly fewer anchors at 50% and 75%.",metric:"anchor",focus:["bertdict","llm"],pair:["bertdict","llm"]},
+  {id:"H2b",vtext:"not supported for the tested pair",text:"The LLM does not beat the dictionary lookup on facts at any level and loses to it at 50% and 75%.",metric:"anchor",focus:["llm","lookup"],pair:["llm","lookup"]},
+  {id:"H3",vtext:"supported beyond one word",text:"A wrong-fact repair scores at least as high in span BERTScore as a right-fact repair in 11% to 45% of pairs (part 4). At one word the span is the fact itself.",metric:"bs",focus:["bart","bertdict"]},
 ];
 function renderResults(root){
   const met=METRICS[state.metric];
-  root.append(el("p",{class:"eyebrow",text:"Scene 3 · the test run, 150 sentences per level"}),
-    el("h2",{text:"A ceiling, not a breakpoint"}),
-    el("p",{class:"lede",text:"Every value and 95% bootstrap interval below is read from the one executed test run of notebook 4. Toggle methods, switch the metric, or click a hypothesis."}));
-  const ctr=el("div",{class:"controls"},
-    el("div",{class:"group"},el("label",{class:"t",text:"Metric"}),el("div",{class:"seg"},...Object.entries(METRICS).map(([k,v])=>
+  root.append(heading("3","Test results by damage level"));
+  root.append(el("div",{class:"controls"},
+    el("div",{class:"group"},el("label",{class:"t",text:"metric"}),el("div",{class:"seg"},...Object.entries(METRICS).map(([k,v])=>
       el("button",{"aria-pressed":String(state.metric===k),onclick:()=>{state.metric=k;state.hyp=null;render();}},v.name.split(" (")[0])))),
-    el("div",{class:"group"},...[...MK,"none"].map(k=>el("button",{class:"chip","aria-pressed":String(state.shown.has(k)),
-      onclick:()=>{state.shown.has(k)?state.shown.delete(k):state.shown.add(k);state.hyp=null;render();}},
-      el("span",{class:"sw",style:`background:${COLORS[k]}`}),MNAME[k]))),
-    met.valid?el("label",{},el("input",{type:"checkbox",checked:state.validOnly,onchange:e=>{state.validOnly=e.target.checked;render();}})," LLM over valid answers only"):null);
-  root.append(ctr);
+    met.valid?el("label",{},el("input",{type:"checkbox",checked:state.validOnly,onchange:e=>{state.validOnly=e.target.checked;render();}})," LLM over valid answers only"):null));
   const chartBox=el("div",{class:"chart"}), tip=el("div",{class:"tip"});
   chartBox.append(tip);
+  const legend=el("div",{class:"legend"},...[...MK,"none"].map(k=>el("button",{"aria-pressed":String(state.shown.has(k)),
+      onclick:()=>{state.shown.has(k)?state.shown.delete(k):state.shown.add(k);state.hyp=null;render();}},swatch(k),MNAME[k])));
   const side=el("div",{class:"hyps"},...HYPS.map(h=>el("button",{class:"hyp","aria-pressed":String(state.hyp===h.id),onclick:()=>{
       if(h.id==="H3"&&state.hyp==="H3"){state.scene=3;render();return;}
       state.hyp=state.hyp===h.id?null:h.id; if(state.hyp){state.metric=h.metric;state.shown=new Set([...h.focus,"none"]);} render();}},
-    el("div",{class:"top"},el("b",{text:h.id}),el("span",{class:"verdict "+h.verdict,text:h.vtext})),el("p",{text:h.text}))));
-  root.append(el("div",{class:"chartwrap"},chartBox,side));
+    el("b",{text:h.id}),el("em",{text:h.vtext}),el("p",{text:h.text}))));
+  root.append(el("div",{class:"chartwrap"},el("div",{},chartBox,legend),side));
   drawLineChart(chartBox,tip,met);
   const fails=DATA.valid.llm;
-  root.append(el("p",{class:"note",text:`LLM format failures per level (of ${S.length}): `+LEVELS.map(l=>`${LEVEL_NAME[l]} ${fails[l].fail}`).join(" · ")+
-    ` · contamination probe: ${DATA.probe.near} of ${DATA.probe.n} test sentences continued near-verbatim (median similarity ${fmt(DATA.probe.median)}).`}));
+  root.append(caption("Figure 3",`Means over ${S.length} test sentences per level with 95% bootstrap intervals over sentences, read from the single test run of notebook 4 (paper, Table 6 and Fig. 2). `+
+    "LLM = few-shot; a format failure counts as no repair. Click a hypothesis to show its methods; for H2 and H2b the Holm-adjusted p-value of the paired test is printed above each level. "+
+    `LLM format failures per level: `+LEVELS.map(l=>`${LEVEL_NAME[l]} ${fails[l].fail}`).join(", ")+
+    `. Contamination probe: ${DATA.probe.near} of ${DATA.probe.n} test sentences continued near-verbatim (median similarity ${fmt(DATA.probe.median)}).`));
 }
 function drawLineChart(box,tip,met){
-  const W=1000,H=500,pl=64,pr=150,pt=56,pb=48, iw=W-pl-pr, ih=H-pt-pb;
+  const W=1000,H=470,pl=70,pr=140,pt=50,pb=46, iw=W-pl-pr, ih=H-pt-pb;
   const x=i=>pl+i*iw/(LEVELS.length-1), y=v=>pt+ih-(v-met.lo)/(met.hi-met.lo)*ih;
   const svg=svgEl("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":`${met.name} by damage level`});
-  const ticks=[];for(let v=met.lo;v<=met.hi+1e-9;v+=(met.hi-met.lo)/(met.hi-met.lo>1?6:4))ticks.push(+v.toFixed(2));
-  for(const t of ticks){svg.append(svgEl("line",{x1:pl,x2:pl+iw,y1:y(t),y2:y(t),stroke:t===0?"#B9B2A3":"#E5E0D5","stroke-width":1}));
-    const tx=svgEl("text",{x:pl-10,y:y(t)+5,"text-anchor":"end","font-size":15,fill:"#6B7280"});tx.textContent=met.pct?Math.round(t*100)+"%":fmt(t,1);svg.append(tx);}
-  LEVELS.forEach((l,i)=>{const tx=svgEl("text",{x:x(i),y:H-16,"text-anchor":"middle","font-size":16,fill:"#3E4A5B"});tx.textContent=LEVEL_NAME[l];svg.append(tx);});
+  svg.append(svgText({x:pl,y:pt-26,"font-size":20,fill:"#0b0b0b"},met.name));
+  const ticks=[];for(let v=met.lo;v<=met.hi+1e-9;v+=(met.hi-met.lo)/(met.hi-met.lo>1?7:4))ticks.push(+v.toFixed(2));
+  for(const t of ticks){svg.append(svgEl("line",{x1:pl,x2:pl+iw,y1:y(t),y2:y(t),stroke:"#dddddd","stroke-width":1}));
+    svg.append(svgEl("line",{x1:pl,x2:pl+6,y1:y(t),y2:y(t),stroke:"#0b0b0b","stroke-width":1.2}));
+    svg.append(svgText({x:pl-10,y:y(t)+6,"text-anchor":"end","font-size":18,fill:"#0b0b0b"},met.pct?Math.round(t*100)+"%":fmt(t,1)));}
+  svg.append(svgEl("line",{x1:pl,x2:pl,y1:pt,y2:pt+ih,stroke:"#0b0b0b","stroke-width":1.2}));
+  svg.append(svgEl("line",{x1:pl,x2:pl+iw,y1:pt+ih,y2:pt+ih,stroke:"#0b0b0b","stroke-width":1.2}));
+  LEVELS.forEach((l,i)=>{svg.append(svgEl("line",{x1:x(i),x2:x(i),y1:pt+ih,y2:pt+ih-6,stroke:"#0b0b0b","stroke-width":1.2}));
+    svg.append(svgText({x:x(i),y:pt+ih+26,"text-anchor":"middle","font-size":18,fill:"#0b0b0b"},LEVEL_NAME[l]));});
   const series=[...MK,"none"].filter(k=>state.shown.has(k)&&DATA.ci[state.metric]&&DATA.ci[state.metric][k]);
   const pts={};
   for(const k of series){
@@ -390,106 +384,109 @@ function drawLineChart(box,tip,met){
     if(d.some(v=>!v))continue; pts[k]=d;
     if(k!=="none"&&(d[0][1]!==d[0][0]||d[0][2]!==d[0][0])){
       const up=d.map((v,i)=>`${x(i)},${y(v[2])}`), dn=d.map((v,i)=>`${x(i)},${y(v[1])}`).reverse();
-      svg.append(svgEl("polygon",{points:up.concat(dn).join(" "),fill:COLORS[k],opacity:0.12}));}
+      svg.append(svgEl("polygon",{points:up.concat(dn).join(" "),fill:COLORS[k],opacity:0.15}));}
   }
   const label=[];
   for(const k of Object.keys(pts)){
     const d=pts[k], hl=!state.hyp||HYPS.find(h=>h.id===state.hyp).focus.includes(k);
-    svg.append(svgEl("polyline",{points:d.map((v,i)=>`${x(i)},${y(v[0])}`).join(" "),fill:"none",stroke:COLORS[k],"stroke-width":hl?3.5:2,"stroke-dasharray":DASH[k],"stroke-linejoin":"round",opacity:hl?1:.35}));
-    d.forEach((v,i)=>svg.append(svgEl("circle",{cx:x(i),cy:y(v[0]),r:5.5,fill:COLORS[k],stroke:"#FBFAF6","stroke-width":2,opacity:hl?1:.35})));
-    label.push({k,y:y(d[d.length-1][0])});
+    const g=svgEl("g",{opacity:hl?1:.3});
+    g.append(svgEl("polyline",{points:d.map((v,i)=>`${x(i)},${y(v[0])}`).join(" "),fill:"none",stroke:COLORS[k],"stroke-width":k==="none"?1.8:2.6,"stroke-dasharray":DASH[k],"stroke-linejoin":"round"}));
+    d.forEach((v,i)=>{const m=marker(MARK[k],x(i),y(v[0]),6,COLORS[k]);if(m)g.append(m);});
+    svg.append(g); label.push({k,y:y(d[d.length-1][0])});
   }
   if(state.validOnly&&met.valid&&state.shown.has("llm")){
     const v=LEVELS.map(l=>DATA.valid.llm[l][met.valid]);
-    svg.append(svgEl("polyline",{points:v.map((a,i)=>`${x(i)},${y(a)}`).join(" "),fill:"none",stroke:COLORS.llm,"stroke-width":2.5,"stroke-dasharray":"2 6","stroke-linecap":"round"}));
+    svg.append(svgEl("polyline",{points:v.map((a,i)=>`${x(i)},${y(a)}`).join(" "),fill:"none",stroke:COLORS.llm,"stroke-width":2,"stroke-dasharray":"2 5","stroke-linecap":"round"}));
     label.push({k:"llmvalid",y:y(v[v.length-1])});
   }
-  // direct labels, de-collided
-  label.sort((a,b)=>a.y-b.y); for(let i=1;i<label.length;i++)if(label[i].y-label[i-1].y<20)label[i].y=label[i-1].y+20;
-  for(const l of label){const tx=svgEl("text",{x:pl+iw+14,y:l.y+5,"font-size":15,fill:"#1C2533","font-weight":l.k==="bertdict"||l.k==="llm"?600:400});
-    tx.textContent=l.k==="llmvalid"?"LLM, valid only":MNAME[l.k];svg.append(tx);}
-  // significance markers for the hypothesis pair
+  // direct labels at the right end, de-collided
+  label.sort((a,b)=>a.y-b.y); for(let i=1;i<label.length;i++)if(label[i].y-label[i-1].y<21)label[i].y=label[i-1].y+21;
+  for(const l of label)svg.append(svgText({x:pl+iw+14,y:l.y+6,"font-size":18,fill:l.k==="llmvalid"?COLORS.llm:"#0b0b0b"},l.k==="llmvalid"?"LLM, valid only":MNAME[l.k]));
+  // p-values of the paired test for the hypothesis pair
   const h=state.hyp&&HYPS.find(q=>q.id===state.hyp);
   if(h&&h.pair&&met.test){
     LEVELS.forEach((l,i)=>{const t=DATA.tests.find(q=>q.level===l&&q.pair[0]===h.pair[0]&&q.pair[1]===h.pair[1]);if(!t)return;
-      const p=t[met.test], tx=svgEl("text",{x:x(i),y:pt-12,"text-anchor":"middle","font-size":14,"font-weight":700,fill:p<0.05?"#B42318":"#9AA3AE"});
-      tx.textContent=p<0.001?"p<.001":p<0.05?"p="+p.toFixed(3).replace("0.","."):"n.s.";svg.append(tx);});
-    const tx=svgEl("text",{x:pl,y:16,"font-size":13,fill:"#6B7280"});tx.textContent=`Holm-adjusted ${met.test==="mcnemar_holm"?"McNemar":"Wilcoxon"} test, ${MNAME[h.pair[0]]} vs ${MNAME[h.pair[1]]}`;svg.append(tx);
+      const p=t[met.test];
+      svg.append(svgText({x:x(i),y:pt-4,"text-anchor":"middle","font-size":16,"font-style":"italic",fill:p<0.05?"#0b0b0b":"#8a8a8a"},
+        p<0.001?"p < .001":p<0.05?"p = "+p.toFixed(3).replace("0.","."):"n.s."));});
+    svg.append(svgText({x:pl+iw,y:pt-26,"text-anchor":"end","font-size":16,fill:"#52514e"},
+      `Holm-adjusted ${met.test==="mcnemar_holm"?"McNemar":"Wilcoxon"} test, ${MNAME[h.pair[0]]} vs. ${MNAME[h.pair[1]]}`));
   }
-  // crosshair + tooltip
-  const hair=svgEl("line",{y1:pt,y2:pt+ih,stroke:"#1C2533","stroke-width":1,opacity:0});svg.append(hair);
+  // crosshair and tooltip
+  const hair=svgEl("line",{y1:pt,y2:pt+ih,stroke:"#0b0b0b","stroke-width":1,opacity:0});svg.append(hair);
   const hit=svgEl("rect",{x:pl-20,y:pt,width:iw+40,height:ih,fill:"transparent"});svg.append(hit);
   const show=(ev)=>{const r=svg.getBoundingClientRect(), mx=(ev.clientX-r.left)*W/r.width;
     const i=Math.max(0,Math.min(LEVELS.length-1,Math.round((mx-pl)/(iw/(LEVELS.length-1)))));
-    hair.setAttribute("x1",x(i));hair.setAttribute("x2",x(i));hair.setAttribute("opacity",.35);
-    tip.replaceChildren(el("div",{class:"lv",text:`${met.name} · ${LEVEL_NAME[LEVELS[i]]}`}),
+    hair.setAttribute("x1",x(i));hair.setAttribute("x2",x(i));hair.setAttribute("opacity",.3);
+    tip.replaceChildren(el("div",{class:"lv",text:`${met.name}, ${LEVEL_NAME[LEVELS[i]]}`}),
       ...Object.keys(pts).sort((a,b)=>pts[b][i][0]-pts[a][i][0]).map(k=>el("div",{class:"row"},
-        el("span",{class:"k"},el("i",{style:`background:${COLORS[k]}`}),MNAME[k]),
+        el("span",{},swatch(k),MNAME[k]),
         el("span",{},el("b",{text:met.pct?pct(pts[k][i][0]):fmt(pts[k][i][0])})," ",
           pts[k][i][1]!==pts[k][i][0]?el("small",{text:met.pct?`[${pct(pts[k][i][1])}, ${pct(pts[k][i][2])}]`:`[${fmt(pts[k][i][1])}, ${fmt(pts[k][i][2])}]`}):null))));
     tip.style.display="block"; const bx=box.getBoundingClientRect();
-    let left=(x(i)/W)*bx.width+18; if(left+260>bx.width)left=(x(i)/W)*bx.width-270; tip.style.left=left+"px"; tip.style.top=Math.max(8,Math.min(bx.height-tip.offsetHeight-8,ev.clientY-bx.top+24))+"px";};
+    let left=(x(i)/W)*bx.width+18; if(left+280>bx.width)left=(x(i)/W)*bx.width-290; tip.style.left=left+"px"; tip.style.top=Math.max(8,Math.min(bx.height-tip.offsetHeight-8,ev.clientY-bx.top+24))+"px";};
   hit.addEventListener("pointermove",show);hit.addEventListener("pointerleave",()=>{tip.style.display="none";hair.setAttribute("opacity",0);});
   box.prepend(svg);
 }
 
-// --------------------------------------------------------------------------- scene 4: metric trap
+// --------------------------------------------------------------------------- scene 4: BERTScore vs. facts
 function renderTrap(root){
   const lv=state.trapLevel, mk=state.trapMethod;
-  root.append(el("p",{class:"eyebrow",text:"Scene 4 · SQ3, does similarity see the fact?"}),
-    el("h2",{text:"The metric trap: fluent, plausible and wrong"}),
-    el("p",{class:"lede",text:"Each dot is one repair. Top row: the anchor fact was restored; bottom row: it was not. If BERTScore saw facts, every bottom dot would sit left of every top dot. The SQ3 rate is the chance a wrong-fact repair scores at least as high as a right-fact one (0 = sees the fact, 0.5 = blind)."}));
+  root.append(heading("4","Does BERTScore see the fact? (SQ3)"));
   root.append(el("div",{class:"controls"},
-    el("div",{class:"group"},el("label",{class:"t",text:"Level"}),el("div",{class:"seg"},...LEVELS.slice(1).map(l=>
-      el("button",{"aria-pressed":String(lv===l),onclick:()=>{state.trapLevel=l;state.trapSel=null;render();}},LEVEL_NAME[l])))),
-    el("div",{class:"group"},el("label",{class:"t",text:"Method"}),el("div",{class:"seg"},...MK.map(k=>
+    el("div",{class:"group"},el("label",{class:"t",text:"level"}),levelButtons(LEVELS.slice(1),lv,l=>{state.trapLevel=l;state.trapSel=null;render();})),
+    el("div",{class:"group"},el("label",{class:"t",text:"method"}),el("div",{class:"seg"},...MK.map(k=>
       el("button",{"aria-pressed":String(mk===k),onclick:()=>{state.trapMethod=k;state.trapSel=null;render();}},MNAME[k]))))));
   const rate=DATA.sq3[mk]?DATA.sq3[mk][lv]:null;
   const rs=S.map((s,i)=>({i,s,r:s.repairs[lv][mk]}));
   const wrong=rs.filter(o=>!o.r.anchor), right=rs.filter(o=>o.r.anchor);
-  const side=el("div",{class:"card detail"},
-    el("div",{class:"lab",text:`SQ3 rate · ${MNAME[mk]} · ${LEVEL_NAME[lv]}`}),
+  const live=DATA.sq3_live[mk]?` (recomputed here: ${fmt(DATA.sq3_live[mk][lv])})`:"";
+  const side=el("div",{class:"side"},
+    el("div",{class:"lab",text:`SQ3 rate (1 − AUC), ${MNAME[mk]}, ${LEVEL_NAME[lv]}`}),
     el("div",{class:"big",text:fmt(rate)}),
-    el("div",{class:"note",style:"margin:0",text:`${right.length} repairs restore the anchor, ${wrong.length} do not. From notebook 4${DATA.sq3_live[mk]?` (recomputed here: ${fmt(DATA.sq3_live[mk][lv])})`:""}.`}));
-  const detailBox=el("div",{class:"detail"}); side.append(el("hr",{style:"border:0;border-top:1px solid #DCD6C8;width:100%"}),detailBox);
-  const showDetail=o=>{state.trapSel=o.i;const s=o.s,L=s.levels[lv];detailBox.replaceChildren(
-    el("div",{class:"lab",text:`${s.id} · anchor ${o.r.anchor?"restored":"wrong"}${DATA.meta.bertscore?" · BERTScore "+fmt(o.r.bs):""}`}),
+    el("div",{class:"note",style:"margin:0",text:`${right.length} repairs restore the anchor, ${wrong.length} do not. From notebook 4${live}.`}));
+  const detailBox=el("div",{class:"detail"}); side.append(detailBox);
+  const showDetail=o=>{state.trapSel=o.i;const s=o.s;detailBox.replaceChildren(
+    el("div",{class:"lab",text:`${s.id}, anchor ${o.r.anchor?"restored":"wrong"}${DATA.meta.bertscore?", BERTScore "+fmt(o.r.bs):""}`}),
     el("div",{class:"lab",text:"Gold"}),spanTokens(s,lv,undefined,null,false),
     el("div",{class:"lab",text:MNAME[mk]}),spanTokens(s,lv,o.r.fmt?o.r.w:null,o.r.ok,false),
-    el("button",{class:"btn",onclick:()=>{state.idx=o.i;state.level=lv;state.scene=1;render();}},"Open in the repair race →"));};
+    el("div",{},el("button",{class:"btn",onclick:()=>{state.idx=o.i;state.level=lv;state.scene=1;render();}},"open in part 2")));};
+  if(!detailBox.childNodes.length)detailBox.append(el("div",{class:"lab",text:"Click a dot to read the repair."}));
   if(DATA.meta.bertscore){
-    const W=1000,H=330,pl=220,pr=24,lo=-0.6,hi=1,x=v=>pl+(v-lo)/(hi-lo)*(W-pl-pr);
+    const W=1000,H=330,pl=210,pr=24,lo=-0.6,hi=1,x=v=>pl+(v-lo)/(hi-lo)*(W-pl-pr), ybase=H-46;
     const svg=svgEl("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"Span BERTScore of each repair, by whether the anchor fact was restored"});
-    for(let t=-0.5;t<=1.0001;t+=0.25){svg.append(svgEl("line",{x1:x(t),x2:x(t),y1:20,y2:H-40,stroke:t===0?"#B9B2A3":"#E5E0D5"}));
-      const tx=svgEl("text",{x:x(t),y:H-14,"text-anchor":"middle","font-size":15,fill:"#6B7280"});tx.textContent=fmt(t,2);svg.append(tx);}
-    const rows=[[right,"anchor restored",95,"#2a78d6"],[wrong,"anchor wrong",215,"#B42318"]];
+    for(let t=-0.5;t<=1.0001;t+=0.25){svg.append(svgEl("line",{x1:x(t),x2:x(t),y1:20,y2:ybase,stroke:"#dddddd"}));
+      svg.append(svgEl("line",{x1:x(t),x2:x(t),y1:ybase,y2:ybase-6,stroke:"#0b0b0b","stroke-width":1.2}));
+      svg.append(svgText({x:x(t),y:ybase+24,"text-anchor":"middle","font-size":18,fill:"#0b0b0b"},fmt(t,2)));}
+    svg.append(svgEl("line",{x1:pl,x2:W-pr,y1:ybase,y2:ybase,stroke:"#0b0b0b","stroke-width":1.2}));
+    svg.append(svgText({x:(pl+W-pr)/2,y:H-2,"text-anchor":"middle","font-size":18,fill:"#0b0b0b"},"span BERTScore of the repair"));
+    const rows=[[right,"anchor restored",80,COLORS.bertdict],[wrong,"anchor wrong",190,COLORS.llm]];
     const medRight=right.length?right.map(o=>o.r.bs).sort((a,b)=>a-b)[Math.floor(right.length/2)]:1;
     for(const [set,name,cy,col] of rows){
-      const tx=svgEl("text",{x:pl-14,y:cy+5,"text-anchor":"end","font-size":16,fill:"#1C2533","font-weight":600});tx.textContent=`${name} (${set.length})`;svg.append(tx);
+      svg.append(svgText({x:pl-14,y:cy+6,"text-anchor":"end","font-size":19,fill:"#0b0b0b"},`${name} (${set.length})`));
       for(const o of set){const jitter=((o.i*2654435761)%1000)/1000-0.5;
         const isTrap=!o.r.anchor&&o.r.bs>=medRight;
-        const c=svgEl("circle",{cx:x(o.r.bs),cy:cy+jitter*70,r:isTrap?7.5:6,fill:o.r.anchor?col:(isTrap?col:"#fff"),stroke:col,"stroke-width":2,opacity:.85,tabindex:0,role:"button","aria-label":`${o.s.id} BERTScore ${fmt(o.r.bs)}`});
-        c.addEventListener("click",()=>showDetail(o));c.addEventListener("keydown",e=>{if(e.key==="Enter")showDetail(o);});
-        if(state.trapSel===o.i){c.setAttribute("stroke","#1C2533");c.setAttribute("stroke-width",4);}
+        const c=svgEl("circle",{cx:x(o.r.bs),cy:cy+jitter*64,r:isTrap?7:5.5,fill:o.r.anchor||isTrap?col:"#fff",stroke:col,"stroke-width":1.6,opacity:.9,tabindex:0,role:"button","aria-label":`${o.s.id} BERTScore ${fmt(o.r.bs)}`});
+        c.addEventListener("click",()=>{showDetail(o);render();});c.addEventListener("keydown",e=>{if(e.key==="Enter"){showDetail(o);render();}});
+        if(state.trapSel===o.i){c.setAttribute("stroke","#0b0b0b");c.setAttribute("stroke-width",3.5);}
         svg.append(c);}
     }
-    const t2=svgEl("text",{x:pl,y:H-40+28+12,"font-size":14,fill:"#6B7280"});t2.textContent="";svg.append(t2);
-    root.append(el("div",{class:"trap"},el("div",{class:"chart"},svg,el("p",{class:"note",style:"padding:0 12px",
-      text:"Filled red dots: a wrong anchor that still scores at or above the median of the right repairs. Click any dot to read the repair."})),side));
+    root.append(el("div",{class:"trap"},el("div",{class:"chart"},svg),side));
   } else {
     const cards=wrong.filter(o=>o.r.fmt), shownCards=state.trapAll?cards:cards.slice(0,12);
-    const gal=el("div",{class:"gallery"},...shownCards.map(o=>{
-      const L=o.s.levels[lv], j=L.slots.findIndex(x=>x[0]===o.s.anchor), w=o.r.w[j];
-      return el("button",{class:"gal",onclick:()=>showDetail(o)},el("div",{class:"lab",text:o.s.id}),
-        el("div",{class:"g",text:"gold: "+o.s.tokens[o.s.anchor]}),el("div",{class:"r",text:"repair: "+(w||"∅")}));}));
+    const tb=el("table",{class:"bt",style:"width:100%"},el("tr",{},el("th",{text:"Sentence"}),el("th",{text:"Gold anchor"}),el("th",{text:"Repair"})),
+      ...shownCards.map(o=>{const L=o.s.levels[lv], j=L.slots.findIndex(x=>x[0]===o.s.anchor), w=o.r.w[j];
+        return el("tr",{style:"cursor:pointer",onclick:()=>showDetail(o)},el("td",{class:"sid",text:o.s.id}),el("td",{text:o.s.tokens[o.s.anchor]}),el("td",{class:"nope",text:w||"∅"}));}));
     root.append(el("div",{class:"trap"},el("div",{},
-      el("p",{class:"note",style:"margin-top:0",text:`Per-repair BERTScores are not in this build (run build_demo.py --bertscore to add the dot plot). Below: wrong anchors of this method, one card per sentence (${shownCards.length} of ${cards.length}; format failures left out).`}),gal,
-      cards.length>12?el("button",{class:"btn",style:"margin-top:10px",onclick:()=>{state.trapAll=!state.trapAll;render();}},state.trapAll?"Show fewer":`Show all ${cards.length}`):null),side));
+      el("p",{class:"note",style:"margin-top:0",text:`Per-repair BERTScores are not in this build (run build_demo.py --bertscore for the dot plot). Wrong anchors of this method (${shownCards.length} of ${cards.length}; format failures left out):`}),tb,
+      cards.length>12?el("button",{class:"btn",style:"margin-top:10px",onclick:()=>{state.trapAll=!state.trapAll;render();}},state.trapAll?"show fewer":`show all ${cards.length}`):null),side));
   }
-  const t=el("table",{class:"mini"},el("tr",{},el("th",{text:"SQ3 rate (notebook 4)"}),...LEVELS.slice(1).map(l=>el("th",{text:LEVEL_NAME[l]}))),
-    ...MK.map(k=>el("tr",{},el("td",{},el("span",{style:`display:inline-block;width:14px;height:3px;background:${COLORS[k]};vertical-align:middle;margin-right:8px`}),MNAME[k]),
-      ...LEVELS.slice(1).map(l=>el("td",{text:fmt(DATA.sq3[k]?DATA.sq3[k][l]:null)})))));
-  root.append(el("div",{class:"card",style:"margin-top:18px"},t));
+  const t=el("table",{class:"bt",style:"margin-top:16px"},el("tr",{},el("th",{text:"SQ3 rate (1 − AUC), notebook 4"}),...LEVELS.slice(1).map(l=>el("th",{class:"r",text:LEVEL_NAME[l]}))),
+    ...MK.map(k=>el("tr",{style:k===mk?"font-weight:700":null},el("td",{},swatch(k),MNAME[k]),
+      ...LEVELS.slice(1).map(l=>el("td",{class:"r",text:fmt(DATA.sq3[k]?DATA.sq3[k][l]:null)})))));
+  root.append(t,caption("Figure 4","Each dot is one repair of the chosen method at this level. If span BERTScore saw facts, every dot in the lower row would lie left of every dot in the upper row. "+
+    "The SQ3 rate is the chance that a repair with the wrong anchor scores at least as high as one with the right anchor (ties count half): 0 means BERTScore always ranks the right fact higher, 0.5 means it cannot tell. "+
+    "Filled lower dots score at or above the median of the right repairs. Repairs come from different sentences, so this is a ranking diagnostic, not a controlled name swap."));
   if(state.trapSel!=null){const o=rs.find(q=>q.i===state.trapSel);if(o)showDetail(o);}
 }
 
@@ -507,32 +504,36 @@ function nearest(q,n=8){ const out=[]; let cap=Math.max(3,Math.ceil(q.length*0.6
   out.sort(byRank); return out.slice(0,n);}
 function byRank(a,b){return a[1]-b[1]||b[2]-a[2]||(a[0]<b[0]?-1:a[0]>b[0]?1:0);}
 function renderLookup(root){
-  root.append(el("p",{class:"eyebrow",text:"Scene 5 · the non-GenAI baseline"}),
-    el("h2",{text:"Try the dictionary lookup"}),
-    el("p",{class:"lede",text:"This is the entire lookup method: the closest spelling in a word list from the 443 excerpts outside the sample, ties broken by frequency, then alphabet. No context, no model, and it restores about half the anchor facts at every level."}));
-  if(!DATA.lexicon){root.append(el("div",{class:"card",text:"The word list was not built (data/raw/BLN600 missing when the demo was built)."}));return;}
+  root.append(heading("5","Dictionary lookup, the non-GenAI baseline"));
+  if(!DATA.lexicon){root.append(el("p",{text:"The word list was not built (data/raw/BLN600 missing when the demo was built)."}));return;}
   LEX=LEX||DATA.lexicon;
   const s=S[state.idx], L=s.levels[state.level==="0"?"1w":state.level];
   const presets=[...new Set(L.slots.filter(x=>!x[2]).map(x=>x[1].replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,"")).filter(Boolean))].slice(0,8);
-  const input=el("input",{type:"text",value:state.lookupWord,placeholder:"type a damaged word, e.g. Hacley","aria-label":"Damaged word",spellcheck:"false",autocomplete:"off"});
-  const list=el("div",{class:"cands"});
-  const run=()=>{state.lookupWord=input.value.trim(); list.replaceChildren();
-    if(!state.lookupWord)return; const res=nearest(state.lookupWord);
-    res.forEach(([w,d,c])=>list.append(el("div",{class:"cand"},el("span",{class:"wd",text:w}),el("span",{class:"d",text:`${d} edit${d===1?"":"s"}`}),el("span",{class:"f",text:`${c.toLocaleString()}×`}))));};
+  const input=el("input",{type:"text",value:state.lookupWord,placeholder:"type a damaged word","aria-label":"Damaged word",spellcheck:"false",autocomplete:"off"});
+  const list=el("table",{class:"bt cands"});
+  const run=()=>{state.lookupWord=input.value.trim();
+    const res=state.lookupWord?nearest(state.lookupWord):[];
+    list.replaceChildren(el("tr",{},el("th",{text:"List word"}),el("th",{class:"r",text:"Edits"}),el("th",{class:"r",text:"Count in list"})),
+      ...res.map(([w,d,c])=>el("tr",{},el("td",{class:"wd",text:w}),el("td",{class:"r",text:String(d)}),el("td",{class:"r",text:c.toLocaleString("en-US")}))));};
   input.addEventListener("input",run);
   const pre=el("div",{class:"presets"},...["Hacley","Wrighb","Curbis","Jeseph"].concat(presets).map(p=>
     el("button",{class:"btn",onclick:()=>{input.value=p;run();input.focus();}},p)));
   root.append(el("div",{class:"lookup"},el("div",{},input,pre,list),
-    el("div",{class:"card explain"},
-      el("p",{style:"margin-top:0"},el("b",{text:`${LEX.length.toLocaleString()} words`})," in the list. The presets after the first four are the damaged words of the current sentence at this level (",el("span",{class:"sid",text:s.id}),")."),
-      el("p",{},"BERT + dictionary adds the ",el("code",{text:"5"})," closest list words to BERT's own candidates and lets letter similarity (weight ",el("code",{text:"λ = 64"}),") decide; BERT's context breaks near ties and fills dropped words."),
-      el("p",{},"Where the list fails: only 77% of damaged fact words are in it (dev), and a dropped word has no letters to look up. That is where GenAI could add something, and mostly did not."))));
+    el("div",{class:"explain"},
+      el("p",{},"This is the whole method: the closest spelling (Levenshtein distance, case-sensitive) in a list of ",el("b",{text:`${LEX.length.toLocaleString("en-US")} words`}),
+        " from the gold text of the 443 excerpts outside the sample; ties go to the more frequent word. No context, no model. It restores the anchor in 51% of sentences at every level, because the anchor's damage is the same at every level."),
+      el("p",{},"BERT + dictionary adds the ",el("code",{text:"5"})," closest list words to BERT's own candidates and scores all of them by BERT's mean log-probability per piece plus ",el("code",{text:"λ = 64"}),
+        " times letter similarity: the letters decide most slots, and BERT's context breaks near ties and fills dropped words."),
+      el("p",{},"Where the list fails: it holds only 77% of the damaged fact words (dev), and a dropped word has no letters to look up."),
+      el("p",{},"Presets: the first four are fixed examples. Hacley (gold Hanley) and Wrighb (gold Wright) are from the paper; Hanley is not in the list, so the lookup cannot find it. The rest are the damaged words of sentence ",el("span",{class:"sid",text:s.id})," at this level."))));
   run();
 }
 
 // ----------------------------------------------------------------------------------------- render
 const RENDER=[renderDamage,renderRepair,renderResults,renderTrap,renderLookup];
+let lastScene=null;
 function render(){
+  if(state.scene!==lastScene){window.scrollTo(0,0);lastScene=state.scene;}
   document.querySelectorAll("nav.scenes button").forEach((b,i)=>b.setAttribute("aria-selected",String(i===state.scene)));
   document.querySelectorAll("section.scene").forEach((sec,i)=>{sec.classList.toggle("active",i===state.scene);if(i!==state.scene)sec.replaceChildren();});
   const root=document.querySelectorAll("section.scene")[state.scene]; root.replaceChildren(); RENDER[state.scene](root);

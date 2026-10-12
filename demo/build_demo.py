@@ -234,7 +234,9 @@ def check_against_notebook(sentences, ci):
                     continue
                 mean = float(np.mean([s["repairs"][lv][key][field] for s in sentences]))
                 checked += 1
-                if abs(round(mean, 2) - reported[0]) > 0.0051:
+                # per-sentence scores are stored at 3 decimals, so a mean on a rounding edge (0.525) may
+                # round the other way: allow the notebook's half-unit plus that per-sentence rounding
+                if abs(mean - reported[0]) > 0.0056:
                     bad.append(f"{metric} {key} {lv}: recomputed {mean:.3f}, notebook {reported[0]:.2f}")
     return checked, bad
 

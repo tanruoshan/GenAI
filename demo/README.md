@@ -3,13 +3,17 @@
 One offline HTML page with five scenes. It replaces most result slides: the slides keep motivation, research
 questions and the method list, and the demo shows the damage, the repairs and the results.
 
-| Key | Scene | What it shows |
+| Key | Part | What it shows |
 |---|---|---|
-| 1 | The damage | one test sentence at clean, 1 word, 10, 25, 50 and 75%; damaged words, dropped words, anchor fact |
-| 2 | The repair race | the same slot view repaired by all six methods, each slot marked right or wrong |
+| 1 | Damage | one test sentence at clean, 1 word, 10, 25, 50 and 75%; damaged words, dropped words, anchor fact |
+| 2 | Repairs | the same damaged input repaired by all six methods, each slot marked right or wrong |
 | 3 | Results | anchor recovery, Fact Recovery Rate, span BERTScore, exact words and CER with 95% intervals; click H1 to H3 |
-| 4 | The metric trap | span BERTScore of repairs with the right and the wrong anchor (H3), and the SQ3 rates |
-| 5 | Try the lookup | the dictionary baseline, live: type a damaged word and see the closest list words |
+| 4 | BERTScore vs. facts | span BERTScore of repairs with the right and the wrong anchor (H3, SQ3), and the SQ3 rates |
+| 5 | Lookup | the dictionary baseline, live: type a damaged word and see the closest list words |
+
+The page copies the look of the paper on purpose, so the demo reads as the paper's figures made interactive:
+Times, black rules and booktabs tables as on the ACL page, the Okabe-Ito colours and markers of the paper's
+Figure 2, and the viridis level colours of its Figure 1. Every part ends with a caption in the paper's style.
 
 Other keys: left and right arrows change the level, up and down the sentence, Space plays the levels, R picks a
 random sentence. Escape leaves a text box.
