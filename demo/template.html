@@ -306,7 +306,7 @@ function stepRepairs(root){
 const HYPS=[
   {id:"H1",vtext:"partly supported (descriptively)",text:"Quality falls as damage grows, but Fact Recovery Rate does not fall faster than BERTScore (BERT + dict.: FRR 0.58 to 0.48, span BERTScore 0.77 to 0.40).",metric:"frr",uses:["frr","bs","exact"]},
   {id:"H2",vtext:"not supported for the tested pair",text:"The few-shot LLM never restores more facts than BERT + dictionary, and significantly fewer anchors at 50% and 75%.",metric:"anchor",uses:["anchor","bs","frr"]},
-  {id:"H2b",vtext:"not supported for the tested pair",text:"The LLM does not beat the dictionary lookup on facts at any level and loses to it at 50% and 75%.",metric:"anchor",uses:["anchor","bs","frr"]},
+  {id:"H2b",vtext:"not supported for the tested pair",text:"The LLM does not beat the dictionary lookup on facts at any level and loses to it at 50% and 75%. Its only significant advantage: span BERTScore at 10%.",metric:"anchor",uses:["anchor","bs","frr"]},
   {id:"H3",vtext:"supported beyond one word",text:"A wrong-fact repair scores at least as high in span BERTScore as a right-fact repair in 11% to 45% of pairs. Click again for step 4.",metric:"bs",uses:["bs","anchor"]},
 ];
 const METRIC_NAMES={frr:"Fact Recovery Rate",anchor:"Anchor recovery",bs:"Span BERTScore",exact:"Exact words",cer:"Span CER"};
@@ -333,7 +333,9 @@ function stepResults(root){
       `lookup ${range(a("lookup").map(v=>v*100))}%, LLM ${pct(a("llm")[0])} to ${pct(a("llm")[4])}, significantly below BERT + dict. at ${sig.join(" and ")}. `+
       `The LLM's drop goes with answers in the wrong format: ${fails["50"].fail+fails["75"].fail} of 300 at 50% and 75% (dotted line: the LLM over its valid answers only).`}),
     el("p",{class:"cap",text:`150 test sentences per level, 95% bootstrap intervals over sentences, from the single test run (notebook 4; paper, Table 6 and Fig. 2). `+
-      `Click a hypothesis to see its measure; H2 and H2b also show their paired test above each level. Contamination probe: ${DATA.probe.near} of ${DATA.probe.n} test sentences continued near-verbatim by the LLM.`}),
+      `Click a hypothesis to see its measure; H2 and H2b also show their paired test above each level. `+
+      `The tests use the anchor because it is one fact per sentence and the same word at every level, so each comparison is paired and right-or-wrong; `+
+      `the number of facts per sentence varies, so the Fact Recovery Rate is reported without a test. Contamination probe: ${DATA.probe.near} of ${DATA.probe.n} test sentences continued near-verbatim by the LLM.`}),
     reviewNote("3"));
 }
 
