@@ -15,6 +15,7 @@ Inputs (nothing is sent to a model, nothing is re-tuned):
 The page embeds BLN600 text (CC BY-NC-ND), so demo/out/ is git-ignored: build it locally, never commit it.
 """
 import argparse
+import base64
 import hashlib
 import json
 import re
@@ -267,6 +268,26 @@ def lexicon_counts(rows, lexicon_json):
     return dict(counts)
 
 
+# The paper's fonts, embedded so the page looks the same on every machine and offline: TeX Gyre Termes (the
+# OpenType version of Nimbus Roman, the paper's Times) and Inconsolata (the paper's typewriter font).
+# Licences: demo/fonts/GUST-FONT-LICENSE.txt and demo/fonts/OFL-Inconsolata.txt.
+FONT_FACES = [("TeX Gyre Termes", "normal", "normal", "texgyretermes-regular.otf"),
+              ("TeX Gyre Termes", "bold", "normal", "texgyretermes-bold.otf"),
+              ("TeX Gyre Termes", "normal", "italic", "texgyretermes-italic.otf"),
+              ("Inconsolata", "normal", "normal", "Inconsolatazi4-Regular.otf")]
+
+
+def font_faces():
+    css = []
+    for family, weight, style, name in FONT_FACES:
+        path = HERE / "fonts" / name
+        if path.exists():
+            data = base64.b64encode(path.read_bytes()).decode("ascii")
+            css.append(f'@font-face{{font-family:"{family}";font-weight:{weight};font-style:{style};'
+                       f'src:url(data:font/otf;base64,{data}) format("opentype")}}')
+    return "\n".join(css)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--bertscore", action="store_true", help="compute span BERTScore per repair (cached)")
@@ -310,11 +331,11 @@ def main(argv=None):
                 rs = [s["repairs"][lv][key] for s in sentences]
                 sq3_live.setdefault(key, {})[lv] = round(wrong_fact_rate([r["bs"] for r in rs], [r["anchor"] for r in rs]), 3)
     figs = {}
+    valid = valid_only(sentences)
     if has_bs:
-        from talk_figures import levels_figure, strip_figure
+        from talk_figures import all_figures
         assert TALK["id"] in by_id, "the talk sentence is not in the test split"
-        figs = {"levels": levels_figure(nb4["ci"], nb4["tests"]),
-                "strip": strip_figure(sentences, TALK["trap_method"], TALK["level"], TALK["id"], "BART")}
+        figs = all_figures(nb4["ci"], valid, nb4["tests"], sentences, TALK)
     llm_model = yaml.safe_load((ROOT / "configs" / "llm.yaml").read_text(encoding="utf-8"))["model"]
     probe = load_preds(ROOT / "runs" / "preds" / f"llm_probe_v1-{llm_model}-{SPLIT}.jsonl")
     probe_rows = [json.loads(p["raw_output"]) for p in probe]
@@ -328,7 +349,7 @@ def main(argv=None):
         "sentences": sentences,
         "featured": manual_ids(sorted(by_id), seed),
         "ci": nb4["ci"], "tests": nb4["tests"], "sq3": nb4["sq3"], "sq3_live": sq3_live,
-        "valid": valid_only(sentences),
+        "valid": valid,
         "probe": {"n": len(probe_rows), "near": sum(int(p.get("near_verbatim", 0)) for p in probe_rows),
                   "median": round(float(np.median([p["similarity"] for p in probe_rows])), 2) if probe_rows else None,
                   "max": round(float(max(p["similarity"] for p in probe_rows)), 2) if probe_rows else None},
@@ -337,6 +358,7 @@ def main(argv=None):
     }
     blob = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     page = (HERE / "template.html").read_text(encoding="utf-8").replace("/*__PAYLOAD__*/null", blob)
+    page = page.replace("/*__FONTS__*/", font_faces())
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(page, encoding="utf-8")
