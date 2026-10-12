@@ -33,6 +33,7 @@ METRICS = {"frr": ("Fact Recovery Rate", True), "anchor": ("Anchor recovery", Tr
            "bs": ("Span BERTScore", False), "exact": ("Exact words", True),
            "cer": ("Span CER after repair (lower is better)", True)}
 PAIRS = {"H2": ("bertdict", "llm", "BERT + dict. vs. LLM"), "H2b": ("llm", "lookup", "LLM vs. lookup")}
+SHORT = {"bertdict": "BERT + dict.", "llm": "LLM", "lookup": "lookup"}
 
 
 def _style():
@@ -95,11 +96,18 @@ def metric_figure(ci, valid, tests, metric, hyp=None):
     if hyp and metric in ("anchor", "bs"):
         a, b, label = PAIRS[hyp]
         field = "mcnemar_holm" if metric == "anchor" else "wilcoxon_holm"
+        # who is ahead: sentences where only one of the pair restores the anchor, or scores higher
+        counts = "anchor_only" if metric == "anchor" else "bs_higher"
         top = ax.get_ylim()[1]
+        y = top * 0.93 if metric == "anchor" else top - 0.08
         for i, lv in enumerate(LEVELS):
             t = next(t for t in tests if t["pair"] == [a, b] and t["level"] == lv)
-            ax.text(i, top * 0.93 if metric == "anchor" else top - 0.08, _p(t[field]), ha="center", fontsize=13,
-                    style="italic", color=INK if t[field] < 0.05 else "#8a8a8a")
+            sig = t[field] < 0.05
+            ax.text(i, y, _p(t[field]), ha="center", fontsize=13, style="italic", color=INK if sig else "#8a8a8a")
+            if sig:
+                ahead = a if t[counts][0] > t[counts][1] else b
+                ax.text(i, y - (top - ax.get_ylim()[0]) * 0.055, f"{SHORT[ahead]} ahead", ha="center", fontsize=11.5,
+                        color=INK)
         ax.set_title(f"{label}, Holm-adjusted {'McNemar' if metric == 'anchor' else 'Wilcoxon'} test",
                      loc="right", color=MUTED, fontsize=12)
     handles, labels = ax.get_legend_handles_labels()
@@ -117,14 +125,15 @@ def strip_figure(sentences, method, level, method_name, highlight_id=None):
     rows = [(s["repairs"][level][method]["bs"], s["repairs"][level][method]["anchor"], s["id"]) for s in sentences]
     fig, ax = plt.subplots(figsize=(11.5, 3.5))
     rng = np.random.default_rng(0)
-    for ok, y, color, label in [(1, 1, "#0072B2", "anchor restored"), (0, 0, "#D55E00", "anchor wrong")]:
+    # neutral ink: filled = anchor restored, hollow = anchor wrong (the method colours mean methods elsewhere)
+    for ok, y, color, label in [(1, 1, "#333333", "anchor restored"), (0, 0, "#333333", "anchor wrong")]:
         pts = [(bs, sid) for bs, a, sid in rows if a == ok]
         xs = np.array([bs for bs, _ in pts])
         ys = y + rng.uniform(-0.22, 0.22, len(xs))
         ax.scatter(xs, ys, s=46, facecolors=color if ok else "none", edgecolors=color, linewidths=1.4, zorder=3)
         for (bs, sid), yy in zip(pts, ys):
             if sid == highlight_id:
-                ax.scatter([bs], [yy], s=260, facecolors="none", edgecolors=INK, linewidths=1.8, zorder=4)
+                ax.scatter([bs], [yy], s=320, facecolors="none", edgecolors=INK, linewidths=2.4, zorder=4)
     n_ok = sum(a for _, a, _ in rows)
     ax.set_yticks([0, 1], [f"anchor wrong ({len(rows) - n_ok})", f"anchor restored ({n_ok})"])
     ax.set_ylim(-0.6, 1.6)

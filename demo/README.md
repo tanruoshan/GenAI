@@ -16,7 +16,8 @@ minute summary and the place to dig deeper during the discussion: every step can
 Each step has a plain claim, one sentence on why we did it this way, the visual, and small controls. Right
 arrow, Space or a presenter's clicker (PageDown) goes forward (in step 1 through the levels, in step 2 to the
 BERTScore view), left arrow or PageUp back, 1 to 6 jump to a step. P plays the levels, R picks a random sentence,
-up and down change the sentence (steps 1 and 2). The bar at the bottom does the same with the mouse.
+up and down change the sentence (steps 1 and 2). The bar at the bottom does the same with the mouse. After
+typing in the lookup box (step 5), press Escape or click outside it before the keys move again.
 
 **Review notes.** Orange "To confirm" boxes mark points the team still has to agree on. N hides them; before
 the defence set `REVIEW = false` in `template.html` and rebuild.
@@ -49,7 +50,8 @@ python demo/build_demo.py              # without BERTScore: no figures (steps 3 
 ```
 
 The page is written to `demo/out/bln600_demo.html`. Open it in any browser; it needs no server and no internet.
-On a 1280 x 720 projector, use full screen (F11, or Cmd+Ctrl+F on a Mac) and zoom out once if a step does not fit.
+On a 1280 x 720 projector, use full screen (F11, or Cmd+Ctrl+F on a Mac) and zoom out once (Ctrl or Cmd and
+minus) if a step does not fit; steps 2 to 5 may still need a short scroll.
 
 ## Where the numbers come from
 
