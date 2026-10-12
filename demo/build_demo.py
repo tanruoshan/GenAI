@@ -38,6 +38,9 @@ OUT = HERE / "out"
 NOTEBOOK = ROOT / "notebooks" / "04_evaluation.ipynb"
 LEVELS = ["1w", "10", "25", "50", "75"]
 SPLIT = "test"
+# the talk mode walks through one sentence: at 25% only BERT + dictionary restores its anchor, and BART's fluent
+# wrong name gets the higher span BERTScore (0.55 against 0.15)
+TALK = {"id": "3206257161-020", "level": "25", "trap_method": "bart"}
 
 # notebook-4 name -> (short key, display name, role). Order = the fixed colour order of the demo.
 METHODS = [
@@ -306,6 +309,12 @@ def main(argv=None):
             for lv in LEVELS[1:]:
                 rs = [s["repairs"][lv][key] for s in sentences]
                 sq3_live.setdefault(key, {})[lv] = round(wrong_fact_rate([r["bs"] for r in rs], [r["anchor"] for r in rs]), 3)
+    figs = {}
+    if has_bs:
+        from talk_figures import levels_figure, strip_figure
+        assert TALK["id"] in by_id, "the talk sentence is not in the test split"
+        figs = {"levels": levels_figure(nb4["ci"], nb4["tests"]),
+                "strip": strip_figure(sentences, TALK["trap_method"], TALK["level"], TALK["id"], "BART")}
     llm_model = yaml.safe_load((ROOT / "configs" / "llm.yaml").read_text(encoding="utf-8"))["model"]
     probe = load_preds(ROOT / "runs" / "preds" / f"llm_probe_v1-{llm_model}-{SPLIT}.jsonl")
     probe_rows = [json.loads(p["raw_output"]) for p in probe]
@@ -323,6 +332,7 @@ def main(argv=None):
         "probe": {"n": len(probe_rows), "near": sum(int(p.get("near_verbatim", 0)) for p in probe_rows),
                   "median": round(float(np.median([p["similarity"] for p in probe_rows])), 2) if probe_rows else None,
                   "max": round(float(max(p["similarity"] for p in probe_rows)), 2) if probe_rows else None},
+        "talk": TALK, "figs": figs,
         "lexicon": sorted(lex.items(), key=lambda kv: (-kv[1], kv[0])) if lex else None,
     }
     blob = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")

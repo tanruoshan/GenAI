@@ -15,7 +15,14 @@ The page copies the look of the paper on purpose, so the demo reads as the paper
 Times, black rules and booktabs tables as on the ACL page, the Okabe-Ito colours and markers of the paper's
 Figure 2, and the viridis level colours of its Figure 1. Every part ends with a caption in the paper's style.
 
-Other keys: left and right arrows change the level, up and down the sentence, Space plays the levels, R picks a
+**Talk mode** (opens first; `T` switches between talk mode and the five explorer parts): five steps for the
+5 to 10 minute summary, one claim each, on one test sentence (`TALK` in `build_demo.py`). Right arrow, Space or
+a presenter's clicker (PageDown) goes forward, left arrow or PageUp back, Home to the start. Step 1 plays the
+damage levels, step 2 shows the repairs and then their BERTScore, steps 3 and 4 show two matplotlib figures in
+the paper's style (`demo/talk_figures.py`, built only with `--bertscore`), step 5 the answers to the hypotheses.
+Every number in a claim is read from the data. The explorer stays one key away for the discussion.
+
+Other keys (explorer): left and right arrows change the level, up and down the sentence, Space plays the levels, R picks a
 random sentence. Escape leaves a text box.
 
 ## Build

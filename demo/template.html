@@ -129,6 +129,24 @@ table.cands tr:first-child td{font-weight:700}
 .explain p{margin:0 0 10px}
 .explain code{font-family:var(--mono);font-size:.85em}
 
+/* talk mode: one claim per frame, large type, few controls */
+body.talking header nav.scenes,body.talking footer{display:none}
+body.talking header{border-bottom:0}
+.talk{max-width:1280px;margin:0 auto}
+.talk .kicker{color:var(--muted);font-size:20px;margin:6px 0 4px}
+.talk .claim{font-size:40px;line-height:1.15;font-weight:700;margin:0 0 18px;max-width:1180px}
+.talk .sub{font-size:22px;color:var(--ink2);margin:14px 0 0;max-width:1180px}
+.talk .sentence{font-size:31px}
+.talk .tok.dmg,.talk .tok.drop{font-size:26px}
+.talk .fig svg{width:100%;height:auto;max-height:50vh;display:block}
+.talk table.race .span-line{font-size:23px;line-height:1.5}
+.talk table.race td{padding:7px 14px}
+.talk .seg button{font-size:20px;padding:4px 14px}
+.talk td.hi{font-weight:700;font-size:24px}
+.talk ul.take{font-size:26px;line-height:1.35;margin:0;padding-left:1.1em}
+.talk ul.take li{margin:0 0 12px}
+.talk .lim{font-size:19px;color:var(--muted);margin-top:22px;border-top:.75px solid var(--hair);padding-top:10px}
+.progress{position:fixed;right:24px;bottom:14px;font-size:16px;color:var(--muted)}
 footer{padding:10px 32px 16px;color:var(--muted);font-size:15px;max-width:1440px;margin:0 auto;width:100%;border-top:.75px solid var(--hair)}
 kbd{font-family:var(--mono);font-size:13px;border:1px solid #999;padding:0 4px;background:#fff}
 @media (max-height:860px){main{padding:12px 28px 18px}h2{font-size:23px;margin-bottom:8px}.cap{font-size:15.5px}
@@ -142,6 +160,7 @@ kbd{font-family:var(--mono);font-size:13px;border:1px solid #999;padding:0 4px;b
   <nav class="scenes" role="tablist" aria-label="Parts"></nav>
 </header>
 <main>
+  <section id="s-talk"></section>
   <section class="scene" id="s-damage"></section>
   <section class="scene" id="s-repair"></section>
   <section class="scene" id="s-results"></section>
@@ -191,7 +210,7 @@ function swatch(k){ // legend swatch: a short line with the method's marker
   const m=marker(MARK[k],13,7,4,COLORS[k]); if(m)s.append(m); return s;
 }
 
-const state={scene:0,idx:Math.max(0,byId[DATA.featured[0]]??0),level:"25",filter:"all",
+const state={mode:DATA.figs&&DATA.figs.levels?"talk":"explore",frame:0,scene:0,idx:Math.max(0,byId[DATA.featured[0]]??0),level:"25",filter:"all",
   metric:"anchor",shown:new Set(["bertdict","llm","lookup","bart","none"]),validOnly:false,hyp:null,
   trapLevel:"25",trapMethod:"bart",trapSel:null,trapAll:false,lookupWord:"Hacley",full:false,playing:null};
 
@@ -221,7 +240,7 @@ function buildNav(){
     `Intervals, tests and SQ3 rates are read from the single executed test run (notebooks/04_evaluation.ipynb); per-sentence repairs from runs/preds/, `+
     (meta.mismatches.length?`${meta.mismatches.length} of ${meta.checked} recomputed means DIFFER from notebook 4. `:`all ${meta.checked} recomputed means match notebook 4. `),
     el("kbd",{text:"1"}),"–",el("kbd",{text:"5"})," parts, ",el("kbd",{text:"←"}),el("kbd",{text:"→"})," level, ",
-    el("kbd",{text:"↑"}),el("kbd",{text:"↓"})," sentence, ",el("kbd",{text:"Space"})," play levels, ",el("kbd",{text:"R"})," random.");
+    el("kbd",{text:"↑"}),el("kbd",{text:"↓"})," sentence, ",el("kbd",{text:"Space"})," play levels, ",el("kbd",{text:"R"})," random",DATA.figs&&DATA.figs.levels?[", ",el("kbd",{text:"T"})," talk mode."]:".");
 }
 function heading(no,text){return el("h2",{},el("span",{class:"no",text:no}),text);}
 function caption(label,...kids){return el("p",{class:"cap"},el("b",{text:label+": "}),...kids);}
@@ -284,10 +303,10 @@ function renderDamage(root){
 }
 
 // ----------------------------------------------------------------------------- scene 2: repairs
-function spanTokens(s,lv,words,ok,showCtx){
+function spanTokens(s,lv,words,ok,showCtx,ctx=3){
   const L=s.levels[lv], [a,b]=L.span, wrap=el("div",{class:"span-line"});
   const slotIdx=Object.fromEntries(L.slots.map((x,j)=>[x[0],j]));
-  const from=showCtx?0:Math.max(0,a-3), to=showCtx?s.tokens.length:Math.min(s.tokens.length,b+3);
+  const from=showCtx?0:Math.max(0,a-ctx), to=showCtx?s.tokens.length:Math.min(s.tokens.length,b+ctx);
   if(from>0)wrap.append(el("span",{class:"ctx",text:"… "}));
   for(let i=from;i<to;i++){
     const j=slotIdx[i];
@@ -529,11 +548,87 @@ function renderLookup(root){
   run();
 }
 
+// ------------------------------------------------------------------------------------------ talk mode
+// Five steps for the talk, one claim each, shown on the talk sentence (DATA.talk). Every number in a claim is
+// read from the data, never typed in. The explorer (parts 1 to 5) stays one key away for the discussion.
+const TALK_MAIN=["bertdict","llm","lookup","bart"];
+function talkSentence(){return S[byId[DATA.talk.id]];}
+function talkFrames(){
+  const f=[];
+  ["0"].concat(LEVELS).forEach(l=>f.push({step:1,level:l}));
+  f.push({step:2,bs:false},{step:2,bs:true},{step:3},{step:4},{step:5});
+  return f;
+}
+const range=(a,d=0)=>{const lo=Math.min(...a),hi=Math.max(...a);return lo===hi?fmt(lo,d):`${fmt(lo,d)} to ${fmt(hi,d)}`;};
+function talkFrame(root,fr,total,pos){
+  const s=talkSentence(), tl=DATA.talk.level, box=el("div",{class:"talk"});
+  const kick=n=>el("div",{class:"kicker",text:`${n} of 5`});
+  if(fr.step===1){
+    const lv=fr.level, L=lv==="0"?null:s.levels[lv], tint=L?LEVEL_COL[lv][1]:null;
+    const slots=L?Object.fromEntries(L.slots.map(([i,out,d])=>[i,{out,d}])):{};
+    const sent=el("p",{class:"sentence"});
+    s.tokens.forEach((t,i)=>{const sl=slots[i];let cls="tok"+(sl?(sl.d?" drop":" dmg"):"")+(i===s.anchor?" anchor":"");
+      sent.append(el("span",{class:cls,style:sl?`background:${tint}`:null,text:sl?(sl.d?"⟨?⟩":sl.out):t})," ");});
+    const k=L?L.slots.length:0, nd=L?L.slots.filter(x=>x[2]).length:0;
+    box.append(kick(1),el("h2",{class:"claim",text:"We damage one fact and the words around it, from one word to 75% of the sentence"}),
+      el("div",{class:"controls"},levelButtons(["0"].concat(LEVELS),lv,l=>{state.frame=talkFrames().findIndex(q=>q.step===1&&q.level===l);render();})),sent,
+      el("p",{class:"sub",text:L?`${LEVEL_NAME[lv]}: ${k} of ${s.tokens.length} words damaged${nd?`, ${nd} dropped (⟨?⟩)`:""}, span CER ${pct(L.cer)}. The boxed anchor fact looks the same at every level.`
+        :"A sentence from a London crime report, 1834 to 1894 (BLN600). Boxed: the anchor fact we track."}));
+  } else if(fr.step===2){
+    const R=s.repairs[tl], L=s.levels[tl];
+    const right=TALK_MAIN.filter(k=>R[k].anchor).map(k=>MNAME[k]);
+    const claim=fr.bs
+      ?`BERTScore follows the common words: ${fmt(R.bart.bs)} for the wrong name, ${fmt(R.bertdict.bs)} for the right one`
+      :`Same input for all: ${right.length?"only "+right.join(" and "):"no method"} restores the name`;
+    const head=el("tr",{},el("th",{text:"Method"}),el("th",{text:`Repaired span, ${LEVEL_NAME[tl]} damage`}),el("th",{class:"r",text:"Anchor"}),fr.bs?el("th",{class:"r",text:"Words right"}):null,fr.bs?el("th",{class:"r",text:"BERTScore"}):null);
+    const rows=[el("tr",{class:"gold"},el("td",{class:"m"},el("span",{style:"display:inline-block;width:34px"}),"Gold"),el("td",{},spanTokens(s,tl,undefined,null,false,1)),el("td",{}),fr.bs?el("td",{}):null,fr.bs?el("td",{}):null),
+      el("tr",{},el("td",{class:"m"},swatch("none"),"Damaged input"),el("td",{},spanTokens(s,tl,null,null,false,1)),el("td",{}),fr.bs?el("td",{}):null,fr.bs?el("td",{class:"r",text:fmt(L.bs_none)}):null)];
+    TALK_MAIN.forEach((k,n)=>{const r=R[k];rows.push(el("tr",{class:n===0?"mid":""},el("td",{class:"m"},swatch(k),MNAME[k]),
+      el("td",{},r.fmt?null:el("span",{class:"fail",text:"format failure:"}),spanTokens(s,tl,r.fmt?r.w:null,r.ok,false,1)),
+      el("td",{class:"r"},el("span",{class:r.anchor?"yes":"nope",text:r.anchor?"right":"wrong"})),
+      fr.bs?el("td",{class:"r",text:`${r.ok.filter(Boolean).length} of ${r.ok.length}`}):null,
+      fr.bs?el("td",{class:"r"+(k==="bart"||k==="bertdict"?" hi":""),text:fmt(r.bs)}):null));});
+    box.append(kick(2),el("h2",{class:"claim",text:claim}),el("table",{class:"bt race"},head,...rows),
+      el("p",{class:"sub",text:fr.bs?`BART restores ${R.bart.ok.filter(Boolean).length} of ${R.bart.ok.length} words but not the name; BERT + dict. ${R.bertdict.ok.filter(Boolean).length} of ${R.bertdict.ok.length}, including the name. A span-level similarity counts the fact as one word among many.`
+        :"Every method sees the intact context and the damaged words, never the gold words. Green: restored exactly; red: wrong; box: the anchor."}));
+  } else if(fr.step===3){
+    const a=k=>LEVELS.map(l=>DATA.ci.anchor[k][l][0]);
+    const t=DATA.tests.filter(q=>q.pair[0]==="bertdict"&&q.pair[1]==="llm"&&q.mcnemar_holm<0.05).map(q=>LEVEL_NAME[q.level]);
+    box.append(kick(3),el("h2",{class:"claim",text:"No breakpoint, but a ceiling: the best method restores about half the facts at every level"}),
+      el("div",{class:"fig"}),
+      el("p",{class:"sub",text:`Anchor restored, 1 word to 75%: BERT + dict. ${pct(a("bertdict")[0])} to ${pct(a("bertdict")[4])}, lookup ${range(a("lookup").map(v=>v*100))}%, `+
+        `LLM ${pct(a("llm")[0])} to ${pct(a("llm")[4])}, significantly below BERT + dict. at ${t.join(" and ")}. The LLM's drop goes with format failures: `+
+        `${DATA.valid.llm["50"].fail+DATA.valid.llm["75"].fail} of its 300 answers at 50% and 75%. 150 sentences per level, 95% bootstrap intervals.`}));
+    box.querySelector(".fig").innerHTML=DATA.figs.levels;
+  } else if(fr.step===4){
+    const tm=DATA.talk.trap_method, main=TALK_MAIN.flatMap(k=>LEVELS.slice(1).map(l=>DATA.sq3[k][l]));
+    box.append(kick(4),el("h2",{class:"claim",text:"BERTScore does not see the fact: many wrong-fact repairs score as high as right ones"}),
+      el("div",{class:"fig"}),
+      el("p",{class:"sub",text:`Every BART repair at ${LEVEL_NAME[tl]}; circled: the example. The chance that a wrong-fact repair scores at least as high as a right-fact one is `+
+        `${fmt(DATA.sq3[tm][tl])} here and ${range(main,2)} for the four methods beyond one word (0 = BERTScore sees the fact, 0.5 = it cannot tell).`}));
+    box.querySelector(".fig").innerHTML=DATA.figs.strip;
+  } else {
+    box.append(kick(5),el("h2",{class:"claim",text:"The letters carry the repair: GenAI should suggest, not rewrite"}),
+      el("ul",{class:"take"},
+        el("li",{},el("b",{text:"H1, partly: "}),"quality falls with damage, but facts do not fall faster than BERTScore."),
+        el("li",{},el("b",{text:"H2 and H2b, not supported: "}),"the few-shot LLM restores no more facts than BERT + dictionary or a plain lookup."),
+        el("li",{},el("b",{text:"H3, supported beyond one word: "}),"BERTScore overstates repair; report a fact-level score next to it."),
+        el("li",{},el("b",{text:"In practice: "}),"propose repairs from the garbled letters, show ranked alternatives, and let the historian decide.")),
+      el("p",{class:"lim",text:"Limits: synthetic damage in a known span, one LLM, one prompt, one damage draw and one training seed; real damaged pages remain untested."}));
+  }
+  root.append(box,el("div",{class:"progress",text:`${pos+1}/${total} · T: explorer`}));
+}
+function renderTalk(root){const f=talkFrames();state.frame=Math.max(0,Math.min(f.length-1,state.frame));talkFrame(root,f[state.frame],f.length,state.frame);}
+
 // ----------------------------------------------------------------------------------------- render
 const RENDER=[renderDamage,renderRepair,renderResults,renderTrap,renderLookup];
 let lastScene=null;
 function render(){
-  if(state.scene!==lastScene){window.scrollTo(0,0);lastScene=state.scene;}
+  const where=state.mode==="talk"?"talk":state.scene;
+  if(where!==lastScene){window.scrollTo(0,0);lastScene=where;}
+  document.body.classList.toggle("talking",state.mode==="talk");
+  const talk=$("#s-talk"); talk.replaceChildren();
+  if(state.mode==="talk"){document.querySelectorAll("section.scene").forEach(sec=>{sec.classList.remove("active");sec.replaceChildren();});renderTalk(talk);return;}
   document.querySelectorAll("nav.scenes button").forEach((b,i)=>b.setAttribute("aria-selected",String(i===state.scene)));
   document.querySelectorAll("section.scene").forEach((sec,i)=>{sec.classList.toggle("active",i===state.scene);if(i!==state.scene)sec.replaceChildren();});
   const root=document.querySelectorAll("section.scene")[state.scene]; root.replaceChildren(); RENDER[state.scene](root);
@@ -541,6 +636,13 @@ function render(){
 document.addEventListener("keydown",e=>{
   if(e.target.matches("input,select,textarea")){if(e.key==="Escape")e.target.blur();return;}
   if(e.ctrlKey||e.metaKey||e.altKey)return;
+  if(e.key.toLowerCase()==="t"&&DATA.figs&&DATA.figs.levels){state.mode=state.mode==="talk"?"explore":"talk";stopPlay();render();e.preventDefault();return;}
+  if(state.mode==="talk"){ // arrows, space and a presenter's clicker (PageDown / PageUp)
+    if(["ArrowRight","ArrowDown","PageDown"," ","Enter"].includes(e.key)){state.frame++;render();e.preventDefault();}
+    else if(["ArrowLeft","ArrowUp","PageUp","Backspace"].includes(e.key)){state.frame--;render();e.preventDefault();}
+    else if(e.key==="Home"){state.frame=0;render();e.preventDefault();}
+    else if(/^[1-5]$/.test(e.key)){state.mode="explore";state.scene=+e.key-1;render();e.preventDefault();}
+    return;}
   if(/^[1-5]$/.test(e.key)){e.preventDefault();state.scene=+e.key-1;render();}
   else if(e.key==="ArrowRight"||e.key==="ArrowLeft"){const seq=(state.scene===0?["0"]:[]).concat(LEVELS);let i=seq.indexOf(state.level);
     i=Math.max(0,Math.min(seq.length-1,i+(e.key==="ArrowRight"?1:-1)));stopPlay();state.level=seq[i];render();e.preventDefault();}
