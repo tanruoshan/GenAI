@@ -67,6 +67,39 @@ minus) if a step does not fit; steps 2 to 5 may still need a short scroll.
 - Span BERTScore per repair uses the notebook's settings (`roberta-large`, baseline rescaled) and is cached in
   `demo/out/bertscore_span.json`.
 
+## Working on the demo (for teammates and coding agents)
+
+The project's decision log is not in this repository, so this section is the context you need.
+
+**Rules that must not be broken**
+- Every number on the page comes from the single test run of `notebooks/04_evaluation.ipynb` (read from its
+  stored outputs) or is recomputed from `runs/preds/` with the notebook's own scoring. Never run notebook 4 on
+  the test split again, and never type a number into the page by hand.
+- The build checks 90 recomputed means against notebook 4 and stops if one differs. A build that does not
+  end with "0 differ" must not be shown.
+- Claims must stay within the paper: the hypothesis verdicts as in its Section 5, "best *main* method" (the
+  LLM + article variant is an upper bound, not a main method), BART descriptive only (trained on our own
+  damage), the LLM result tied to one model and one prompt, the damage synthetic and its location known.
+- `demo/out/` holds BLN600 text. Never commit or upload it; this repository is public.
+
+**Where things are**
+- All on-page text (claims, "Why" lines, captions, hypothesis texts) is in `demo/template.html`, one function
+  per step (`stepDamage` ... `stepSummary`) and the `HYPS` list. The orange review notes are `REVIEW_NOTES`.
+- The example sentence of steps 1, 2 and 4 is `TALK` in `demo/build_demo.py`. It was chosen because BERT +
+  dict. and BART restore the same number of words there and only BART gets the name wrong.
+- Figures: `demo/talk_figures.py`. They are drawn at build time; `python demo/build_demo.py` reuses the
+  BERTScore cache in `demo/out/`.
+
+**After any change**
+1. `python demo/build_demo.py` and check "0 differ".
+2. `python -m pytest -q tests/test_demo_build.py`.
+3. Open the page, click through all six steps (with and without the notes, N), and check that no "null",
+   "undefined" or "NaN" appears and that step 3's hypotheses and measures still link both ways.
+
+**State (12 Oct 2026)** The page has been checked against the paper's Tables 6 and 7 and notebook 4 by three
+independent reviews; their fixes are in the git log of this branch. Open are only the team's "To confirm"
+notes. Before the defence: set `let REVIEW=true` to `false` in `template.html`, rebuild, and present that file.
+
 ## Licence
 
 BLN600 is CC BY-NC-ND 4.0. `demo/out/` holds BLN600 text and is git-ignored: show the page, do not commit or
