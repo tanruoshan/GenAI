@@ -51,7 +51,11 @@ def _svg(fig):
 
 
 def _p(p):
-    return "p < .001" if p < 0.001 else ("n.s." if p >= 0.05 else f"p = {p:.3f}".replace("0.", "."))
+    if p < 0.001:
+        return "p < .001"
+    if p < 0.01:  # e.g. 0.0098 would round to ".010"
+        return "p < .01"
+    return "n.s." if p >= 0.05 else f"p = {p:.3f}".replace("0.", ".")
 
 
 def metric_figure(ci, valid, tests, metric, hyp=None):

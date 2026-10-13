@@ -182,9 +182,9 @@ const state={step:0,dmg:0,reveal:false,idx:byId[DATA.talk.id]??0,level:DATA.talk
 // Open points for the team, drawn like LaTeX todonotes. Set REVIEW to false (or press N) once they are settled.
 let REVIEW=true;
 const REVIEW_NOTES={
-  "2b":"BART and BERT + dict. both restore 7 of 9 words; only BART's name is wrong (Hele for Hassell), and BART still scores higher. OK to show it this way?",
+  "2b":"Both restore 7 of 9 words, but not the same: BART gets 'A' (BERT + dict.: 'S -OR') and misses the name (Hele for Hassell). Part of BART's higher score comes from 'A man'; the point is that the wrong name costs BART little. OK?",
   "3":"Title now names BERT + dictionary (Bea). 'About half': its anchor recovery 53 to 58%, Fact Recovery Rate 48 to 58%. 'On equal input' leaves out the LLM + article upper bound. OK?",
-  "4":"Opens on BART at 25% (BART is descriptive in the paper). Open on BERT + dict. instead (rate 0.33 there)?",
+  "4":"Opens on BART at 25% (BART is descriptive in the paper). Open on BERT + dict. instead (33% there)?",
   "6":"Closing: direct answer first, then our hedged reading ('the letters carry most of this', paper). Bea: OK with historians named as the target group (now added in steps 1 and 6). Shan?"};
 const reviewNote=key=>REVIEW&&REVIEW_NOTES[key]?el("div",{class:"todo"},el("b",{text:"To confirm: "}),REVIEW_NOTES[key]):null;
 
@@ -297,10 +297,10 @@ function stepRepairs(root){
       el("label",{class:"chk"},el("input",{type:"checkbox",checked:state.reveal,onchange:e=>{state.reveal=e.target.checked;render();}}),"BERTScore"),
       el("label",{class:"chk"},el("input",{type:"checkbox",checked:state.abl,onchange:e=>{state.abl=e.target.checked;render();}}),"ablations")),
     el("table",{class:"bt race"},th,...rows),
-    el("p",{class:"sub",text:bs&&showcase?(nRight(R.bart)===nRight(R.bertdict)?`Both restore ${nRight(R.bart)} of ${R.bart.ok.length} words; only BART's fact is wrong, and BART still scores higher. `:
+    el("p",{class:"sub",text:bs&&showcase?(nRight(R.bart)===nRight(R.bertdict)?`Both restore ${nRight(R.bart)} of ${R.bart.ok.length} words, not the same ones, but only BERT + dict. restores the fact, and BART still scores higher. `:
         `BART restores ${nRight(R.bart)} of ${R.bart.ok.length} words but not the fact; BERT + dict. ${nRight(R.bertdict)} of ${R.bertdict.ok.length}, including the fact. `)+"A span-level score counts the fact as one word among many."
-      :(state.idx===byId[DATA.talk.id]&&lv===DATA.talk.level?`We picked this sentence because BERT + dict. and BART get the same number of words right here (${nRight(R.bertdict)} of ${R.bertdict.ok.length}), so the only difference is the name. `:"")+
-        `Green: restored exactly; red: wrong; box: the anchor fact. One sentence only; over all ${S.length} sentences at ${LEVEL_NAME[lv]}, the anchor is restored by `+
+      :(state.idx===byId[DATA.talk.id]&&lv===DATA.talk.level?`We picked this sentence because BERT + dict. and BART get the same number of words right here (${nRight(R.bertdict)} of ${R.bertdict.ok.length}), but only BERT + dict. gets the name. `:"")+
+        `Green: restored exactly (case-sensitive); red: wrong; box: the anchor fact. One sentence only; over all ${S.length} sentences at ${LEVEL_NAME[lv]}, the anchor is restored by `+
         MAIN.map(k=>`${MNAME[k]} ${pct(mean(S.map(x=>x.repairs[lv][k].anchor)))}`).join(", ")+"."}),
     el("p",{class:"cap",text:"BERT + dict.: BERT fine-tuned on 19th-century newspaper text, choosing among its own guesses and the closest words of a word list. LLM: Qwen3-30B with five solved examples. Lookup: closest word in the list, no model. BART: a denoiser trained on our own damage, so its scores are optimistic."}),
     state.idx===byId[DATA.talk.id]&&lv===DATA.talk.level?reviewNote(bs?"2b":"2a"):null);
@@ -344,7 +344,7 @@ function stepResults(root){
       el("p",{text:"Fact Recovery Rate: share of the fact words in the damaged span restored exactly. Anchor recovery: whether the one tracked fact is restored (the same word at every level). "+
         "Exact words: share of the damaged words restored exactly. Span BERTScore: similarity in meaning of the repaired span to the original (roberta-large, rescaled, so it can go below 0). "+
         "Span CER: character edits per original character in the span, pooled per level (lower is better)."}),
-      el("p",{text:"The tests compare two methods on the same sentences: McNemar on anchor right or wrong, Wilcoxon on span BERTScore, with the Holm correction over 10 tests per test; "+
+      el("p",{text:"The tests compare two methods on the same sentences: McNemar on anchor right or wrong, Wilcoxon on span BERTScore, with the Holm correction over the 10 tests of each test type (2 pairs x 5 levels); "+
         "n.s. = not significant. 150 test sentences per level, 95% bootstrap intervals over sentences, all from the single test run (notebook 4); "+
         "Fact Recovery Rate, anchor recovery and BERTScore are the paper's Table 6 and Fig. 2."}),
       el("p",{text:`BART is descriptive only: it was trained on our own damage, so its scores are optimistic. Contamination probe: ${DATA.probe.near} of ${DATA.probe.n} test sentences continued near-verbatim by the LLM.`})),
@@ -360,7 +360,7 @@ function stepBertscore(root){
   const anchorWord=o=>{const L=o.s.levels[lv], j=L.slots.findIndex(x=>x[0]===o.s.anchor);return o.r.w[j]?core(o.r.w[j]):"∅";};
   const side=el("div",{class:"side"},
     el("div",{class:"pad"},el("div",{class:"lab",text:`Chance that a wrong-fact repair scores at least as high as a right-fact one (${MNAME[mk]}, ${LEVEL_NAME[lv]})`}),
-      el("div",{class:"big",text:fmt(rate)}),el("div",{class:"lab",text:"0 = BERTScore always ranks the right fact higher, 0.5 = it cannot tell"})),
+      el("div",{class:"big",text:pct(rate)}),el("div",{class:"lab",text:"0% = BERTScore always ranks the right fact higher, 50% = it cannot tell"})),
     el("div",{class:"pad lab",text:"Highest span BERTScores among repairs with a wrong anchor"}),
     el("table",{class:"bt",style:"width:100%;border-bottom:0"},el("tr",{},el("th",{text:"Gold"}),el("th",{text:"Repair"}),el("th",{class:"r",text:"Span BERTScore"})),
       ...wrongHigh.map(o=>el("tr",{},el("td",{text:core(o.s.tokens[o.s.anchor])}),el("td",{class:"nope",text:anchorWord(o)}),el("td",{class:"r",text:fmt(o.r.bs)})))));
@@ -373,7 +373,7 @@ function stepBertscore(root){
     el("p",{class:"sub",text:`Each dot is one repair; circled: the example from step 2. If BERTScore noticed wrong facts, every lower dot would lie left of every upper dot. `+
       (rate>=0.3?"Here the two rows overlap widely. ":rate>=0.15?"Here they partly overlap. ":"Here they are mostly apart. ")+
       (failsHere>10?`${failsHere} of the lower dots are answers in the wrong format, scored as no repair; they form the group on the left and make the rate look lower than over valid answers alone. `:"")+
-      `Over the four methods beyond one word, the chance above is ${range(all,2)}.`}),
+      `Over the four methods beyond one word, the chance above is ${pct(Math.min(...all))} to ${pct(Math.max(...all))}.`}),
     el("p",{class:"cap",text:"Repairs come from different sentences, so this ranks repairs; it is not a controlled swap of one name in the same sentence."+
       (mk==="bart"?" BART is descriptive only: it was trained on our own damage.":"")}),
     reviewNote("4"));
@@ -427,7 +427,7 @@ function stepSummary(root){
       el("li",{},el("b",{text:"H1, partly: "}),"quality falls with damage, but facts do not fall faster than BERTScore."),
       el("li",{},el("b",{text:"H2 and H2b, not supported: "}),"this LLM (Qwen3-30B, one prompt) restores no more facts than BERT + dict. or a plain lookup."),
       el("li",{},el("b",{text:"H3, supported beyond one word: "}),"BERTScore overstates repair; report a fact-level score next to it."),
-      el("li",{},el("b",{text:"Our reading: "}),"in this setting the garbled letters carry most of the fact recovery; context adds little."),
+      el("li",{},el("b",{text:"Our reading: "}),"in this setting the garbled letters carry most of the fact recovery; on top of them, the sentence context adds little (BERT + dict. restores only 1 to 7 percentage points more of the facts than the lookup alone)."),
       el("li",{},el("b",{text:"In practice (a recommendation, not tested with users): "}),"for historians working with digitised newspapers, show repairs as marked suggestions with alternatives; the historian decides.")),
     el("p",{class:"lim",text:"Limits: synthetic damage in a known span, one LLM, one prompt, one damage draw and one training seed; real damaged pages remain untested. "+
       `Data: ${meta.verified?"frozen damaged test split, hash verified":"UNVERIFIED test build"}; ${meta.mismatches.length?`${meta.mismatches.length} of ${meta.checked} recomputed means DIFFER from`:`all ${meta.checked} recomputed means match`} the paper's test run.`}),
