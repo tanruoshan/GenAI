@@ -182,12 +182,10 @@ const state={step:0,dmg:0,reveal:false,idx:byId[DATA.talk.id]??0,level:DATA.talk
 // Open points for the team, drawn like LaTeX todonotes. Set REVIEW to false (or press N) once they are settled.
 let REVIEW=true;
 const REVIEW_NOTES={
-  "1":"Wording OK? 'Anchor fact' = the one fact we track in each sentence; say this aloud.",
-  "2a":"Hand-picked example, chosen because it shows the effect. Say aloud that it is one sentence; the averages follow in step 3. OK to show it?",
   "2b":"BART and BERT + dict. both restore 7 of 9 words; only BART's name is wrong (Hele for Hassell), and BART still scores higher. OK to show it this way?",
-  "3":"'About half': BERT + dict. anchor 53 to 58%, Fact Recovery Rate 48 to 58%. The LLM's drop is partly format failures (scored as no repair). OK?",
+  "3":"Title now names BERT + dictionary (Bea). 'About half': its anchor recovery 53 to 58%, Fact Recovery Rate 48 to 58%. 'On equal input' leaves out the LLM + article upper bound. OK?",
   "4":"Opens on BART at 25% (BART is descriptive in the paper). Open on BERT + dict. instead (rate 0.33 there)?",
-  "6":"Closing: the direct answer first, then our interpretation, hedged (paper, conclusion: 'the letters carry most of this'). The 'in practice' point is a recommendation we did not test with users. OK?"};
+  "6":"Closing: direct answer first, then our hedged reading ('the letters carry most of this', paper). Bea: OK with historians named as the target group (now added in steps 1 and 6). Shan?"};
 const reviewNote=key=>REVIEW&&REVIEW_NOTES[key]?el("div",{class:"todo"},el("b",{text:"To confirm: "}),REVIEW_NOTES[key]):null;
 
 // --------------------------------------------------------------------------------- sentence choice
@@ -258,7 +256,7 @@ function stepDamage(root){
       title:sl?`gold: ${t}`:null,text:sl?(sl.d?"⟨?⟩":sl.out):t})," ");});
   const k=L?L.slots.length:0, nd=L?L.slots.filter(x=>x[2]).length:0;
   add(root,...head(1,"We damage one fact and the words around it, from one word to 75% of the sentence",
-      "Real damaged pages have no known original text. Damaging clean text ourselves lets us set how much is broken and know the right answer. Which letters get confused (86% of substitutions) and how strongly a word is damaged come from real OCR errors in BLN600; the drop rate and the fallback substitutions are our choice."),
+      "Real damaged pages have no known original text. By damaging clean text ourselves, we control how much is broken and know the correct answer. The letter confusions (86% of substitutions) and the severity of damage per word are taken from real OCR errors in BLN600; the drop rate and the fallback substitutions, used when the confusion table has no entry for a letter, are our own choice."),
     el("div",{class:"controls"},sentencePicker(),
       el("div",{class:"group"},el("span",{class:"t",text:"damage"}),levelButtons(DMG_SEQ,lv,l=>{stopPlay();state.dmg=DMG_SEQ.indexOf(l);render();}),
         el("button",{class:"btn",onclick:play},state.playing?"stop":"play"))),
@@ -266,8 +264,9 @@ function stepDamage(root){
     el("div",{class:"key"},el("span",{},el("i",{style:`background:${tint||LEVEL_COL["25"][1]}`}),"damaged word, as every method sees it"),
       el("span",{},"⟨?⟩ word dropped, no letters left"),el("span",{},el("i",{style:"outline:1.5px solid #0b0b0b;outline-offset:-2px"}),"anchor fact (the one fact we track)")),
     el("p",{class:"sub",text:L?`${LEVEL_NAME[lv]}: ${k} of ${s.tokens.length} words damaged${nd?`, ${nd} dropped`:""}, character error rate of the span ${pct(L.cer)}. `+
-      "A word looks the same at every level; a higher level only adds damaged words around the anchor."
-      :"A sentence from a London crime report, 1834 to 1894 (BLN600 corpus). Click play or next to damage it."}),
+      "A word looks the same at every level; a higher level only adds damaged words around the boxed anchor fact."
+      :"Historians search digitised newspapers for facts: names, places, dates, sums of money. A fluent wrong name is worse than visible noise, because the reader no longer sees that anything was damaged. "+
+       "So in every sentence we track one fact, the boxed anchor fact, at every damage level. Here: a London crime report, 1834 to 1894 (BLN600 corpus)."}),
     reviewNote("1"));
 }
 
@@ -300,7 +299,8 @@ function stepRepairs(root){
     el("table",{class:"bt race"},th,...rows),
     el("p",{class:"sub",text:bs&&showcase?(nRight(R.bart)===nRight(R.bertdict)?`Both restore ${nRight(R.bart)} of ${R.bart.ok.length} words; only BART's fact is wrong, and BART still scores higher. `:
         `BART restores ${nRight(R.bart)} of ${R.bart.ok.length} words but not the fact; BERT + dict. ${nRight(R.bertdict)} of ${R.bertdict.ok.length}, including the fact. `)+"A span-level score counts the fact as one word among many."
-      :`Green: restored exactly; red: wrong; box: the anchor fact. One sentence only; over all ${S.length} sentences at ${LEVEL_NAME[lv]}, the anchor is restored by `+
+      :(state.idx===byId[DATA.talk.id]&&lv===DATA.talk.level?`We picked this sentence because BERT + dict. and BART get the same number of words right here (${nRight(R.bertdict)} of ${R.bertdict.ok.length}), so the only difference is the name. `:"")+
+        `Green: restored exactly; red: wrong; box: the anchor fact. One sentence only; over all ${S.length} sentences at ${LEVEL_NAME[lv]}, the anchor is restored by `+
         MAIN.map(k=>`${MNAME[k]} ${pct(mean(S.map(x=>x.repairs[lv][k].anchor)))}`).join(", ")+"."}),
     el("p",{class:"cap",text:"BERT + dict.: BERT fine-tuned on 19th-century newspaper text, choosing among its own guesses and the closest words of a word list. LLM: Qwen3-30B with five solved examples. Lookup: closest word in the list, no model. BART: a denoiser trained on our own damage, so its scores are optimistic."}),
     state.idx===byId[DATA.talk.id]&&lv===DATA.talk.level?reviewNote(bs?"2b":"2a"):null);
@@ -330,8 +330,8 @@ function stepResults(root){
       if(state.hyp===h.id){if(h.id==="H3"){go(3);return;}state.hyp=null;render();return;}
       state.hyp=h.id; state.metric=h.metric; render();}},
     el("b",{text:h.id}),el("em",{text:h.vtext}),el("p",{text:h.text}))));
-  add(root,...head(3,"Even the best main method restores only about half of the facts, at every damage level",
-      "We count exact facts (names, places, numbers) because a fluent wrong name is worse than visible noise: the reader no longer sees that anything was damaged."),
+  add(root,...head(3,"Even BERT + dictionary, the best at restoring facts on equal input, gets only about half of them right at every damage level",
+      "Two fact measures: the Fact Recovery Rate counts every fact in the damaged span; anchor recovery follows the one boxed fact, the same word at every level, so the levels compare cleanly."),
     el("div",{class:"controls"},el("div",{class:"group"},el("span",{class:"t",text:"measure"}),el("div",{class:"seg"},...Object.entries(METRIC_NAMES).map(([k,n])=>
       el("button",{"aria-pressed":String(state.metric===k),onclick:()=>{state.metric=k;
         const h=state.hyp&&HYPS.find(x=>x.id===state.hyp); if(h&&!h.uses.includes(k)&&!h.supports.includes(k))state.hyp=null;render();}},n)))),
@@ -428,7 +428,7 @@ function stepSummary(root){
       el("li",{},el("b",{text:"H2 and H2b, not supported: "}),"this LLM (Qwen3-30B, one prompt) restores no more facts than BERT + dict. or a plain lookup."),
       el("li",{},el("b",{text:"H3, supported beyond one word: "}),"BERTScore overstates repair; report a fact-level score next to it."),
       el("li",{},el("b",{text:"Our reading: "}),"in this setting the garbled letters carry most of the fact recovery; context adds little."),
-      el("li",{},el("b",{text:"In practice (a recommendation, not tested with users): "}),"show repairs as marked suggestions with alternatives; the historian decides.")),
+      el("li",{},el("b",{text:"In practice (a recommendation, not tested with users): "}),"for historians working with digitised newspapers, show repairs as marked suggestions with alternatives; the historian decides.")),
     el("p",{class:"lim",text:"Limits: synthetic damage in a known span, one LLM, one prompt, one damage draw and one training seed; real damaged pages remain untested. "+
       `Data: ${meta.verified?"frozen damaged test split, hash verified":"UNVERIFIED test build"}; ${meta.mismatches.length?`${meta.mismatches.length} of ${meta.checked} recomputed means DIFFER from`:`all ${meta.checked} recomputed means match`} the paper's test run.`}),
     reviewNote("6"));
