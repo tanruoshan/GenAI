@@ -19,8 +19,9 @@ BERTScore view), left arrow or PageUp back, 1 to 6 jump to a step. P plays the l
 up and down change the sentence (steps 1 and 2). The bar at the bottom does the same with the mouse. After
 typing in the lookup box (step 5), press Escape or click outside it before the keys move again.
 
-**Review notes.** Orange "To confirm" boxes mark points the team still has to agree on. N hides them; before
-the defence set `REVIEW = false` in `template.html` and rebuild.
+**Review notes.** The page is built as the production version for the defence (`let REVIEW=false` in
+`template.html`): no notes, no notes button. For a team review build with the orange "To confirm" boxes, set
+it to `true` and rebuild; N then hides and shows them.
 
 **Look.** The page copies the submitted paper so it reads as the paper made interactive: the paper's own fonts
 (TeX Gyre Termes, the OpenType version of the paper's Nimbus Roman, and Inconsolata, embedded from
@@ -96,9 +97,9 @@ The project's decision log is not in this repository, so this section is the con
 3. Open the page, click through all six steps (with and without the notes, N), and check that no "null",
    "undefined" or "NaN" appears and that step 3's hypotheses and measures still link both ways.
 
-**State (12 Oct 2026)** The page has been checked against the paper's Tables 6 and 7 and notebook 4 by three
-independent reviews; their fixes are in the git log of this branch. Open are only the team's "To confirm"
-notes. Before the defence: set `let REVIEW=true` to `false` in `template.html`, rebuild, and present that file.
+**State (13 Oct 2026)** The page has been checked against the paper's Tables 6 and 7 and notebook 4 by four
+independent reviews; their fixes are in the git log of this branch. It is built as the production version
+(`REVIEW=false`); the remaining team questions stay in `REVIEW_NOTES` for a review build.
 
 ## Licence
 

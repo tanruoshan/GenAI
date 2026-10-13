@@ -180,7 +180,8 @@ const DMG_SEQ=["0"].concat(LEVELS);
 const state={step:0,dmg:0,reveal:false,idx:byId[DATA.talk.id]??0,level:DATA.talk.level,filter:"all",abl:false,
   metric:"frr",hyp:null,tMethod:DATA.talk.trap_method,tLevel:DATA.talk.level,lookupWord:"Hacley",playing:null};
 // Open points for the team, drawn like LaTeX todonotes. Set REVIEW to false (or press N) once they are settled.
-let REVIEW=true;
+let REVIEW=false;            // production build for the defence; true = team review build with the notes
+const NOTES_AVAILABLE=REVIEW; // the production build has no notes button and ignores N
 const REVIEW_NOTES={
   "2b":"Both restore 7 of 9 words, but not the same: BART gets 'A' (BERT + dict.: 'S -OR') and misses the name (Hele for Hassell). Part of BART's higher score comes from 'A man'; the point is that the wrong name costs BART little. OK?",
   "3":"Title now names BERT + dictionary (Bea). 'About half': its anchor recovery 53 to 58%, Fact Recovery Rate 48 to 58%. 'On equal input' leaves out the LLM + article upper bound. OK?",
@@ -457,7 +458,7 @@ function bar(){
     el("button",{class:"btn",onclick:next,disabled:pos===TOTAL-1},"next ›"),
     el("span",{class:"pos",text:`${pos+1}/${TOTAL}`}),
     el("span",{class:"grow"}),
-    el("button",{class:"btn",onclick:()=>{REVIEW=!REVIEW;render();}},REVIEW?"hide notes (N)":"show notes (N)")];
+    NOTES_AVAILABLE?el("button",{class:"btn",onclick:()=>{REVIEW=!REVIEW;render();}},REVIEW?"hide notes (N)":"show notes (N)"):null].filter(Boolean);
 }
 let lastStep=null;
 function render(){
@@ -474,7 +475,7 @@ document.addEventListener("keydown",e=>{
   else if(["ArrowLeft","PageUp","Backspace"].includes(k))back();
   else if(/^[1-6]$/.test(k))go(+k-1);
   else if(k==="Home")go(0);
-  else if(k.toLowerCase()==="n"){REVIEW=!REVIEW;render();}
+  else if(k.toLowerCase()==="n"&&NOTES_AVAILABLE){REVIEW=!REVIEW;render();}
   else if(k.toLowerCase()==="p"&&state.step===0)play();
   else if(k.toLowerCase()==="r"&&state.step<2)randomSentence();
   else if(k==="ArrowDown"&&state.step<2)stepSentence(1);
